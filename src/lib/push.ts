@@ -1,6 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Clé VAPID publique : lue depuis l'env (VITE_VAPID_PUBLIC_KEY). Repli sur la
+// valeur historique pour ne rien casser si l'env n'est pas fournie au build.
+// IMPORTANT : cette clé publique DOIT correspondre à la clé privée VAPID
+// configurée côté serveur (secrets Supabase), sinon FCM rejette les push.
 const VAPID_PUBLIC_KEY =
+  (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim() ||
   "BKJVi0v15ZIYrtfEJgyJ-DPTAq2hu7pSGLhCmjYrTQ4znq7fjLyLOtxn3D925HE0Nbci8qvNrfgfG13IlgjXm4E";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -41,14 +46,28 @@ function isPreviewHost(): boolean {
 }
 
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!isPushSupported()) return null;
-  if (window.top !== window.self) return null; // don't register inside the editor iframe
-  if (isPreviewHost()) return null;
+  // Logs de diagnostic temporaires (préfixe [push]) pour repérer un enregistrement
+  // ignoré silencieusement.
+  if (!isPushSupported()) {
+    console.warn("[push] SW non enregistré : notifications push non supportées sur cet appareil.");
+    return null;
+  }
+  if (window.top !== window.self) {
+    console.warn("[push] SW non enregistré : exécution dans une iframe (aperçu/éditeur).");
+    return null; // don't register inside the editor iframe
+  }
+  if (isPreviewHost()) {
+    console.warn(
+      "[push] SW non enregistré : host de prévisualisation (déployez sur le vrai domaine).",
+    );
+    return null;
+  }
   try {
     const reg = await navigator.serviceWorker.register("/sw.js", {
       scope: "/",
       updateViaCache: "none", // ne jamais servir sw.js depuis le cache HTTP du navigateur
     });
+    console.info("[push] Service worker enregistré (scope:", reg.scope + ").");
 
     // Force une vérification immédiate de mise à jour à chaque chargement
     reg.update().catch(() => {});
@@ -64,7 +83,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 
     return reg;
   } catch (e) {
-    console.error("SW register failed", e);
+    console.error("[push] Échec de l'enregistrement du service worker.", e);
     return null;
   }
 }
@@ -77,8 +96,13 @@ export async function enablePushNotifications(role: "client" | "admin"): Promise
     return { ok: false, error: "Notifications non supportées sur cet appareil." };
   if (window.top !== window.self)
     return { ok: false, error: "Les notifications ne sont pas disponibles dans l'aperçu." };
+  if (!VAPID_PUBLIC_KEY) {
+    console.error("[push] Clé VAPID publique absente (VITE_VAPID_PUBLIC_KEY).");
+    return { ok: false, error: "Configuration des notifications incomplète." };
+  }
 
   const permission = await Notification.requestPermission();
+  console.info("[push] Résultat de la demande de permission :", permission);
   if (permission !== "granted") return { ok: false, error: "Permission refusée." };
 
   const reg =
@@ -120,7 +144,11 @@ export async function enablePushNotifications(role: "client" | "admin"): Promise
   )
     .from("push_subscriptions")
     .upsert(payload, { onConflict: "endpoint" });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("[push] Enregistrement de l'abonnement échoué :", error.message);
+    return { ok: false, error: error.message };
+  }
+  console.info("[push] Abonnement push enregistré côté Supabase (role:", role + ").");
   return { ok: true };
 }
 

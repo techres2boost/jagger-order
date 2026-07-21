@@ -627,10 +627,10 @@ function ProductCard({
 
   return (
     <div
-      className={`relative flex h-full flex-col overflow-hidden ${radius} bg-[#F1F2F4] card-hover ${highlight}`}
+      className={`relative flex h-[280px] flex-col overflow-hidden ${radius} bg-[#F1F2F4] card-hover ${highlight}`}
     >
-      <button onClick={() => onOpen(item)} className="flex flex-1 flex-col text-left">
-        <div className="relative aspect-square w-full p-3">
+      <button onClick={() => onOpen(item)} className="flex h-full w-full flex-col text-left">
+        <div className="relative h-[160px] w-full shrink-0 p-3">
           <div className="absolute inset-x-6 bottom-3 h-3 rounded-full bg-black/20 blur-md" />
           {item.image ? (
             <img
@@ -656,16 +656,18 @@ function ProductCard({
             </div>
           )}
         </div>
-        <div className="flex flex-1 flex-col px-4 pb-4 pt-1 pr-14">
-          {item.name && (
-            <div className="line-clamp-2 min-h-[2.5rem] text-sm font-bold text-black">{item.name}</div>
-          )}
-          {price != null && (
-            <div className="mt-auto pt-2 text-base font-black text-black">
-              {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
-              <span className="ml-1 text-[10px] font-bold text-black/60">TND</span>
-            </div>
-          )}
+        <div className="flex flex-1 flex-col justify-between px-4 pb-4 pt-1 pr-14">
+          <div className="line-clamp-2 h-[2.5rem] overflow-hidden text-sm font-bold leading-tight text-black">
+            {item.name ?? ""}
+          </div>
+          <div className="h-6 text-base font-black leading-6 text-black">
+            {price != null ? (
+              <>
+                {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
+                <span className="ml-1 text-[10px] font-bold text-black/60">TND</span>
+              </>
+            ) : null}
+          </div>
         </div>
       </button>
       {!item.incomplete && (

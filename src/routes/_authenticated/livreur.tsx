@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BoxLogo } from "@/components/BoxLogo";
+import { EnableNotifications } from "@/components/EnableNotifications";
 import { fmt } from "@/lib/format";
 import { toast } from "sonner";
 import { MapPin, Phone, CheckCircle2, Navigation, X } from "lucide-react";
@@ -236,6 +237,9 @@ function LivreurPage() {
         <div className="mx-auto flex max-w-xl items-center gap-3">
           <BoxLogo size={36} showWordmark={false} />
           <h1 className="text-lg font-black">Mes livraisons</h1>
+          <div className="ml-auto">
+            <EnableNotifications role="livreur" />
+          </div>
         </div>
       </header>
 

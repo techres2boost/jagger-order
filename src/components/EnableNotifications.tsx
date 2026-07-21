@@ -8,7 +8,7 @@ import {
   isPushSupported,
 } from "@/lib/push";
 
-export function EnableNotifications({ role }: { role: "client" | "admin" }) {
+export function EnableNotifications({ role }: { role: "client" | "admin" | "livreur" }) {
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
   const [subscribed, setSubscribed] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);

@@ -1,5 +1,5 @@
-import { serve } from "std/server";
-import { createClient } from "@supabase/supabase-js";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import webpush from "npm:web-push@3.6.7";
 
 // Edge Function invoquée par le trigger Postgres `trg_order_status_notify`
@@ -116,7 +116,7 @@ serve(async (req: Request) => {
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
-      .select("user_id, refusal_reason, customer_name, address, assigned_livreur_id")
+      .select("user_id, refusal_reason")
       .eq("id", orderId)
       .single();
     if (orderError || !order) {
@@ -141,26 +141,11 @@ serve(async (req: Request) => {
     }
 
     const clientPayload = JSON.stringify({ title: "BOX", body: finalMessage });
-    let sent = await sendToSubscriptions(subscriptions ?? [], clientPayload);
+    const sent = await sendToSubscriptions(subscriptions ?? [], clientPayload);
 
-    // Tâche 5 : notifier le livreur assigné dès le passage à 'delivering'.
-    if (status === "delivering" && order.assigned_livreur_id) {
-      const { data: livreur } = await supabaseAdmin
-        .from("livreurs")
-        .select("user_id")
-        .eq("id", order.assigned_livreur_id)
-        .single();
-      if (livreur?.user_id) {
-        const { data: livreurSubs } = await supabaseAdmin
-          .from("push_subscriptions")
-          .select("endpoint, p256dh, auth")
-          .eq("user_id", livreur.user_id)
-          .eq("role", "livreur");
-        const livreurMessage = `Nouvelle livraison assignée : ${order.customer_name} - ${order.address ?? ""}`;
-        const livreurPayload = JSON.stringify({ title: "BOX Livreur", body: livreurMessage });
-        sent += await sendToSubscriptions(livreurSubs ?? [], livreurPayload);
-      }
-    }
+    // Note : la notification du livreur lors de l'assignation d'une commande est
+    // gérée par un flux dédié et isolé (trigger trg_order_livreur_assigned +
+    // Edge Function notify-livreur), et non ici.
 
     return new Response(JSON.stringify({ ok: true, sent }), { status: 200 });
   } catch (e: unknown) {

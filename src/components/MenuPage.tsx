@@ -528,10 +528,12 @@ function DishThumb({ item, className }: { item: Dish; className?: string }) {
       src={item.image}
       alt={item.name}
       loading="lazy"
-      className={`h-full w-full object-cover appetizing ${className ?? ""}`}
+      className={`h-full w-full object-contain appetizing drop-shadow-[0_14px_18px_rgba(0,0,0,0.28)] ${className ?? ""}`}
+      style={{ filter: "saturate(1.15) contrast(1.05)" }}
     />
   );
 }
+
 
 function PopularCard({
   item,
@@ -618,77 +620,31 @@ function ProductCard({
   const minSizePrice = hasSizes ? Math.min(...item.sizes!.map((s) => s.price)) : null;
   const price = minSizePrice ?? item.price ?? null;
   const inCart = qtyInCart > 0;
-  const radius = featured ? "rounded-[20px]" : "rounded-[14px]";
+  const radius = featured ? "rounded-[20px]" : "rounded-[18px]";
   const highlight = inCart
-    ? `border-2 border-brand ring-2 ring-brand/20 ${radius}`
-    : `border border-transparent ${radius}`;
-
-  // ─── Design spécial catégorie Pizza : photo flottante en forme organique ───
-  if (item.category === "pizzas") {
-    return (
-      <div
-        className={`relative flex h-full flex-col overflow-hidden ${radius} bg-card px-3 pb-3 pt-5 shadow-[0_1px_4px_rgba(0,0,0,0.08)] card-hover ${highlight}`}
-      >
-        <button onClick={() => onOpen(item)} className="flex flex-1 flex-col text-left">
-          <div className="relative mx-auto mb-3 h-28 w-28">
-            <div className="absolute inset-x-4 bottom-1 h-3 rounded-full bg-black/25 blur-md" />
-            {item.image ? (
-              <img
-                src={item.image}
-                alt={item.name}
-                loading="lazy"
-                className="relative h-full w-full rounded-full border border-black/5 object-cover drop-shadow-[0_8px_12px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:scale-105"
-              />
-            ) : (
-              <div className="relative flex h-full w-full items-center justify-center rounded-full border border-black/5 bg-gradient-to-br from-accent to-secondary">
-                <BoxLogo size={56} showWordmark={false} />
-              </div>
-            )}
-            {item.populaire && (
-              <div className="pop-badge absolute -left-1 -top-1 rounded-full bg-[color:var(--gold)] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[color:var(--gold-foreground)] shadow">
-                ★ Populaire
-              </div>
-            )}
-          </div>
-          <div className="flex flex-1 flex-col">
-            {item.name && (
-              <div className="line-clamp-2 min-h-[2.5rem] text-sm font-bold">{item.name}</div>
-            )}
-            {price != null && (
-              <div className="mt-auto pt-2 text-base font-black text-[color:var(--gold)]">
-                {hasSizes ? `dès ${fmt(price)}` : fmt(price)}<span className="ml-1 text-[10px] font-bold text-foreground/60">TND</span>
-              </div>
-            )}
-          </div>
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpen(item);
-          }}
-          className="press absolute bottom-3 right-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg"
-          aria-label="Voir la pizza"
-        >
-          <Plus className="h-5 w-5" />
-          {inCart && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-black text-[color:var(--brand)] shadow">
-              x{qtyInCart}
-            </span>
-          )}
-        </button>
-      </div>
-    );
-  }
+    ? `ring-2 ring-brand ${radius}`
+    : `${radius}`;
 
   return (
     <div
-      className={`relative flex h-full flex-col overflow-hidden ${radius} bg-card shadow-[0_1px_4px_rgba(0,0,0,0.08)] card-hover ${highlight}`}
+      className={`relative flex h-full flex-col overflow-hidden ${radius} bg-[#F1F2F4] card-hover ${highlight}`}
     >
       <button onClick={() => onOpen(item)} className="flex flex-1 flex-col text-left">
-        <div
-          className={`relative aspect-square w-full overflow-hidden ${featured ? "rounded-t-[20px]" : "rounded-t-[14px]"}`}
-        >
-          <DishThumb item={item} className="transition-transform duration-300 hover:scale-105" />
+        <div className="relative aspect-square w-full p-3">
+          <div className="absolute inset-x-6 bottom-3 h-3 rounded-full bg-black/20 blur-md" />
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={item.name}
+              loading="lazy"
+              className="relative h-full w-full object-contain drop-shadow-[0_10px_14px_rgba(0,0,0,0.22)] transition-transform duration-300 hover:scale-105"
+              style={{ filter: "saturate(1.15) contrast(1.05)" }}
+            />
+          ) : (
+            <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-white/60">
+              <BoxLogo size={56} showWordmark={false} />
+            </div>
+          )}
           {item.populaire && (
             <div className="pop-badge absolute left-2 top-2 rounded-full bg-[color:var(--gold)] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[color:var(--gold-foreground)] shadow">
               ★ Populaire
@@ -700,13 +656,14 @@ function ProductCard({
             </div>
           )}
         </div>
-        <div className="flex flex-1 flex-col p-3 pb-14">
+        <div className="flex flex-1 flex-col px-4 pb-4 pt-1 pr-14">
           {item.name && (
-            <div className="line-clamp-2 min-h-[2.5rem] text-sm font-bold">{item.name}</div>
+            <div className="line-clamp-2 min-h-[2.5rem] text-sm font-bold text-black">{item.name}</div>
           )}
           {price != null && (
-            <div className="mt-auto pt-2 text-base font-black text-[color:var(--gold)]">
-              {hasSizes ? `dès ${fmt(price)}` : fmt(price)}<span className="ml-1 text-[10px] font-bold text-foreground/60">TND</span>
+            <div className="mt-auto pt-2 text-base font-black text-black">
+              {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
+              <span className="ml-1 text-[10px] font-bold text-black/60">TND</span>
             </div>
           )}
         </div>
@@ -720,7 +677,7 @@ function ProductCard({
           className="press absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg"
           aria-label="Ajouter au panier"
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-5 w-5" strokeWidth={3} />
           {inCart && (
             <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-black text-[color:var(--brand)] shadow">
               x{qtyInCart}
@@ -731,6 +688,7 @@ function ProductCard({
     </div>
   );
 }
+
 function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
   const { add } = useCart();
   const [sizeIdx, setSizeIdx] = useState(0);

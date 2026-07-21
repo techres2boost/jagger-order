@@ -732,14 +732,14 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-background pb-40 animate-in slide-in-from-bottom duration-300"
+        className="relative flex h-[92vh] w-full flex-col rounded-t-3xl bg-background animate-in slide-in-from-bottom duration-300"
       >
-        {/* Image — floating pour pizza, plein cadre sinon */}
-        {item.category === "pizzas" ? (
-          <div className="relative bg-card px-5 pb-4 pt-8">
+        <div className="flex-1 overflow-y-auto pb-32">
+          {/* Photo — fond rouge, vague en bas, image non recadrée */}
+          <div className="relative bg-brand pt-8 pb-16">
             <button
               onClick={onClose}
-              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-brand-dark shadow"
+              className="press absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-brand-dark shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
             >
               ✕
             </button>
@@ -748,178 +748,169 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                 e.stopPropagation();
                 setImageOpen(true);
               }}
-              className="relative mx-auto block h-56 w-56"
+              className="relative mx-auto block h-56 w-full"
               aria-label="Voir l'image en plein écran"
             >
-              <div className="absolute inset-x-8 bottom-2 h-5 rounded-full bg-black/25 blur-xl" />
               {item.image ? (
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="relative h-full w-full rounded-full border border-black/5 object-cover drop-shadow-[0_16px_20px_rgba(0,0,0,0.22)]"
+                  className="mx-auto h-full w-auto max-w-[80%] object-contain drop-shadow-[0_16px_20px_rgba(0,0,0,0.28)]"
                 />
               ) : (
-                <div className="relative flex h-full w-full items-center justify-center rounded-full border border-black/5 bg-gradient-to-br from-accent to-secondary">
-                  <BoxLogo size={80} showWordmark={false} />
+                <div className="mx-auto flex h-full w-56 items-center justify-center">
+                  <BoxLogo size={100} showWordmark={false} />
                 </div>
               )}
             </button>
-          </div>
-        ) : (
-          <div className="relative h-[40%] bg-brand">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setImageOpen(true);
-              }}
-              className="block h-full w-full"
-              aria-label="Voir l'image en plein écran"
+            <svg
+              className="absolute -bottom-px left-0 right-0 h-10 w-full text-background"
+              viewBox="0 0 1440 80"
+              preserveAspectRatio="none"
+              aria-hidden
             >
-              {item.image ? (
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="h-full w-full rounded-b-[2.5rem] object-cover"
-                />
-              ) : (
-                <div
-                  className="h-full w-full rounded-b-[2.5rem]"
-                  style={{ backgroundColor: item.color || DEFAULT_DISH_COLOR }}
-                />
-              )}
-            </button>
-            <button
-              onClick={onClose}
-              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-brand-dark shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
-            >
-              ✕
-            </button>
+              <path
+                fill="currentColor"
+                d="M0,32 C240,96 480,0 720,32 C960,64 1200,16 1440,48 L1440,80 L0,80 Z"
+              />
+            </svg>
           </div>
-        )}
 
-        <div className="mx-auto max-w-2xl px-5 pt-5">
-          <div className="flex items-start justify-between gap-4">
-            <h2 className="text-2xl font-black">{item.name}</h2>
-            <div className="whitespace-nowrap text-2xl font-black text-[color:var(--gold)]">
-              {fmt(base)} <span className="text-sm font-bold text-foreground/50">TND</span>
-            </div>
-          </div>
-          {item.description && (
-            <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
-          )}
-          {item.incomplete && (
-            <div className="mt-3 rounded-lg bg-warning/10 p-3 text-xs font-medium text-warning-foreground">
-              ⚠️ Information à compléter par l'établissement.
-            </div>
-          )}
-
-          {item.sizes && (
-            <div className="mt-5">
-              <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                Format
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {item.sizes.map((s, i) => (
-                  <button
-                    key={s.label}
-                    onClick={() => setSizeIdx(i)}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                      i === sizeIdx ? "bg-brand text-brand-foreground" : "bg-secondary"
-                    }`}
-                  >
-                    {s.label} · {fmt(s.price)} TND
-                  </button>
-                ))}
+          <div className="mx-auto max-w-2xl px-5 pt-5">
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-2xl font-black">{item.name}</h2>
+              <div className="whitespace-nowrap text-2xl font-black text-[color:var(--gold)]">
+                {fmt(base)} <span className="text-sm font-bold text-foreground/50">TND</span>
               </div>
             </div>
-          )}
+            {item.description && (
+              <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
+            )}
 
-          {item.composition && (
-            <div className="mt-5">
-              <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                Composition
-              </h3>
-              <p className="rounded-xl bg-secondary/60 p-3 text-sm text-foreground">
-                {item.composition}
-              </p>
+            {/* Quantité — juste sous la description */}
+            <div className="mt-4 flex items-center gap-3">
+              <span className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                Quantité
+              </span>
+              <div className="ml-auto flex items-center gap-3 rounded-full border px-1 py-1">
+                <button
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  className="press h-9 w-9 rounded-full bg-secondary font-bold"
+                >
+                  −
+                </button>
+                <span className="w-6 text-center font-bold">{qty}</span>
+                <button
+                  onClick={() => setQty((q) => q + 1)}
+                  className="press h-9 w-9 rounded-full bg-[#B22222] font-bold text-white"
+                >
+                  +
+                </button>
+              </div>
             </div>
-          )}
 
-          {optionGroups.map((group) => {
-            const selectedIds = selections[group.id] ?? [];
-            const limitReached = selectedIds.length >= group.maxSelection;
-            return (
-              <div key={group.id} className="mt-5">
+            {item.incomplete && (
+              <div className="mt-4 rounded-lg bg-warning/10 p-3 text-xs font-medium text-warning-foreground">
+                ⚠️ Information à compléter par l'établissement.
+              </div>
+            )}
+
+            {item.sizes && (
+              <div className="mt-5">
                 <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                  {group.name}
+                  Format
                 </h3>
-                <p className="mb-2 text-xs text-muted-foreground">
-                  Choisissez un maximum de {group.maxSelection} produits
-                </p>
-                {limitReached && (
-                  <p className="mb-2 rounded-lg bg-warning/10 p-2 text-xs font-medium text-warning-foreground">
-                    Limite atteinte pour « {group.name} ».
-                  </p>
-                )}
-                <div className="flex flex-col gap-2">
-                  {group.items.map((optionItem) => {
-                    const checked = selectedIds.includes(optionItem.id);
-                    const disabled = !checked && limitReached;
-                    return (
-                      <label
-                        key={optionItem.id}
-                        className={`flex items-center justify-between rounded-xl border p-3 ${disabled ? "opacity-40" : ""}`}
-                      >
-                        <span className="text-sm font-medium">{optionItem.name}</span>
-                        <span className="flex items-center gap-3">
-                          {group.type === "supplement" && (
-                            <span className="text-sm font-bold text-[color:var(--gold)]">
-                              +{fmt(optionItem.price)} TND
-                            </span>
-                          )}
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            disabled={disabled}
-                            onChange={() => toggleOption(group, optionItem.id)}
-                            className="h-5 w-5 accent-[color:var(--brand)]"
-                          />
-                        </span>
-                      </label>
-                    );
-                  })}
+                <div className="flex flex-wrap gap-2">
+                  {item.sizes.map((s, i) => (
+                    <button
+                      key={s.label}
+                      onClick={() => setSizeIdx(i)}
+                      className={`press rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                        i === sizeIdx
+                          ? "bg-brand text-brand-foreground shadow-md"
+                          : "bg-secondary hover:bg-secondary/70"
+                      }`}
+                    >
+                      {s.label} · {fmt(s.price)} TND
+                    </button>
+                  ))}
                 </div>
               </div>
-            );
-          })}
+            )}
 
-          <div className="mt-6 flex items-center gap-3">
-            <span className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-              Quantité
-            </span>
-            <div className="ml-auto flex items-center gap-3 rounded-full border px-1 py-1">
-              <button
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="h-9 w-9 rounded-full bg-secondary font-bold"
-              >
-                −
-              </button>
-              <span className="w-6 text-center font-bold">{qty}</span>
-              <button
-                onClick={() => setQty((q) => q + 1)}
-                className="h-9 w-9 rounded-full bg-secondary font-bold"
-              >
-                +
-              </button>
-            </div>
+            {item.composition && (
+              <div className="mt-5">
+                <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                  Composition
+                </h3>
+                <p className="rounded-xl bg-secondary/60 p-3 text-sm text-foreground">
+                  {item.composition}
+                </p>
+              </div>
+            )}
+
+            {optionGroups.map((group) => {
+              const selectedIds = selections[group.id] ?? [];
+              const limitReached = selectedIds.length >= group.maxSelection;
+              return (
+                <div key={group.id} className="mt-5">
+                  <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                    {group.name}
+                  </h3>
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Choisissez un maximum de {group.maxSelection} produits
+                  </p>
+                  {limitReached && (
+                    <p className="mb-2 rounded-lg bg-warning/10 p-2 text-xs font-medium text-warning-foreground">
+                      Limite atteinte pour « {group.name} ».
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    {group.items.map((optionItem) => {
+                      const checked = selectedIds.includes(optionItem.id);
+                      const disabled = !checked && limitReached;
+                      return (
+                        <label
+                          key={optionItem.id}
+                          className={`flex cursor-pointer items-center justify-between rounded-xl border-2 p-3 transition-all duration-200 ${
+                            checked
+                              ? "border-[#B22222] bg-[#B22222]/5 shadow-[0_2px_10px_rgba(178,34,34,0.15)]"
+                              : "border-transparent bg-secondary/50 hover:border-[#B22222]/40 hover:bg-[#B22222]/5 hover:-translate-y-0.5"
+                          } ${disabled ? "cursor-not-allowed opacity-40 hover:translate-y-0" : ""}`}
+                        >
+                          <span className="text-sm font-medium">{optionItem.name}</span>
+                          <span className="flex items-center gap-3">
+                            {group.type === "supplement" && (
+                              <span className="text-sm font-bold text-[#B22222]">
+                                +{fmt(optionItem.price)} TND
+                              </span>
+                            )}
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={disabled}
+                              onChange={() => toggleOption(group, optionItem.id)}
+                              className="h-5 w-5 accent-[#B22222]"
+                            />
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <div className="fixed bottom-16 left-0 right-0 z-30 border-t bg-white px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div className="absolute bottom-0 left-0 right-0 z-30 border-t bg-white px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="mx-auto flex max-w-2xl items-center gap-5">
             <div className="shrink-0">
               <div className="text-xs text-muted-foreground">Total</div>
-              <div className="text-lg font-black text-[color:var(--gold)]">{fmt(total)} <span className="text-xs font-bold text-foreground/50">TND</span></div>
+              <div className="text-lg font-black text-[color:var(--gold)]">
+                {fmt(total)}{" "}
+                <span className="text-xs font-bold text-foreground/50">TND</span>
+              </div>
             </div>
             <button
               disabled={item.incomplete}
@@ -948,14 +939,14 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                 toast.success(`${item.name} ajouté au panier`);
                 onClose();
               }}
-              className="ml-auto h-12 flex-1 rounded-full bg-[#B22222] px-4 font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2"
+              className="press ml-auto flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#B22222] px-4 font-bold text-white disabled:opacity-40"
             >
               <ShoppingCart className="h-5 w-5" />
               Ajouter au panier
             </button>
           </div>
         </div>
-      </div>
+
 
       {imageOpen && (
         <div

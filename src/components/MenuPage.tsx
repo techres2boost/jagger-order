@@ -15,6 +15,7 @@ import {
   SlidersHorizontal,
   ArrowDownAZ,
   ArrowUpAZ,
+  ArrowRight,
   X,
 } from "lucide-react";
 import { BoxLogo } from "@/components/BoxLogo";
@@ -422,30 +423,58 @@ export function MenuPage() {
       </header>
 
       <main className="mx-auto max-w-3xl">
-        {/* Populaires — featured zone with red tint */}
+        {/* Populaires — minimal, invisible cards, seamless with white bg */}
         {populaires.length > 0 && (
-          <section className="tint-red px-4 pt-5 pb-6 rounded-b-[28px]">
-            <h2 className="section-title mb-4 text-xl font-black">Plats populaires</h2>
-            <div className="hide-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
+          <section className="px-4 pt-6 pb-2">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-xl font-black text-foreground">Plats populaires</h2>
+              {populaires.length < 4 && (
+                <button
+                  onClick={() => {
+                    setActive("__all__");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="flex items-center gap-1 text-xs font-bold text-[color:var(--brand)] press"
+                >
+                  Voir tout <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
               {populaires.map((it) => {
                 const qtyInCart = lines
                   .filter((l) => l.itemId === it.id)
                   .reduce((s, l) => s + l.qty, 0);
                 return (
-                  <div key={it.id} className="w-48 shrink-0">
-                    <ProductCard
-                      item={it}
-                      onOpen={setSelected}
-                      onAdd={add}
-                      qtyInCart={qtyInCart}
-                      featured
-                    />
-                  </div>
+                  <PopularCard
+                    key={it.id}
+                    item={it}
+                    onOpen={setSelected}
+                    onAdd={add}
+                    qtyInCart={qtyInCart}
+                  />
                 );
               })}
+              {populaires.length < 4 && (
+                <button
+                  onClick={() => {
+                    setActive("__all__");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="flex w-32 shrink-0 flex-col items-center justify-center gap-2 press"
+                  aria-label="Voir tout le menu"
+                >
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#F1F2F4] text-[color:var(--brand)] shadow-inner">
+                    <ArrowRight className="h-8 w-8" />
+                  </div>
+                  <span className="text-xs font-bold text-foreground/70">Voir tout</span>
+                </button>
+              )}
             </div>
           </section>
         )}
+
+
 
         {/* Grid catégorie */}
         <section className="px-4 pt-6">
@@ -516,6 +545,74 @@ function DishThumb({ item, className }: { item: Dish; className?: string }) {
   );
 }
 
+function PopularCard({
+  item,
+  onOpen,
+  onAdd,
+  qtyInCart = 0,
+}: {
+  item: Dish;
+  onOpen: (i: Dish) => void;
+  onAdd: (i: { itemId: string; name: string; unitPrice: number; qty: number }) => void;
+  qtyInCart?: number;
+}) {
+  const hasSizes = Boolean(item.sizes && item.sizes.length > 0);
+  const minSizePrice = hasSizes ? Math.min(...item.sizes!.map((s) => s.price)) : null;
+  const price = minSizePrice ?? item.price ?? null;
+  const inCart = qtyInCart > 0;
+  return (
+    <div className="relative flex w-32 shrink-0 flex-col items-center pt-2">
+      <button
+        onClick={() => onOpen(item)}
+        className="group flex w-full flex-col items-center text-center"
+      >
+        <div className="relative h-24 w-24">
+          <div className="absolute inset-x-3 bottom-1 h-3 rounded-full bg-black/30 blur-lg" />
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={item.name}
+              loading="lazy"
+              className="relative h-full w-full object-contain drop-shadow-[0_14px_18px_rgba(0,0,0,0.28)] transition-transform duration-300 group-hover:-translate-y-1 group-hover:scale-105"
+              style={{ filter: "saturate(1.15) contrast(1.05)" }}
+            />
+          ) : (
+            <div className="relative flex h-full w-full items-center justify-center rounded-full bg-[#F1F2F4]">
+              <BoxLogo size={48} showWordmark={false} />
+            </div>
+          )}
+        </div>
+        <div className="mt-3 line-clamp-2 min-h-[2.5rem] text-[13px] font-bold leading-tight text-foreground">
+          {item.name}
+        </div>
+        {price != null && (
+          <div className="mt-1 text-sm font-black text-foreground">
+            {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
+            <span className="ml-1 text-[10px] font-bold text-foreground/50">TND</span>
+          </div>
+        )}
+      </button>
+      {!item.incomplete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen(item);
+          }}
+          className="press absolute right-0 top-16 flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg ring-2 ring-white"
+          aria-label="Ajouter au panier"
+        >
+          <Plus className="h-4 w-4" strokeWidth={3} />
+          {inCart && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-black text-[color:var(--brand)] shadow">
+              x{qtyInCart}
+            </span>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ProductCard({
   item,
   onOpen,
@@ -571,7 +668,7 @@ function ProductCard({
             )}
             {price != null && (
               <div className="mt-auto pt-2 text-base font-black text-[color:var(--gold)]">
-                {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
+                {hasSizes ? `dès ${fmt(price)}` : fmt(price)}<span className="ml-1 text-[10px] font-bold text-foreground/60">TND</span>
               </div>
             )}
           </div>
@@ -581,7 +678,7 @@ function ProductCard({
             e.stopPropagation();
             onOpen(item);
           }}
-          className="press absolute bottom-3 right-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full brand-gradient text-white shadow-lg"
+          className="press absolute bottom-3 right-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg"
           aria-label="Voir la pizza"
         >
           <Plus className="h-5 w-5" />
@@ -621,7 +718,7 @@ function ProductCard({
           )}
           {price != null && (
             <div className="mt-auto pt-2 text-base font-black text-[color:var(--gold)]">
-              {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
+              {hasSizes ? `dès ${fmt(price)}` : fmt(price)}<span className="ml-1 text-[10px] font-bold text-foreground/60">TND</span>
             </div>
           )}
         </div>
@@ -632,7 +729,7 @@ function ProductCard({
             e.stopPropagation();
             onOpen(item);
           }}
-          className="press absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full brand-gradient text-white shadow-lg"
+          className="press absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg"
           aria-label="Ajouter au panier"
         >
           <Plus className="h-5 w-5" />
@@ -752,7 +849,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
           <div className="flex items-start justify-between gap-4">
             <h2 className="text-2xl font-black">{item.name}</h2>
             <div className="whitespace-nowrap text-2xl font-black text-[color:var(--gold)]">
-              {fmt(base)}
+              {fmt(base)} <span className="text-sm font-bold text-foreground/50">TND</span>
             </div>
           </div>
           {item.description && (
@@ -778,7 +875,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                       i === sizeIdx ? "bg-brand text-brand-foreground" : "bg-secondary"
                     }`}
                   >
-                    {s.label} · {fmt(s.price)}
+                    {s.label} · {fmt(s.price)} TND
                   </button>
                 ))}
               </div>
@@ -825,7 +922,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                         <span className="flex items-center gap-3">
                           {group.type === "supplement" && (
                             <span className="text-sm font-bold text-[color:var(--gold)]">
-                              +{fmt(optionItem.price)}
+                              +{fmt(optionItem.price)} TND
                             </span>
                           )}
                           <input
@@ -870,7 +967,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
           <div className="mx-auto flex max-w-2xl items-center gap-5">
             <div className="shrink-0">
               <div className="text-xs text-muted-foreground">Total</div>
-              <div className="text-lg font-black text-[color:var(--gold)]">{fmt(total)}</div>
+              <div className="text-lg font-black text-[color:var(--gold)]">{fmt(total)} <span className="text-xs font-bold text-foreground/50">TND</span></div>
             </div>
             <button
               disabled={item.incomplete}

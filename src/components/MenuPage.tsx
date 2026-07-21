@@ -528,10 +528,12 @@ function DishThumb({ item, className }: { item: Dish; className?: string }) {
       src={item.image}
       alt={item.name}
       loading="lazy"
-      className={`h-full w-full object-cover appetizing ${className ?? ""}`}
+      className={`h-full w-full object-contain appetizing drop-shadow-[0_14px_18px_rgba(0,0,0,0.28)] ${className ?? ""}`}
+      style={{ filter: "saturate(1.15) contrast(1.05)" }}
     />
   );
 }
+
 
 function PopularCard({
   item,

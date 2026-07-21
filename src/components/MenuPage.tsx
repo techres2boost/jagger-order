@@ -184,7 +184,7 @@ export function MenuPage() {
 
       setCategories(cats);
       setDishes(mapped);
-      setActive((current) => current ?? cats[0]?.id ?? null);
+      setActive((current) => current ?? "__all__");
       setLoading(false);
     })();
     return () => {
@@ -192,12 +192,28 @@ export function MenuPage() {
     };
   }, []);
 
-  const items = useMemo(
-    () => (active ? dishes.filter((d) => d.category === active) : []),
-    [dishes, active],
-  );
+  const items = useMemo(() => {
+    let list = active === "__all__" ? dishes : active ? dishes.filter((d) => d.category === active) : [];
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (d) =>
+          d.name.toLowerCase().includes(q) ||
+          (d.description ?? "").toLowerCase().includes(q),
+      );
+    }
+    if (priceSort !== "none") {
+      const priceOf = (d: Dish) =>
+        d.price ?? (d.sizes && d.sizes.length ? Math.min(...d.sizes.map((s) => s.price)) : Number.POSITIVE_INFINITY);
+      list = [...list].sort((a, b) =>
+        priceSort === "asc" ? priceOf(a) - priceOf(b) : priceOf(b) - priceOf(a),
+      );
+    }
+    return list;
+  }, [dishes, active, search, priceSort]);
   const populaires = useMemo(() => dishes.filter((d) => d.populaire), [dishes]);
-  const activeCategory = categories.find((c) => c.id === active);
+  const activeCategoryName =
+    active === "__all__" ? "Tout" : categories.find((c) => c.id === active)?.name;
 
   // Évite d'afficher l'interface client à un livreur pendant la redirection.
   if (rolesResolved && isLivreur) {

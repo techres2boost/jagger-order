@@ -225,57 +225,13 @@ export function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-28">
-      {/* Header intégré (haut + recherche + promo + catégories) */}
-      <header className="hero-gradient text-white">
+    <div className="min-h-screen bg-white pb-28">
+      {/* Header intégré sur fond blanc */}
+      <header className="bg-white">
         <div className="mx-auto max-w-3xl px-4 pt-4 pb-3">
-          {/* Top row : logo + icônes mobiles */}
-          <div className="flex items-center justify-between">
-            <BoxLogo size={52} showWordmark={false} />
-            <div className="flex items-center gap-2">
-              {user && <EnableNotifications role={isAdmin ? "admin" : "client"} />}
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 press"
-                  title="Admin"
-                  aria-label="Admin"
-                >
-                  <Shield className="h-5 w-5" />
-                </Link>
-              )}
-              {user ? (
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    toast.success("Déconnecté");
-                  }}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 press"
-                  title="Déconnexion"
-                  aria-label="Déconnexion"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
-              ) : (
-                <Link
-                  to="/auth"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[color:var(--brand)] hover:bg-white/90 press shadow-lg"
-                  title="Connexion"
-                  aria-label="Connexion"
-                >
-                  <UserIcon className="h-5 w-5" />
-                </Link>
-              )}
-            </div>
-          </div>
-
-          {/* Accroche */}
-          <h1 className="mt-5 text-2xl font-black leading-tight text-white sm:text-3xl">
-            Que voulez-vous commander aujourd'hui ?
-          </h1>
-
-          {/* Barre de recherche + filtre */}
-          <div className="mt-4 flex items-center gap-2">
+          {/* Top row : logo + search + connexion */}
+          <div className="flex items-center gap-3">
+            <BoxLogo size={44} showWordmark={false} />
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-foreground/50" />
               <input
@@ -283,33 +239,31 @@ export function MenuPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Rechercher un plat…"
-                className="h-12 w-full rounded-2xl border-0 bg-white pl-11 pr-10 text-sm font-medium text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-white/60 shadow-md"
+                className="h-11 w-full rounded-2xl border-0 bg-[#F1F2F4] pl-10 pr-16 text-sm font-medium text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]/30"
               />
-              {search && (
+              {search ? (
                 <button
                   onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-foreground/50 hover:bg-black/5"
+                  className="absolute right-10 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-foreground/50 hover:bg-black/5"
                   aria-label="Effacer"
                 >
                   <X className="h-4 w-4" />
                 </button>
-              )}
-            </div>
-            <div className="relative">
+              ) : null}
               <button
                 onClick={() => setShowFilter((v) => !v)}
-                className={`flex h-12 w-12 items-center justify-center rounded-2xl press shadow-md ${
+                className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl press ${
                   priceSort !== "none"
-                    ? "bg-[color:var(--gold)] text-[color:var(--gold-foreground)]"
-                    : "bg-white text-foreground"
+                    ? "bg-[color:var(--brand)] text-white"
+                    : "text-foreground/60 hover:bg-black/5"
                 }`}
                 aria-label="Filtrer par prix"
                 title="Filtrer par prix"
               >
-                <SlidersHorizontal className="h-5 w-5" />
+                <SlidersHorizontal className="h-4 w-4" />
               </button>
               {showFilter && (
-                <div className="absolute right-0 top-14 z-40 w-52 rounded-2xl bg-white p-2 text-foreground shadow-xl">
+                <div className="absolute right-0 top-12 z-40 w-52 rounded-2xl bg-white p-2 text-foreground shadow-xl ring-1 ring-black/5">
                   <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-foreground/50">
                     Trier par prix
                   </div>
@@ -335,7 +289,47 @@ export function MenuPage() {
                 </div>
               )}
             </div>
+            <div className="flex items-center gap-2">
+              {user && <EnableNotifications role={isAdmin ? "admin" : "client"} />}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
+                  title="Admin"
+                  aria-label="Admin"
+                >
+                  <Shield className="h-5 w-5" />
+                </Link>
+              )}
+              {user ? (
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    toast.success("Déconnecté");
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
+                  title="Déconnexion"
+                  aria-label="Déconnexion"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--brand)] text-white hover:brightness-110 press shadow-md"
+                  title="Connexion"
+                  aria-label="Connexion"
+                >
+                  <UserIcon className="h-5 w-5" />
+                </Link>
+              )}
+            </div>
           </div>
+
+          {/* Accroche */}
+          <h1 className="mt-5 text-2xl font-black leading-tight text-foreground sm:text-3xl">
+            Que voulez-vous commander aujourd'hui ?
+          </h1>
 
           {/* Carte promo */}
           <div className="mt-4 relative overflow-hidden rounded-3xl bg-[color:var(--brand)] px-5 py-4 shadow-xl">
@@ -373,7 +367,7 @@ export function MenuPage() {
                 className={`shrink-0 rounded-lg px-4 py-2 text-sm font-bold transition min-h-[42px] press ${
                   active === c.id
                     ? "bg-[color:var(--brand)] text-white shadow-[0_6px_16px_rgba(227,6,19,0.5)]"
-                    : "bg-white text-foreground/80 hover:text-foreground"
+                    : "bg-[#F1F2F4] text-foreground/80 hover:text-foreground"
                 }`}
               >
                 {c.name}

@@ -65,6 +65,9 @@ export function MenuPage() {
   const { user, isAdmin, isLivreur, rolesResolved } = useAuth();
   const navigate = useNavigate();
   const [bounceKey, setBounceKey] = useState(0);
+  const [search, setSearch] = useState("");
+  const [priceSort, setPriceSort] = useState<"none" | "asc" | "desc">("none");
+  const [showFilter, setShowFilter] = useState(false);
   const prevCount = useRef(count);
   useEffect(() => {
     if (count > prevCount.current) setBounceKey((k) => k + 1);

@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { fmt } from "@/lib/format";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { OrderProgressRing, STEPS } from "@/components/OrderProgressRing";
+import { useOrderCountdown } from "@/hooks/use-order-countdown";
 
 export const Route = createFileRoute("/_authenticated/commandes")({
   ssr: false,
@@ -41,6 +43,8 @@ interface OrderRow {
   phone: string;
   address?: string | null;
   special_instructions?: string | null;
+  arrival_at: string | null;
+  estimated_delivery_at: string | null;
 }
 
 interface OrderItemRow {
@@ -385,6 +389,9 @@ function CommandesPage() {
                       <div className="mt-3 text-sm text-muted-foreground">
                         {order.customer_name} · {fmt(Number(order.total))}
                       </div>
+                      {isCurrentStatus(order.status) && order.status !== "pending" && (
+                        <OrderCountdownBadge order={order} />
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Link
@@ -549,6 +556,23 @@ function CommandesPage() {
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// Mini-cercle de progression + temps restant, version compacte pour la carte de
+// la liste. Réutilise le hook et le composant partagés avec la page de détail.
+function OrderCountdownBadge({ order }: { order: OrderRow }) {
+  const { minutesRemaining, label } = useOrderCountdown(order);
+  if (minutesRemaining == null) return null;
+  const stepIndex = STEPS.findIndex((step) => step.key === order.status);
+  return (
+    <div className="mt-3 flex items-center gap-3">
+      <OrderProgressRing stepIndex={stepIndex} variant="compact" />
+      <div>
+        <div className="text-xl font-black text-brand tabular-nums">{label}</div>
+        <div className="text-xs text-muted-foreground">Temps restant estimé</div>
+      </div>
     </div>
   );
 }

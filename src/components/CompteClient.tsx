@@ -89,12 +89,13 @@ export function CompteClient() {
         setProfile({ ...(p as Profile), email: u.user.email ?? null });
       }
 
-      const { data: a } = await supabase
+      const { data: a } = await (supabase as any)
         .from("addresses")
         .select("*")
         .eq("user_id", u.user.id)
         .order("is_default", { ascending: false });
       setAddresses((a as unknown as Address[]) ?? []);
+
 
       setLoading(false);
     })();
@@ -109,9 +110,8 @@ export function CompteClient() {
     const row = { full_name: profile.full_name.trim(), phone: profile.phone ?? null };
     const { error } = await supabase
       .from("profiles")
-      .upsert({ id: user.id, ...row } as unknown as Profile & { id: string }, {
-        returning: "representation",
-      });
+      .upsert({ id: user.id, ...row } as any);
+
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Profil mis à jour");
@@ -121,7 +121,7 @@ export function CompteClient() {
   async function reloadAddresses() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const { data: a } = await supabase
+    const { data: a } = await (supabase as any)
       .from("addresses")
       .select("*")
       .eq("user_id", u.user.id)
@@ -131,7 +131,8 @@ export function CompteClient() {
 
   async function onDeleteAddress(id: string) {
     if (!confirm("Supprimer cette adresse ?")) return;
-    const { error } = await supabase.from("addresses").delete().eq("id", id);
+    const { error } = await (supabase as any).from("addresses").delete().eq("id", id);
+
     if (error) return toast.error(error.message);
     toast.success("Adresse supprimée");
     reloadAddresses();
@@ -286,7 +287,7 @@ export function CompteClient() {
                     <div className="flex flex-col items-end gap-2">
                       <button
                         onClick={() => {
-                          setEditingAddress(a);
+                          setEditingAddress(a as unknown as EditAddress);
                           setShowAdd(true);
                         }}
                         className="rounded-md border p-2"

@@ -2,3 +2,6 @@ project_id = "ssmmstetcmgsjnjbjkat"
 
 [functions.send-order-notification]
 verify_jwt = false
+
+[functions.notify-livreur]
+verify_jwt = false

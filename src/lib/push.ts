@@ -88,7 +88,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 }
 
-export async function enablePushNotifications(role: "client" | "admin"): Promise<{
+export async function enablePushNotifications(role: "client" | "admin" | "livreur"): Promise<{
   ok: boolean;
   error?: string;
 }> {

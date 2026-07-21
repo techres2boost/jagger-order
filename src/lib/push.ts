@@ -156,3 +156,30 @@ export function currentPermission(): NotificationPermission | "unsupported" {
   if (!isPushSupported()) return "unsupported";
   return Notification.permission;
 }
+
+/**
+ * Indique si un abonnement push RÉEL existe pour cet appareil : il faut à la fois
+ * une souscription pushManager active ET une ligne correspondante (même endpoint)
+ * dans push_subscriptions. On ne se fie pas à Notification.permission seul, qui
+ * peut rester "granted" sans qu'aucune ligne n'existe en base (row supprimée,
+ * jamais stockée, autre appareil…).
+ */
+export async function hasActiveSubscription(): Promise<boolean> {
+  if (!isPushSupported()) return false;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    if (!reg) return false;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return false;
+
+    const { data, error } = await supabase
+      .from("push_subscriptions" as never)
+      .select("endpoint")
+      .eq("endpoint", sub.endpoint)
+      .maybeSingle();
+    if (error) return false;
+    return !!data;
+  } catch {
+    return false;
+  }
+}

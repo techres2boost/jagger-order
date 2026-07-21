@@ -1,9 +1,9 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BoxLogo } from "@/components/BoxLogo";
-import { Home, Building2, Briefcase, Pencil, Trash2, Plus } from "lucide-react";
+import { Home, Building2, Briefcase, Pencil, Trash2, Plus, ChevronLeft } from "lucide-react";
 import { z } from "zod";
 import { AddAddress, type EditAddress } from "@/components/AddAddress";
 
@@ -55,6 +55,7 @@ function pickPrimary(rows: AddressRow[]): AddressRow | null {
 
 function CompleteProfilePage() {
   const navigate = useNavigate();
+  const router = useRouter();
   const search = useSearch({ from: "/_authenticated/complete-profile" });
   const [savingProfile, setSavingProfile] = useState(false);
   const [name, setName] = useState("");
@@ -175,12 +176,21 @@ function CompleteProfilePage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
+      <button
+        onClick={() => router.history.back()}
+        aria-label="Retour"
+        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border bg-card shadow-sm"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+
       <div className="mb-6">
         <BoxLogo size={72} />
       </div>
 
       {/* Name + phone form */}
       <form
+        id="profile-form"
         onSubmit={saveProfile}
         className="w-full max-w-md space-y-4 rounded-3xl border bg-card p-6 shadow-sm"
       >
@@ -212,13 +222,6 @@ function CompleteProfilePage() {
             className="h-12 w-full rounded-xl border bg-input px-4"
           />
         </div>
-
-        <button
-          disabled={savingProfile}
-          className="h-12 w-full rounded-full bg-brand font-bold text-brand-foreground disabled:opacity-50"
-        >
-          {savingProfile ? "Enregistrement…" : "Enregistrer"}
-        </button>
       </form>
 
       {/* Address block */}
@@ -289,6 +292,17 @@ function CompleteProfilePage() {
             <Plus className="h-4 w-4" /> Ajouter une adresse
           </button>
         )}
+      </div>
+
+      <div className="mt-6 w-full max-w-md">
+        <button
+          type="submit"
+          form="profile-form"
+          disabled={savingProfile}
+          className="h-12 w-full rounded-full bg-brand font-bold text-brand-foreground disabled:opacity-50"
+        >
+          {savingProfile ? "Enregistrement…" : "Enregistrer"}
+        </button>
       </div>
 
       {showAdd && (

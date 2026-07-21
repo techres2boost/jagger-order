@@ -32,12 +32,11 @@ export function EnableNotifications({ role }: { role: "client" | "admin" }) {
     <button
       onClick={handle}
       disabled={busy}
-      className="flex h-9 items-center gap-1 rounded-full border border-brand px-3 text-xs font-semibold text-brand disabled:opacity-60"
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 disabled:opacity-60 press"
       title="Activer les notifications"
+      aria-label="Activer les notifications"
     >
-      {busy ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-      <span className="hidden sm:inline">Activer les notifications</span>
-      <span className="sm:hidden">Notifs</span>
+      {busy ? <BellOff className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
     </button>
   );
 }

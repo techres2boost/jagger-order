@@ -124,26 +124,28 @@ export async function enablePushNotifications(role: "client" | "admin"): Promise
   const auth = json.keys?.auth || abToBase64(sub.getKey("auth"));
 
   const { data: u } = await supabase.auth.getUser();
-  const payload: Record<string, unknown> = {
-    endpoint,
-    p256dh,
-    auth,
-    role,
-    user_id: u.user?.id ?? null,
-  };
+  if (!u.user) {
+    return { ok: false, error: "Vous devez être connecté pour activer les notifications." };
+  }
 
+  // Enregistrement via RPC SECURITY DEFINER : un endpoint push identifie un
+  // appareil, pas un utilisateur. La RPC réattribue toujours la ligne à
+  // l'utilisateur courant (user_id = auth.uid()), ce qui évite le conflit RLS
+  // lorsqu'un autre compte a déjà utilisé ce même appareil, sans exposer les
+  // abonnements d'autrui.
   const { error } = await (
     supabase as unknown as {
-      from: (t: string) => {
-        upsert: (
-          v: unknown,
-          opts: { onConflict: string },
-        ) => Promise<{ error: { message: string } | null }>;
-      };
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ error: { message: string } | null }>;
     }
-  )
-    .from("push_subscriptions")
-    .upsert(payload, { onConflict: "endpoint" });
+  ).rpc("save_push_subscription", {
+    p_endpoint: endpoint,
+    p_p256dh: p256dh,
+    p_auth: auth,
+    p_role: role,
+  });
   if (error) {
     console.error("[push] Enregistrement de l'abonnement échoué :", error.message);
     return { ok: false, error: error.message };

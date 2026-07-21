@@ -226,60 +226,154 @@ export function MenuPage() {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-black/40 hero-gradient text-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <BoxLogo size={56} showWordmark={false} />
+      {/* Header intégré (haut + recherche + promo + catégories) */}
+      <header className="hero-gradient text-white">
+        <div className="mx-auto max-w-3xl px-4 pt-4 pb-3">
+          {/* Top row : logo + icônes mobiles */}
+          <div className="flex items-center justify-between">
+            <BoxLogo size={52} showWordmark={false} />
+            <div className="flex items-center gap-2">
+              {user && <EnableNotifications role={isAdmin ? "admin" : "client"} />}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 press"
+                  title="Admin"
+                  aria-label="Admin"
+                >
+                  <Shield className="h-5 w-5" />
+                </Link>
+              )}
+              {user ? (
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    toast.success("Déconnecté");
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 press"
+                  title="Déconnexion"
+                  aria-label="Déconnexion"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[color:var(--brand)] hover:bg-white/90 press shadow-lg"
+                  title="Connexion"
+                  aria-label="Connexion"
+                >
+                  <UserIcon className="h-5 w-5" />
+                </Link>
+              )}
+            </div>
+          </div>
 
-          <div className="flex items-center gap-2">
-            {user && <EnableNotifications role={isAdmin ? "admin" : "client"} />}
-            {isAdmin && (
-              <Link
-                to="/admin"
-                className="flex h-9 items-center gap-1 rounded-full bg-white/10 px-3 text-xs font-semibold text-white hover:bg-white/20"
-              >
-                <Shield className="h-4 w-4" /> Admin
-              </Link>
-            )}
-            {user ? (
+          {/* Accroche */}
+          <h1 className="mt-5 text-2xl font-black leading-tight text-white sm:text-3xl">
+            Que voulez-vous commander aujourd'hui ?
+          </h1>
+
+          {/* Barre de recherche + filtre */}
+          <div className="mt-4 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-foreground/50" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Rechercher un plat…"
+                className="h-12 w-full rounded-2xl border-0 bg-white pl-11 pr-10 text-sm font-medium text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-white/60 shadow-md"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-foreground/50 hover:bg-black/5"
+                  aria-label="Effacer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <div className="relative">
               <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  toast.success("Déconnecté");
-                }}
-                className="flex h-9 items-center gap-1 rounded-full border border-white/30 px-3 text-xs font-semibold text-white hover:bg-white/10"
+                onClick={() => setShowFilter((v) => !v)}
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl press shadow-md ${
+                  priceSort !== "none"
+                    ? "bg-[color:var(--gold)] text-[color:var(--gold-foreground)]"
+                    : "bg-white text-foreground"
+                }`}
+                aria-label="Filtrer par prix"
+                title="Filtrer par prix"
               >
-                <LogOut className="h-4 w-4" /> Sortir
+                <SlidersHorizontal className="h-5 w-5" />
               </button>
-            ) : (
-              <Link
-                to="/auth"
-                className="flex h-9 items-center gap-1 rounded-full brand-gradient px-4 text-xs font-semibold text-white press shadow-lg"
-              >
-                <UserIcon className="h-4 w-4" /> Connexion
-              </Link>
-            )}
+              {showFilter && (
+                <div className="absolute right-0 top-14 z-40 w-52 rounded-2xl bg-white p-2 text-foreground shadow-xl">
+                  <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-foreground/50">
+                    Trier par prix
+                  </div>
+                  {[
+                    { key: "none" as const, label: "Par défaut", icon: null },
+                    { key: "asc" as const, label: "Prix croissant", icon: <ArrowDownAZ className="h-4 w-4" /> },
+                    { key: "desc" as const, label: "Prix décroissant", icon: <ArrowUpAZ className="h-4 w-4" /> },
+                  ].map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => {
+                        setPriceSort(opt.key);
+                        setShowFilter(false);
+                      }}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold ${
+                        priceSort === opt.key ? "bg-[color:var(--brand)]/10 text-[color:var(--brand)]" : "hover:bg-black/5"
+                      }`}
+                    >
+                      {opt.icon}
+                      <span>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Carte promo */}
+          <div className="mt-4 relative overflow-hidden rounded-3xl bg-[color:var(--brand)] px-5 py-4 shadow-xl">
+            <div className="absolute inset-0 opacity-30 halftone-red pointer-events-none" />
+            <div className="relative flex items-center gap-3">
+              <div className="flex-1">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">
+                  Offre de bienvenue
+                </div>
+                <div className="mt-1 text-2xl font-black leading-tight text-white">
+                  -10 % sur votre
+                  <br />
+                  première commande
+                </div>
+              </div>
+              <img
+                src={burger3d}
+                alt=""
+                width={120}
+                height={120}
+                loading="lazy"
+                className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.35)] rotate-[-6deg]"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Bandeau livraison */}
-        <div className="halftone-red text-brand-foreground">
-          <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-2 text-xs font-semibold">
-            <Truck className="h-4 w-4" /> Livraison de repas à domicile disponible
-          </div>
-        </div>
-
-        {/* Tabs catégories */}
-        <div className="hide-scrollbar-red overflow-x-auto shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
-          <div className="mx-auto flex max-w-3xl gap-2 px-4 py-3">
-            {categories.map((c) => (
+        {/* Tabs catégories (edges carrés) */}
+        <div className="hide-scrollbar-red overflow-x-auto">
+          <div className="mx-auto flex max-w-3xl gap-2 px-4 pb-4">
+            {[{ id: "__all__", name: "Tout" }, ...categories].map((c) => (
               <button
                 key={c.id}
                 onClick={() => setActive(c.id)}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition min-h-[44px] press ${
+                className={`shrink-0 rounded-lg px-4 py-2 text-sm font-bold transition min-h-[42px] press ${
                   active === c.id
-                    ? "brand-gradient text-white shadow-[0_6px_16px_rgba(227,6,19,0.45)]"
-                    : "bg-white text-foreground/70 border border-border hover:border-brand/40 hover:text-foreground"
+                    ? "bg-[color:var(--brand)] text-white shadow-[0_6px_16px_rgba(227,6,19,0.5)]"
+                    : "bg-white text-foreground/80 hover:text-foreground"
                 }`}
               >
                 {c.name}
@@ -288,9 +382,6 @@ export function MenuPage() {
           </div>
         </div>
       </header>
-
-      {/* Diagonal divider between hero and content */}
-      <div className="diagonal-divider" />
 
       <main className="mx-auto max-w-3xl">
         {/* Populaires — featured zone with red tint */}
@@ -320,7 +411,7 @@ export function MenuPage() {
 
         {/* Grid catégorie */}
         <section className="px-4 pt-6">
-          <h2 className="section-title mb-4 text-xl font-black">{activeCategory?.name}</h2>
+          <h2 className="section-title mb-4 text-xl font-black">{activeCategoryName}</h2>
           {loading && (
             <p className="py-8 text-center text-sm text-muted-foreground">Chargement du menu…</p>
           )}

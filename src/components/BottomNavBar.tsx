@@ -27,7 +27,7 @@ export function BottomNavBar() {
   return (
     <nav
       aria-label="Navigation principale"
-      className="fixed left-0 right-0 bottom-0 z-50 box-border w-full bg-white/95 backdrop-blur-md"
+      className="fixed left-0 right-0 bottom-0 z-[999] box-border w-full bg-white/95 backdrop-blur-md"
       style={{ height: 64, paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="mx-auto flex h-full max-w-xl items-center justify-between px-4">

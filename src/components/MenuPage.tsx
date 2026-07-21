@@ -514,6 +514,10 @@ export function MenuPage() {
   );
 }
 
+function displayName(item: Dish) {
+  return item.category?.toLowerCase() === "pizzas" ? `Pizza ${item.name}` : item.name;
+}
+
 function DishThumb({ item, className }: { item: Dish; className?: string }) {
   if (!item.image) {
     return (

@@ -29,6 +29,7 @@ interface OrderRow {
   expires_at: string;
   refusal_reason?: "unavailable" | "busy" | null;
   estimated_delivery_at: string | null;
+  arrival_at: string | null;
 }
 
 interface OrderItemRow {
@@ -157,9 +158,16 @@ function OrderStatusPage() {
     };
   }, []);
 
-  // Stop le tick dès qu'un statut final est reçu
+  // Stop le tick uniquement sur un statut terminal ; on garde le décompte vivant
+  // pendant accepted/ready/delivering pour l'arrivée estimée.
   useEffect(() => {
-    if (order && order.status !== "pending" && tickRef.current) {
+    const terminal =
+      order != null &&
+      (order.status === "delivered" ||
+        order.status === "refused" ||
+        order.status === "expired" ||
+        order.status === "cancelled");
+    if (terminal && tickRef.current) {
       clearInterval(tickRef.current);
       tickRef.current = null;
     }
@@ -265,11 +273,15 @@ function OrderStatusPage() {
   const remaining = Math.max(0, Math.floor((new Date(order.expires_at).getTime() - now) / 1000));
   const mm = String(Math.floor(remaining / 60)).padStart(1, "0");
   const ss = String(remaining % 60).padStart(2, "0");
-  const minutesRemaining = order.estimated_delivery_at
-    ? Math.max(0, Math.ceil((new Date(order.estimated_delivery_at).getTime() - now) / 60000))
+  // On décompte sur l'heure d'arrivée cible figée (prépa + trajet), calculée une
+  // seule fois côté DB. Repli sur estimated_delivery_at pour les commandes
+  // acceptées avant la mise en place de arrival_at.
+  const arrivalTarget = order.arrival_at ?? order.estimated_delivery_at;
+  const minutesRemaining = arrivalTarget
+    ? Math.ceil((new Date(arrivalTarget).getTime() - now) / 60000)
     : null;
-  const arrivalTime = order.estimated_delivery_at
-    ? new Date(order.estimated_delivery_at).toLocaleTimeString("fr-FR", {
+  const arrivalTime = arrivalTarget
+    ? new Date(arrivalTarget).toLocaleTimeString("fr-FR", {
         hour: "2-digit",
         minute: "2-digit",
       })
@@ -293,7 +305,7 @@ function OrderStatusPage() {
         {order.status !== "delivered" && minutesRemaining != null && arrivalTime && (
           <div className="mt-4 flex items-center justify-center gap-4">
             <div className="text-3xl font-black text-brand tabular-nums">
-              {minutesRemaining} min
+              {minutesRemaining > 0 ? `${minutesRemaining} min` : "Bientôt là"}
             </div>
             <div className="text-sm text-muted-foreground">Arrivée prévue à {arrivalTime}</div>
           </div>

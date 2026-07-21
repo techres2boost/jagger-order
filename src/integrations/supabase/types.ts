@@ -67,6 +67,7 @@ export type Database = {
           delivered_at: string | null;
           estimated_ready_at: string | null;
           estimated_delivery_at: string | null;
+          arrival_at: string | null;
           assigned_livreur_id: string | null;
         };
         Insert: {
@@ -86,6 +87,7 @@ export type Database = {
           delivered_at?: string | null;
           estimated_ready_at?: string | null;
           estimated_delivery_at?: string | null;
+          arrival_at?: string | null;
           assigned_livreur_id?: string | null;
         };
         Update: {
@@ -105,6 +107,7 @@ export type Database = {
           delivered_at?: string | null;
           estimated_ready_at?: string | null;
           estimated_delivery_at?: string | null;
+          arrival_at?: string | null;
           assigned_livreur_id?: string | null;
         };
         Relationships: [

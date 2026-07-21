@@ -946,6 +946,9 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
             </button>
           </div>
         </div>
+      </div>
+
+
 
 
       {imageOpen && (

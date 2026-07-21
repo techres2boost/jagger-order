@@ -423,30 +423,58 @@ export function MenuPage() {
       </header>
 
       <main className="mx-auto max-w-3xl">
-        {/* Populaires — featured zone with red tint */}
+        {/* Populaires — minimal, invisible cards, seamless with white bg */}
         {populaires.length > 0 && (
-          <section className="tint-red px-4 pt-5 pb-6 rounded-b-[28px]">
-            <h2 className="section-title mb-4 text-xl font-black">Plats populaires</h2>
-            <div className="hide-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
+          <section className="px-4 pt-6 pb-2">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-xl font-black text-foreground">Plats populaires</h2>
+              {populaires.length < 4 && (
+                <button
+                  onClick={() => {
+                    setActive("__all__");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="flex items-center gap-1 text-xs font-bold text-[color:var(--brand)] press"
+                >
+                  Voir tout <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
               {populaires.map((it) => {
                 const qtyInCart = lines
                   .filter((l) => l.itemId === it.id)
                   .reduce((s, l) => s + l.qty, 0);
                 return (
-                  <div key={it.id} className="w-48 shrink-0">
-                    <ProductCard
-                      item={it}
-                      onOpen={setSelected}
-                      onAdd={add}
-                      qtyInCart={qtyInCart}
-                      featured
-                    />
-                  </div>
+                  <PopularCard
+                    key={it.id}
+                    item={it}
+                    onOpen={setSelected}
+                    onAdd={add}
+                    qtyInCart={qtyInCart}
+                  />
                 );
               })}
+              {populaires.length < 4 && (
+                <button
+                  onClick={() => {
+                    setActive("__all__");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="flex w-32 shrink-0 flex-col items-center justify-center gap-2 press"
+                  aria-label="Voir tout le menu"
+                >
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#F1F2F4] text-[color:var(--brand)] shadow-inner">
+                    <ArrowRight className="h-8 w-8" />
+                  </div>
+                  <span className="text-xs font-bold text-foreground/70">Voir tout</span>
+                </button>
+              )}
             </div>
           </section>
         )}
+
+
 
         {/* Grid catégorie */}
         <section className="px-4 pt-6">

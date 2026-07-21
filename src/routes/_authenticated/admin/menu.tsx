@@ -5,7 +5,14 @@ import { BoxLogo } from "@/components/BoxLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
 import { ArrowLeft, Edit3, Plus, Trash2 } from "lucide-react";
 
@@ -116,7 +123,8 @@ function AdminMenuPage() {
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
 
   const selectedCategory = useMemo(
-    () => categories.find((category) => category.id === selectedCategoryId) ?? categories[0] ?? null,
+    () =>
+      categories.find((category) => category.id === selectedCategoryId) ?? categories[0] ?? null,
     [categories, selectedCategoryId],
   );
 
@@ -385,7 +393,10 @@ function AdminMenuPage() {
     const removedIds = originalSizes.map((s) => s.id).filter((id) => !keptIds.has(id));
 
     if (removedIds.length > 0) {
-      const { error: deleteError } = await supabase.from("menu_item_sizes").delete().in("id", removedIds);
+      const { error: deleteError } = await supabase
+        .from("menu_item_sizes")
+        .delete()
+        .in("id", removedIds);
       if (deleteError) {
         toast.error(deleteError.message);
         return;
@@ -478,7 +489,11 @@ function AdminMenuPage() {
             description: item.description ?? "",
             sizes:
               existingSizes.length > 0
-                ? existingSizes.map((s) => ({ id: s.id, label: s.size_label, price: s.price.toString() }))
+                ? existingSizes.map((s) => ({
+                    id: s.id,
+                    label: s.size_label,
+                    price: s.price.toString(),
+                  }))
                 : [{ label: "Standard", price: "" }],
             color: item.color ?? DEFAULT_DISH_COLOR,
             imageUrl: item.image_url ?? null,
@@ -580,19 +595,23 @@ function AdminMenuPage() {
 
   return (
     <div className="min-h-screen bg-background pb-10">
-      
-
       <main className="mx-auto max-w-6xl px-4 py-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Administration</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Administration
+            </p>
             <h2 className="text-2xl font-black">Menu</h2>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => openCategoryEditor()}>
               <Plus className="h-4 w-4" /> Nouvelle catégorie
             </Button>
-            <Button variant="secondary" onClick={() => openItemEditor()} disabled={!selectedCategory}>
+            <Button
+              variant="secondary"
+              onClick={() => openItemEditor()}
+              disabled={!selectedCategory}
+            >
               <Plus className="h-4 w-4" /> Nouveau plat
             </Button>
           </div>
@@ -603,7 +622,9 @@ function AdminMenuPage() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">Catégories</p>
-                <p className="text-xs text-muted-foreground">Sélectionnez une catégorie pour éditer ses plats.</p>
+                <p className="text-xs text-muted-foreground">
+                  Sélectionnez une catégorie pour éditer ses plats.
+                </p>
               </div>
               <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {categories.length}
@@ -667,7 +688,9 @@ function AdminMenuPage() {
               <div>
                 <p className="text-sm font-semibold">Plats</p>
                 <p className="text-xs text-muted-foreground">
-                  {selectedCategory ? `Plats de la catégorie ${selectedCategory.name}` : "Sélectionnez une catégorie."}
+                  {selectedCategory
+                    ? `Plats de la catégorie ${selectedCategory.name}`
+                    : "Sélectionnez une catégorie."}
                 </p>
               </div>
               <div className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -736,12 +759,15 @@ function AdminMenuPage() {
 
         {(categoryForm || itemForm) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-[90vw] rounded-3xl bg-card p-6 shadow-xl md:max-w-2xl">
+            <div className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-hidden rounded-3xl bg-card shadow-xl md:max-w-2xl">
               {categoryForm ? (
-                <form onSubmit={saveCategory} className="space-y-4">
-                  <div className="flex items-center justify-between gap-4">
+                <form onSubmit={saveCategory} className="flex min-h-0 flex-1 flex-col">
+                  {/* Header sticky */}
+                  <div className="flex shrink-0 items-center justify-between gap-4 border-b px-6 py-4">
                     <div>
-                      <h2 className="text-xl font-black">{categoryForm.id ? "Modifier la catégorie" : "Nouvelle catégorie"}</h2>
+                      <h2 className="text-xl font-black">
+                        {categoryForm.id ? "Modifier la catégorie" : "Nouvelle catégorie"}
+                      </h2>
                       <p className="text-sm text-muted-foreground">Gérez les catégories du menu.</p>
                     </div>
                     <button
@@ -753,20 +779,24 @@ function AdminMenuPage() {
                     </button>
                   </div>
 
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold">Nom</label>
-                    <Input
-                      value={categoryForm.name}
-                      onChange={(event) =>
-                        setCategoryForm({
-                          ...categoryForm,
-                          name: event.target.value,
-                        })
-                      }
-                    />
+                  {/* Corps scrollable */}
+                  <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold">Nom</label>
+                      <Input
+                        value={categoryForm.name}
+                        onChange={(event) =>
+                          setCategoryForm({
+                            ...categoryForm,
+                            name: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-4">
+                  {/* Footer sticky */}
+                  <div className="flex shrink-0 justify-end gap-2 border-t px-6 py-4">
                     <Button variant="outline" type="button" onClick={() => setCategoryForm(null)}>
                       Annuler
                     </Button>
@@ -776,11 +806,16 @@ function AdminMenuPage() {
               ) : null}
 
               {itemForm ? (
-                <form onSubmit={saveItem} className="space-y-4">
-                  <div className="flex items-center justify-between gap-4">
+                <form onSubmit={saveItem} className="flex min-h-0 flex-1 flex-col">
+                  {/* Header sticky */}
+                  <div className="flex shrink-0 items-center justify-between gap-4 border-b px-6 py-4">
                     <div>
-                      <h2 className="text-xl font-black">{itemForm.id ? "Modifier le plat" : "Nouveau plat"}</h2>
-                      <p className="text-sm text-muted-foreground">Ajoutez ou mettez à jour un plat du menu.</p>
+                      <h2 className="text-xl font-black">
+                        {itemForm.id ? "Modifier le plat" : "Nouveau plat"}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Ajoutez ou mettez à jour un plat du menu.
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -791,218 +826,254 @@ function AdminMenuPage() {
                     </button>
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold">Catégorie</label>
-                      <select
-                        value={itemForm.category_id}
-                        onChange={(event) => setItemForm({ ...itemForm, category_id: event.target.value })}
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      >
-                        <option value="" disabled>
-                          Choisir une catégorie
-                        </option>
-                        {categories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
+                  {/* Corps scrollable */}
+                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-6 py-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold">Catégorie</label>
+                        <select
+                          value={itemForm.category_id}
+                          onChange={(event) =>
+                            setItemForm({ ...itemForm, category_id: event.target.value })
+                          }
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        >
+                          <option value="" disabled>
+                            Choisir une catégorie
                           </option>
-                        ))}
-                      </select>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold">Nom du plat</label>
+                        <Input
+                          value={itemForm.name}
+                          onChange={(event) =>
+                            setItemForm({ ...itemForm, name: event.target.value })
+                          }
+                        />
+                      </div>
                     </div>
+
                     <div>
-                      <label className="mb-2 block text-sm font-semibold">Nom du plat</label>
-                      <Input
-                        value={itemForm.name}
-                        onChange={(event) => setItemForm({ ...itemForm, name: event.target.value })}
+                      <label className="mb-1 block text-sm font-semibold">Description</label>
+                      <Textarea
+                        rows={2}
+                        className="resize-y"
+                        value={itemForm.description}
+                        onChange={(event) =>
+                          setItemForm({ ...itemForm, description: event.target.value })
+                        }
+                        placeholder="Optionnel"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold">Description</label>
-                    <Textarea
-                      value={itemForm.description}
-                      onChange={(event) => setItemForm({ ...itemForm, description: event.target.value })}
-                      placeholder="Optionnel"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold">Photo du plat</label>
-                    <div className="flex items-start gap-4">
-                      {imagePreview || itemForm.imageUrl ? (
-                        <div className="relative aspect-square h-24 w-24 shrink-0 overflow-hidden rounded-xl border">
-                          <img
-                            src={imagePreview ?? itemForm.imageUrl ?? undefined}
-                            alt="Aperçu du plat"
-                            className="h-full w-full object-cover"
-                          />
+                    {/* Photo + Couleur de secours côte à côte */}
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-semibold">Photo du plat</label>
+                        <div className="flex items-start gap-3">
+                          {imagePreview || itemForm.imageUrl ? (
+                            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border">
+                              <img
+                                src={imagePreview ?? itemForm.imageUrl ?? undefined}
+                                alt="Aperçu du plat"
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-dashed text-center text-[11px] text-muted-foreground"
+                              style={{ backgroundColor: itemForm.color || DEFAULT_DISH_COLOR }}
+                            >
+                              Aucune photo
+                            </div>
+                          )}
+                          <div className="flex-1 space-y-2">
+                            <Input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              onChange={handleImageChange}
+                            />
+                            {(imagePreview || itemForm.imageUrl) && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={removeSelectedImage}
+                              >
+                                <Trash2 className="h-4 w-4" /> Supprimer la photo
+                              </Button>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              JPEG, PNG ou WebP — 2 Mo maximum.
+                            </p>
+                          </div>
                         </div>
-                      ) : (
-                        <div
-                          className="flex aspect-square h-24 w-24 shrink-0 items-center justify-center rounded-xl border border-dashed text-[11px] text-muted-foreground"
-                          style={{ backgroundColor: itemForm.color || DEFAULT_DISH_COLOR }}
-                        >
-                          Aucune photo
+                        {imageError && (
+                          <p className="mt-2 text-sm text-destructive">{imageError}</p>
+                        )}
+                      </div>
+
+                      {!imagePreview && !itemForm.imageUrl && (
+                        <div>
+                          <label className="mb-1 block text-sm font-semibold">
+                            Couleur de secours
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <Input
+                              type="color"
+                              value={itemForm.color || DEFAULT_DISH_COLOR}
+                              onChange={(event) =>
+                                setItemForm({ ...itemForm, color: event.target.value })
+                              }
+                              className="h-10 w-16 p-1"
+                            />
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {itemForm.color || DEFAULT_DISH_COLOR}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Affichée à la place de la photo si aucune image n'est ajoutée.
+                          </p>
                         </div>
                       )}
-                      <div className="flex-1 space-y-2">
-                        <Input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          onChange={handleImageChange}
-                        />
-                        {(imagePreview || itemForm.imageUrl) && (
+                    </div>
+
+                    {/* Prix + Options sur une ligne (3 colonnes) hors pizza */}
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {isPizzaCategoryId(itemForm.category_id) ? (
+                        <div className="sm:col-span-3">
+                          <label className="mb-1 block text-sm font-semibold">Prix / Formats</label>
+                          <div className="space-y-2">
+                            {itemForm.sizes.map((size, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <Input
+                                  value={size.label}
+                                  onChange={(event) =>
+                                    updateSizeRow(index, { label: event.target.value })
+                                  }
+                                  placeholder="Ex. Moyenne"
+                                  className="flex-1"
+                                />
+                                <Input
+                                  type="number"
+                                  step="0.001"
+                                  min="0"
+                                  value={size.price}
+                                  onChange={(event) =>
+                                    updateSizeRow(index, { price: event.target.value })
+                                  }
+                                  placeholder="Ex. 5.400"
+                                  className="w-32"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeSizeRow(index)}
+                                  disabled={itemForm.sizes.length <= 1}
+                                  className="rounded-full border p-2 text-destructive hover:bg-destructive/10 disabled:opacity-40"
+                                  aria-label="Supprimer ce format"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={removeSelectedImage}
+                            className="mt-2"
+                            onClick={addSizeRow}
                           >
-                            <Trash2 className="h-4 w-4" /> Supprimer la photo
+                            <Plus className="h-4 w-4" /> Ajouter un format
                           </Button>
-                        )}
-                        <p className="text-xs text-muted-foreground">JPEG, PNG ou WebP — 2 Mo maximum.</p>
-                      </div>
-                    </div>
-                    {imageError && <p className="mt-2 text-sm text-destructive">{imageError}</p>}
-                  </div>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Plusieurs formats possibles (ex. « Moyenne », « Maxi »), chacun avec son
+                            prix.
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="mb-1 block text-sm font-semibold">Prix</label>
+                          <Input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            value={itemForm.sizes[0]?.price ?? ""}
+                            onChange={(event) =>
+                              updateSizeRow(0, { label: "Standard", price: event.target.value })
+                            }
+                            placeholder="Ex. 5.400"
+                            className="w-full"
+                          />
+                          <p className="mt-1 text-xs text-muted-foreground">Prix unique du plat.</p>
+                        </div>
+                      )}
 
-                  {!imagePreview && !itemForm.imageUrl && (
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold">Couleur de secours</label>
-                      <div className="flex items-center gap-3">
-                        <Input
-                          type="color"
-                          value={itemForm.color || DEFAULT_DISH_COLOR}
-                          onChange={(event) => setItemForm({ ...itemForm, color: event.target.value })}
-                          className="h-10 w-16 p-1"
-                        />
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {itemForm.color || DEFAULT_DISH_COLOR}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Affichée à la place de la photo si aucune image n'est ajoutée.
-                      </p>
-                    </div>
-                  )}
-
-                  {isPizzaCategoryId(itemForm.category_id) ? (
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold">Prix / Formats</label>
-                      <div className="space-y-2">
-                        {itemForm.sizes.map((size, index) => (
-                          <div key={index} className="flex items-center gap-2">
-                            <Input
-                              value={size.label}
-                              onChange={(event) =>
-                                updateSizeRow(index, { label: event.target.value })
-                              }
-                              placeholder="Ex. Moyenne"
-                              className="flex-1"
-                            />
-                            <Input
-                              type="number"
-                              step="0.001"
-                              min="0"
-                              value={size.price}
-                              onChange={(event) =>
-                                updateSizeRow(index, { price: event.target.value })
-                              }
-                              placeholder="Ex. 5.400"
-                              className="w-32"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeSizeRow(index)}
-                              disabled={itemForm.sizes.length <= 1}
-                              className="rounded-full border p-2 text-destructive hover:bg-destructive/10 disabled:opacity-40"
-                              aria-label="Supprimer ce format"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="mt-2"
-                        onClick={addSizeRow}
-                      >
-                        <Plus className="h-4 w-4" /> Ajouter un format
-                      </Button>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Plusieurs formats possibles (ex. « Moyenne », « Maxi »), chacun avec son
-                        prix.
-                      </p>
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold">Prix</label>
-                      <Input
-                        type="number"
-                        step="0.001"
-                        min="0"
-                        value={itemForm.sizes[0]?.price ?? ""}
-                        onChange={(event) =>
-                          updateSizeRow(0, { label: "Standard", price: event.target.value })
+                      <div
+                        className={
+                          isPizzaCategoryId(itemForm.category_id)
+                            ? "sm:col-span-3"
+                            : "sm:col-span-2"
                         }
-                        placeholder="Ex. 5.400"
-                        className="w-40"
-                      />
-                      <p className="mt-2 text-xs text-muted-foreground">Prix unique du plat.</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold">
-                      Options disponibles pour ce plat
-                    </label>
-                    {optionGroups.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        Aucun groupe d'options disponible. Créez-en depuis la section « Options ».
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {optionGroups.map((group) => (
-                          <label
-                            key={group.id}
-                            className="flex items-center justify-between rounded-xl border p-3"
-                          >
-                            <span className="text-sm font-medium">
-                              {group.name}{" "}
-                              <span className="text-xs font-normal text-muted-foreground">
-                                ({group.type === "retirable" ? "Retirable" : "Supplément"})
-                              </span>
-                            </span>
-                            <input
-                              type="checkbox"
-                              checked={itemForm.optionGroupIds.includes(group.id)}
-                              onChange={() => toggleOptionGroup(group.id)}
-                              className="h-5 w-5 accent-brand"
-                            />
-                          </label>
-                        ))}
+                      >
+                        <label className="mb-1 block text-sm font-semibold">
+                          Options disponibles pour ce plat
+                        </label>
+                        {optionGroups.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">
+                            Aucun groupe d'options disponible. Créez-en depuis la section « Options
+                            ».
+                          </p>
+                        ) : (
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {optionGroups.map((group) => (
+                              <label
+                                key={group.id}
+                                className="flex items-center justify-between gap-2 rounded-lg border p-2"
+                              >
+                                <span className="text-sm font-medium">
+                                  {group.name}{" "}
+                                  <span className="text-xs font-normal text-muted-foreground">
+                                    ({group.type === "retirable" ? "Retirable" : "Supplément"})
+                                  </span>
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={itemForm.optionGroupIds.includes(group.id)}
+                                  onChange={() => toggleOptionGroup(group.id)}
+                                  className="h-5 w-5 accent-brand"
+                                />
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
+
+                    {/* Mise en avant — checkbox inline simple */}
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={itemForm.isFeatured}
+                        onChange={(event) =>
+                          setItemForm({ ...itemForm, isFeatured: event.target.checked })
+                        }
+                        className="h-5 w-5 accent-brand"
+                      />
+                      <span className="text-sm font-semibold">
+                        Mettre en avant dans « Plats populaires »
+                      </span>
+                    </label>
                   </div>
 
-                  <label className="flex items-center gap-3 rounded-xl border p-3">
-                    <input
-                      type="checkbox"
-                      checked={itemForm.isFeatured}
-                      onChange={(event) => setItemForm({ ...itemForm, isFeatured: event.target.checked })}
-                      className="h-5 w-5 accent-brand"
-                    />
-                    <span className="text-sm font-semibold">
-                      Mettre en avant dans « Plats populaires »
-                    </span>
-                  </label>
-
-                  <div className="flex justify-end gap-2 pt-4">
+                  {/* Footer sticky */}
+                  <div className="flex shrink-0 justify-end gap-2 border-t px-6 py-4">
                     <Button variant="outline" type="button" onClick={() => setItemForm(null)}>
                       Annuler
                     </Button>

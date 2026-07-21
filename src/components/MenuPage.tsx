@@ -545,6 +545,74 @@ function DishThumb({ item, className }: { item: Dish; className?: string }) {
   );
 }
 
+function PopularCard({
+  item,
+  onOpen,
+  onAdd,
+  qtyInCart = 0,
+}: {
+  item: Dish;
+  onOpen: (i: Dish) => void;
+  onAdd: (i: { itemId: string; name: string; unitPrice: number; qty: number }) => void;
+  qtyInCart?: number;
+}) {
+  const hasSizes = Boolean(item.sizes && item.sizes.length > 0);
+  const minSizePrice = hasSizes ? Math.min(...item.sizes!.map((s) => s.price)) : null;
+  const price = minSizePrice ?? item.price ?? null;
+  const inCart = qtyInCart > 0;
+  return (
+    <div className="relative flex w-32 shrink-0 flex-col items-center pt-2">
+      <button
+        onClick={() => onOpen(item)}
+        className="group flex w-full flex-col items-center text-center"
+      >
+        <div className="relative h-24 w-24">
+          <div className="absolute inset-x-3 bottom-1 h-3 rounded-full bg-black/30 blur-lg" />
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={item.name}
+              loading="lazy"
+              className="relative h-full w-full object-contain drop-shadow-[0_14px_18px_rgba(0,0,0,0.28)] transition-transform duration-300 group-hover:-translate-y-1 group-hover:scale-105"
+              style={{ filter: "saturate(1.15) contrast(1.05)" }}
+            />
+          ) : (
+            <div className="relative flex h-full w-full items-center justify-center rounded-full bg-[#F1F2F4]">
+              <BoxLogo size={48} showWordmark={false} />
+            </div>
+          )}
+        </div>
+        <div className="mt-3 line-clamp-2 min-h-[2.5rem] text-[13px] font-bold leading-tight text-foreground">
+          {item.name}
+        </div>
+        {price != null && (
+          <div className="mt-1 text-sm font-black text-foreground">
+            {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
+            <span className="ml-1 text-[10px] font-bold text-foreground/50">TND</span>
+          </div>
+        )}
+      </button>
+      {!item.incomplete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen(item);
+          }}
+          className="press absolute right-0 top-16 flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg ring-2 ring-white"
+          aria-label="Ajouter au panier"
+        >
+          <Plus className="h-4 w-4" strokeWidth={3} />
+          {inCart && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-black text-[color:var(--brand)] shadow">
+              x{qtyInCart}
+            </span>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ProductCard({
   item,
   onOpen,

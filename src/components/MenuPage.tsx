@@ -426,20 +426,8 @@ export function MenuPage() {
         {/* Populaires — minimal, invisible cards, seamless with white bg */}
         {populaires.length > 0 && (
           <section className="px-4 pt-6 pb-2">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-xl font-black text-foreground">Plats populaires</h2>
-              {populaires.length < 4 && (
-                <button
-                  onClick={() => {
-                    setActive("__all__");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="flex items-center gap-1 text-xs font-bold text-[color:var(--brand)] press"
-                >
-                  Voir tout <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
+            <h2 className="mb-3 text-xl font-black text-foreground">Plats populaires</h2>
+
             <div className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
               {populaires.map((it) => {
                 const qtyInCart = lines

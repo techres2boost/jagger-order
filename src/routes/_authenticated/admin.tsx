@@ -393,13 +393,13 @@ function AdminPage() {
             </button>
           </div>
         </div>
-        <div className="mx-auto flex max-w-4xl gap-2 px-4 pb-3">
+        <div className="hide-scrollbar mx-auto flex max-w-4xl gap-2 overflow-x-auto px-4 pb-3">
           <button
             onClick={() => {
               setTab("pending");
               navigate({ to: "/admin" });
             }}
-            className={`rounded-full px-4 py-2 text-sm font-bold ${tab === "pending" && !isNestedAdminRoute ? "bg-brand text-brand-foreground" : "bg-secondary"}`}
+            className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold ${tab === "pending" && !isNestedAdminRoute ? "bg-brand text-brand-foreground" : "bg-secondary"}`}
           >
             En attente ({pending.length})
           </button>
@@ -408,31 +408,31 @@ function AdminPage() {
               setTab("history");
               navigate({ to: "/admin" });
             }}
-            className={`rounded-full px-4 py-2 text-sm font-bold ${tab === "history" && !isNestedAdminRoute ? "bg-brand text-brand-foreground" : "bg-secondary"}`}
+            className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold ${tab === "history" && !isNestedAdminRoute ? "bg-brand text-brand-foreground" : "bg-secondary"}`}
           >
             Historique
           </button>
           <Link
             to="/admin/menu"
-            className="flex items-center gap-1 rounded-full bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
           >
             <List className="h-4 w-4" /> Gestion du menu
           </Link>
           <Link
             to="/admin/options"
-            className="flex items-center gap-1 rounded-full bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
           >
             <ListChecks className="h-4 w-4" /> Options
           </Link>
           <Link
             to="/admin/livreurs"
-            className="flex items-center gap-1 rounded-full bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
           >
             <Bike className="h-4 w-4" /> Livreurs
           </Link>
           <Link
             to="/dashboard"
-            className="flex items-center gap-1 rounded-full bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
           >
             <BarChart3 className="h-4 w-4" /> Dashboard
           </Link>

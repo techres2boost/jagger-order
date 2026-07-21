@@ -736,7 +736,7 @@ function AdminMenuPage() {
 
         {(categoryForm || itemForm) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-2xl rounded-3xl bg-card p-6 shadow-xl">
+            <div className="w-full max-w-[90vw] rounded-3xl bg-card p-6 shadow-xl md:max-w-2xl">
               {categoryForm ? (
                 <form onSubmit={saveCategory} className="space-y-4">
                   <div className="flex items-center justify-between gap-4">

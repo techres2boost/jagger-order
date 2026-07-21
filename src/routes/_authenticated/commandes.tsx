@@ -284,7 +284,7 @@ function CommandesPage() {
     setRatings((prev) => ({
       ...prev,
       [orderId]: {
-        id: (data as OrderRatingRow[])[0]?.id ?? prev[orderId]?.id ?? orderId,
+        id: (data as OrderRatingRow[] | null)?.[0]?.id ?? prev[orderId]?.id ?? orderId,
         order_id: orderId,
         rating: ratingValue,
         comment: ratingComment.trim() || null,

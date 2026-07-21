@@ -736,7 +736,7 @@ function DashboardPage() {
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
-                selected={startDate}
+                selected={startDate ?? undefined}
                 onSelect={(date) => {
                   if (date instanceof Date) {
                     setStartDate(date);
@@ -757,7 +757,7 @@ function DashboardPage() {
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
-                selected={endDate}
+                selected={endDate ?? undefined}
                 onSelect={(date) => {
                   if (date instanceof Date) {
                     setEndDate(date);
@@ -859,7 +859,7 @@ function DashboardPage() {
                 Matin (&lt;11h) · Midi (11–17h) · Soir (≥17h)
               </p>
               <div className="space-y-2">
-                {["Matin", "Midi", "Soir" as const].map((service) => (
+                {(["Matin", "Midi", "Soir"] as const).map((service) => (
                   <div key={service}>
                     <div className="mb-1 flex justify-between text-sm">
                       <span className="font-semibold">{service}</span>
@@ -867,6 +867,7 @@ function DashboardPage() {
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-secondary">
                       <div className="h-full bg-[#B22222]" style={{ width: `${(stats.serviceMap[service] / maxService) * 100}%` }} />
+
                     </div>
                   </div>
                 ))}

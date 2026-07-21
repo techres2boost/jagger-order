@@ -213,7 +213,7 @@ function AdminMenuPage() {
       display_order: categories.length + 1,
     };
 
-    const { error } = await supabase.from("categories").upsert(values, { returning: "representation" });
+    const { error } = await supabase.from("categories").upsert(values);
     if (error) {
       toast.error(error.message);
       return;

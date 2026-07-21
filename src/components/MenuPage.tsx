@@ -15,6 +15,7 @@ import {
   SlidersHorizontal,
   ArrowDownAZ,
   ArrowUpAZ,
+  ArrowRight,
   X,
 } from "lucide-react";
 import { BoxLogo } from "@/components/BoxLogo";

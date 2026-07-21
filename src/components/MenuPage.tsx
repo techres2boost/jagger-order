@@ -514,6 +514,10 @@ export function MenuPage() {
   );
 }
 
+function displayName(item: Dish) {
+  return item.category?.toLowerCase() === "pizzas" ? `Pizza ${item.name}` : item.name;
+}
+
 function DishThumb({ item, className }: { item: Dish; className?: string }) {
   if (!item.image) {
     return (
@@ -572,8 +576,8 @@ function PopularCard({
             </div>
           )}
         </div>
-        <div className="mt-3 line-clamp-2 min-h-[2.5rem] text-[13px] font-bold leading-tight text-foreground">
-          {item.name}
+        <div className="mt-4 line-clamp-2 min-h-[2.5rem] text-[13px] font-bold leading-tight text-foreground">
+          {displayName(item)}
         </div>
         {price != null && (
           <div className="mt-1 text-sm font-black text-foreground">
@@ -657,8 +661,8 @@ function ProductCard({
           )}
         </div>
         <div className="flex flex-1 flex-col justify-between px-4 pb-4 pt-1 pr-14">
-          <div className="line-clamp-2 h-[2.5rem] overflow-hidden text-sm font-bold leading-tight text-black">
-            {item.name ?? ""}
+          <div className="mt-2 line-clamp-2 h-[2.5rem] overflow-hidden text-sm font-bold leading-tight text-black">
+            {displayName(item)}
           </div>
           <div className="h-6 text-base font-black leading-6 text-black">
             {price != null ? (

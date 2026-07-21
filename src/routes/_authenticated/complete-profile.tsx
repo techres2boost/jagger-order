@@ -188,118 +188,116 @@ function CompleteProfilePage() {
         <BoxLogo size={72} />
       </div>
 
-      {/* Name + phone form */}
-      <form
-        id="profile-form"
-        onSubmit={saveProfile}
-        className="w-full max-w-md space-y-4 rounded-3xl border bg-card p-6 shadow-sm"
-      >
-        <div className="text-center">
-          <h1 className="text-2xl font-black">Complétez votre profil</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Ces infos serviront pour vos commandes.
-          </p>
-        </div>
+      {/* Carte unique : profil + adresse + enregistrer */}
+      <div className="w-full max-w-md space-y-4 rounded-3xl border bg-card p-6 shadow-sm">
+        {/* Name + phone form */}
+        <form id="profile-form" onSubmit={saveProfile} className="space-y-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-black">Complétez votre profil</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ces infos serviront pour vos commandes.
+            </p>
+          </div>
 
-        <div className="space-y-1">
-          <label className="text-sm font-semibold">Nom complet</label>
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Prénom Nom"
-            className="h-12 w-full rounded-xl border bg-input px-4"
-          />
-        </div>
+          <div className="space-y-1">
+            <label className="text-sm font-semibold">Nom complet</label>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Prénom Nom"
+              className="h-12 w-full rounded-xl border bg-input px-4"
+            />
+          </div>
 
-        <div className="space-y-1">
-          <label className="text-sm font-semibold">Téléphone</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+216 12 345 678"
-            className="h-12 w-full rounded-xl border bg-input px-4"
-          />
-        </div>
-      </form>
+          <div className="space-y-1">
+            <label className="text-sm font-semibold">Téléphone</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+216 12 345 678"
+              className="h-12 w-full rounded-xl border bg-input px-4"
+            />
+          </div>
+        </form>
 
-      {/* Address block */}
-      <div className="mt-6 w-full max-w-md space-y-3 rounded-3xl border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-black">Adresse de livraison</h2>
+        {/* Address block */}
+        <div className="space-y-3">
+          <h2 className="text-lg font-black">Adresse de livraison</h2>
 
-        {addrLoading ? (
-          <p className="text-sm text-muted-foreground">Chargement…</p>
-        ) : primary ? (
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 rounded-2xl border p-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[#E11D2E]">
-                {typeIcon(primary.address_type)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate font-bold">
-                    {primary.label || typeLabel(primary.address_type)}
-                  </p>
-                  {primary.is_default && (
-                    <span className="rounded-full bg-[#E11D2E]/10 px-2 py-0.5 text-[10px] font-bold uppercase text-[#E11D2E]">
-                      Par défaut
-                    </span>
-                  )}
+          {addrLoading ? (
+            <p className="text-sm text-muted-foreground">Chargement…</p>
+          ) : primary ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 rounded-2xl border p-3">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[#E11D2E]">
+                  {typeIcon(primary.address_type)}
                 </div>
-                {primary.full_address && (
-                  <p className="mt-0.5 text-sm text-neutral-600 line-clamp-2">
-                    {primary.full_address}
-                  </p>
-                )}
-                {primary.address_type === "apartment" &&
-                  (primary.floor_number || primary.apartment_number) && (
-                    <p className="mt-0.5 text-xs text-neutral-500">
-                      Étage {primary.floor_number || "—"} · Porte {primary.apartment_number || "—"}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-bold">
+                      {primary.label || typeLabel(primary.address_type)}
+                    </p>
+                    {primary.is_default && (
+                      <span className="rounded-full bg-[#E11D2E]/10 px-2 py-0.5 text-[10px] font-bold uppercase text-[#E11D2E]">
+                        Par défaut
+                      </span>
+                    )}
+                  </div>
+                  {primary.full_address && (
+                    <p className="mt-0.5 text-sm text-neutral-600 line-clamp-2">
+                      {primary.full_address}
                     </p>
                   )}
+                  {primary.address_type === "apartment" &&
+                    (primary.floor_number || primary.apartment_number) && (
+                      <p className="mt-0.5 text-xs text-neutral-500">
+                        Étage {primary.floor_number || "—"} · Porte{" "}
+                        {primary.apartment_number || "—"}
+                      </p>
+                    )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => openEdit(primary)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-neutral-100"
+                    aria-label="Modifier"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteAddress(primary)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-[#E11D2E] hover:bg-red-50"
+                    aria-label="Supprimer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => openEdit(primary)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-neutral-100"
-                  aria-label="Modifier"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => deleteAddress(primary)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[#E11D2E] hover:bg-red-50"
-                  aria-label="Supprimer"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
 
+              <button
+                onClick={openAdd}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed text-sm font-semibold"
+              >
+                <Plus className="h-4 w-4" /> Ajouter une adresse
+              </button>
+            </div>
+          ) : (
             <button
               onClick={openAdd}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed text-sm font-semibold"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#E11D2E] font-bold text-white"
             >
               <Plus className="h-4 w-4" /> Ajouter une adresse
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={openAdd}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#E11D2E] font-bold text-white"
-          >
-            <Plus className="h-4 w-4" /> Ajouter une adresse
-          </button>
-        )}
-      </div>
+          )}
+        </div>
 
-      <div className="mt-6 w-full max-w-md">
         <button
           type="submit"
           form="profile-form"
           disabled={savingProfile}
-          className="h-12 w-full rounded-full bg-brand font-bold text-brand-foreground disabled:opacity-50"
+          className="h-12 w-full rounded-full bg-[#B22222] font-bold text-white disabled:opacity-50"
         >
           {savingProfile ? "Enregistrement…" : "Enregistrer"}
         </button>

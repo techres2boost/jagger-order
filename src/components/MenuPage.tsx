@@ -20,6 +20,14 @@ import {
 import { BoxLogo } from "@/components/BoxLogo";
 import { EnableNotifications } from "@/components/EnableNotifications";
 import burger3d from "@/assets/burger-3d.png";
+import pizza3d from "@/assets/pizza-3d.png";
+import drink3d from "@/assets/drink-3d.png";
+
+const PROMO_CARDS = [
+  { img: burger3d, alt: "Burger 3D" },
+  { img: pizza3d, alt: "Pizza 3D" },
+  { img: drink3d, alt: "Boisson 3D" },
+];
 import { toast } from "sonner";
 
 const DEFAULT_DISH_COLOR = "#E5E5E5";
@@ -68,6 +76,8 @@ export function MenuPage() {
   const [search, setSearch] = useState("");
   const [priceSort, setPriceSort] = useState<"none" | "asc" | "desc">("none");
   const [showFilter, setShowFilter] = useState(false);
+  const promoScrollRef = useRef<HTMLDivElement | null>(null);
+  const [promoIndex, setPromoIndex] = useState(0);
   const prevCount = useRef(count);
   useEffect(() => {
     if (count > prevCount.current) setBounceKey((k) => k + 1);
@@ -331,28 +341,62 @@ export function MenuPage() {
             Que voulez-vous commander aujourd'hui ?
           </h1>
 
-          {/* Carte promo */}
-          <div className="mt-4 relative overflow-hidden rounded-3xl bg-[color:var(--brand)] px-5 py-4 shadow-xl">
-            <div className="absolute inset-0 opacity-30 halftone-red pointer-events-none" />
-            <div className="relative flex items-center gap-3">
-              <div className="flex-1">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">
-                  Offre de bienvenue
+          {/* Carrousel promo — swipe */}
+          <div className="mt-4 -mx-4">
+            <div
+              ref={promoScrollRef}
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                const idx = Math.round(el.scrollLeft / el.clientWidth);
+                if (idx !== promoIndex) setPromoIndex(idx);
+              }}
+              className="hide-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth px-4"
+            >
+              {PROMO_CARDS.map((p, i) => (
+                <div key={i} className="w-full shrink-0 snap-center pr-3 last:pr-0">
+                  <div className="relative overflow-hidden rounded-3xl bg-[color:var(--brand)] px-5 py-4 shadow-xl">
+                    <div className="absolute inset-0 opacity-30 halftone-red pointer-events-none" />
+                    <div className="relative flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">
+                          Offre de bienvenue
+                        </div>
+                        <div className="mt-1 text-2xl font-black leading-tight text-white">
+                          -10 % sur votre
+                          <br />
+                          première commande
+                        </div>
+                      </div>
+                      <img
+                        src={p.img}
+                        alt={p.alt}
+                        width={120}
+                        height={120}
+                        loading="lazy"
+                        className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.35)] rotate-[-6deg]"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-1 text-2xl font-black leading-tight text-white">
-                  -10 % sur votre
-                  <br />
-                  première commande
-                </div>
-              </div>
-              <img
-                src={burger3d}
-                alt=""
-                width={120}
-                height={120}
-                loading="lazy"
-                className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.35)] rotate-[-6deg]"
-              />
+              ))}
+            </div>
+            <div className="mt-3 flex items-center justify-center gap-1.5">
+              {PROMO_CARDS.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    const el = promoScrollRef.current;
+                    if (!el) return;
+                    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+                  }}
+                  aria-label={`Promo ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${
+                    promoIndex === i
+                      ? "w-6 bg-[color:var(--brand)]"
+                      : "w-1.5 bg-black/20"
+                  }`}
+                />
+              ))}
             </div>
           </div>
         </div>

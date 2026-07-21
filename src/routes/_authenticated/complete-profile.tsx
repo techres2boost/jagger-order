@@ -173,6 +173,8 @@ function CompleteProfilePage() {
 
   const primary = pickPrimary(addresses);
   const otherAddresses = addresses.filter((a) => !primary || a.id !== primary.id);
+  // Toutes les adresses, celle par défaut en premier puis les autres.
+  const orderedAddresses = primary ? [primary, ...otherAddresses] : addresses;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
@@ -228,53 +230,51 @@ function CompleteProfilePage() {
 
           {addrLoading ? (
             <p className="text-sm text-muted-foreground">Chargement…</p>
-          ) : primary ? (
+          ) : orderedAddresses.length > 0 ? (
             <div className="space-y-3">
-              <div className="flex items-start gap-3 rounded-2xl border p-3">
-                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[#E11D2E]">
-                  {typeIcon(primary.address_type)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-bold">
-                      {primary.label || typeLabel(primary.address_type)}
-                    </p>
-                    {primary.is_default && (
-                      <span className="rounded-full bg-[#E11D2E]/10 px-2 py-0.5 text-[10px] font-bold uppercase text-[#E11D2E]">
-                        Par défaut
-                      </span>
-                    )}
+              {orderedAddresses.map((a) => (
+                <div key={a.id} className="flex items-start gap-3 rounded-2xl border p-3">
+                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[#E11D2E]">
+                    {typeIcon(a.address_type)}
                   </div>
-                  {primary.full_address && (
-                    <p className="mt-0.5 text-sm text-neutral-600 line-clamp-2">
-                      {primary.full_address}
-                    </p>
-                  )}
-                  {primary.address_type === "apartment" &&
-                    (primary.floor_number || primary.apartment_number) && (
-                      <p className="mt-0.5 text-xs text-neutral-500">
-                        Étage {primary.floor_number || "—"} · Porte{" "}
-                        {primary.apartment_number || "—"}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate font-bold">{a.label || typeLabel(a.address_type)}</p>
+                      {a.is_default && (
+                        <span className="rounded-full bg-[#E11D2E]/10 px-2 py-0.5 text-[10px] font-bold uppercase text-[#E11D2E]">
+                          Par défaut
+                        </span>
+                      )}
+                    </div>
+                    {a.full_address && (
+                      <p className="mt-0.5 text-sm text-neutral-600 line-clamp-2">
+                        {a.full_address}
                       </p>
                     )}
+                    {a.address_type === "apartment" && (a.floor_number || a.apartment_number) && (
+                      <p className="mt-0.5 text-xs text-neutral-500">
+                        Étage {a.floor_number || "—"} · Porte {a.apartment_number || "—"}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => openEdit(a)}
+                      className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-neutral-100"
+                      aria-label="Modifier"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteAddress(a)}
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-[#E11D2E] hover:bg-red-50"
+                      aria-label="Supprimer"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={() => openEdit(primary)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-neutral-100"
-                    aria-label="Modifier"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => deleteAddress(primary)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-[#E11D2E] hover:bg-red-50"
-                    aria-label="Supprimer"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+              ))}
 
               <button
                 onClick={openAdd}

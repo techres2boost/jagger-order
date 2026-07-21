@@ -303,7 +303,7 @@ export function CompteClient() {
                     </div>
                   </div>
                 </div>
-                <div className="h-32 w-full">
+                <div className="relative z-0 h-32 w-full overflow-hidden">
                   <MapContainer
                     center={[a.latitude, a.longitude]}
                     zoom={15}

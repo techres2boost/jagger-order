@@ -41,9 +41,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 interface OrderRow {
   id: string;
-  status: "pending" | "accepted" | "ready" | "refused" | "expired" | "cancelled";
+  status: "pending" | "accepted" | "ready" | "delivering" | "delivered" | "refused" | "expired" | "cancelled";
   created_at: string;
   updated_at: string;
+  accepted_at?: string | null;
   refusal_reason?: string | null;
   total: number;
   address?: string | null;
@@ -133,13 +134,17 @@ function DashboardPage() {
     const topCategories = [...categoryCounts.entries()].sort((a, b) => b[1] - a[1]);
     const totalCategoryItems = topCategories.reduce((sum, [, qty]) => sum + qty, 0);
 
-    const acceptedOrders = orders.filter((order) => order.status === "accepted");
+    // "Temps d'acceptation" / "Délai moyen" : basés sur l'ÉVÉNEMENT d'acceptation
+    // (accepted_at), pas sur le statut courant. Une commande acceptée puis passée
+    // à ready/delivering/delivered n'a plus status = 'accepted' mais garde son
+    // accepted_at, et doit donc compter. Le délai est created_at -> accepted_at.
+    const acceptedOrders = orders.filter((order) => order.accepted_at != null);
     const refusedOrders = orders.filter((order) => order.status === "refused");
     const expiredOrders = orders.filter((order) => order.status === "expired");
     const cancelledOrders = orders.filter((order) => order.status === "cancelled");
 
     const acceptDurations = acceptedOrders
-      .map((order) => (new Date(order.updated_at).getTime() - new Date(order.created_at).getTime()) / 1000)
+      .map((order) => (new Date(order.accepted_at as string).getTime() - new Date(order.created_at).getTime()) / 1000)
       .filter((duration) => duration >= 0 && duration < 60 * 60);
 
     const avgSec = acceptDurations.length ? acceptDurations.reduce((sum, value) => sum + value, 0) / acceptDurations.length : 0;
@@ -514,8 +519,12 @@ function DashboardPage() {
       const acceptanceDenominator = acceptedOrders.length + refusedOrders.length + expiredOrders.length;
       const acceptanceRate = acceptanceDenominator ? acceptedOrders.length / acceptanceDenominator : 0;
 
-      const acceptDurations = acceptedOrders
-        .map((order) => (new Date(order.updated_at).getTime() - new Date(order.created_at).getTime()) / 1000)
+      // Temps d'acceptation : basé sur l'événement accepted_at (created_at ->
+      // accepted_at), indépendamment du statut courant. Jeu de données distinct
+      // de `acceptedOrders` (qui sert au CA/panier) pour ne pas altérer les ventes.
+      const acceptedAtOrders = periodOrders.filter((order) => order.accepted_at != null);
+      const acceptDurations = acceptedAtOrders
+        .map((order) => (new Date(order.accepted_at as string).getTime() - new Date(order.created_at).getTime()) / 1000)
         .filter((duration) => duration >= 0 && duration < 60 * 60);
       const acceptCount = acceptDurations.length;
       const minAccept = acceptCount ? Math.min(...acceptDurations) : 0;
@@ -594,10 +603,9 @@ function DashboardPage() {
           ? periodOrders.map((order) => {
               const orderItems = orderItemsMap.get(order.id) ?? [];
               const itemsText = orderItems.map((item) => `${item.qty}x ${item.name}`).join(", ");
-              const acceptSeconds =
-                order.status === "accepted"
-                  ? Math.round((new Date(order.updated_at).getTime() - new Date(order.created_at).getTime()) / 1000)
-                  : "";
+              const acceptSeconds = order.accepted_at
+                ? Math.round((new Date(order.accepted_at).getTime() - new Date(order.created_at).getTime()) / 1000)
+                : "";
               return [
                 order.id,
                 format(new Date(order.created_at), "yyyy-MM-dd"),

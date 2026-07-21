@@ -20,6 +20,14 @@ import {
 import { BoxLogo } from "@/components/BoxLogo";
 import { EnableNotifications } from "@/components/EnableNotifications";
 import burger3d from "@/assets/burger-3d.png";
+import pizza3d from "@/assets/pizza-3d.png";
+import drink3d from "@/assets/drink-3d.png";
+
+const PROMO_CARDS = [
+  { img: burger3d, alt: "Burger 3D" },
+  { img: pizza3d, alt: "Pizza 3D" },
+  { img: drink3d, alt: "Boisson 3D" },
+];
 import { toast } from "sonner";
 
 const DEFAULT_DISH_COLOR = "#E5E5E5";

@@ -668,7 +668,7 @@ function ProductCard({
             )}
             {price != null && (
               <div className="mt-auto pt-2 text-base font-black text-[color:var(--gold)]">
-                {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
+                {hasSizes ? `dès ${fmt(price)}` : fmt(price)}<span className="ml-1 text-[10px] font-bold text-foreground/60">TND</span>
               </div>
             )}
           </div>
@@ -678,7 +678,7 @@ function ProductCard({
             e.stopPropagation();
             onOpen(item);
           }}
-          className="press absolute bottom-3 right-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full brand-gradient text-white shadow-lg"
+          className="press absolute bottom-3 right-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg"
           aria-label="Voir la pizza"
         >
           <Plus className="h-5 w-5" />
@@ -718,7 +718,7 @@ function ProductCard({
           )}
           {price != null && (
             <div className="mt-auto pt-2 text-base font-black text-[color:var(--gold)]">
-              {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
+              {hasSizes ? `dès ${fmt(price)}` : fmt(price)}<span className="ml-1 text-[10px] font-bold text-foreground/60">TND</span>
             </div>
           )}
         </div>
@@ -729,7 +729,7 @@ function ProductCard({
             e.stopPropagation();
             onOpen(item);
           }}
-          className="press absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full brand-gradient text-white shadow-lg"
+          className="press absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg"
           aria-label="Ajouter au panier"
         >
           <Plus className="h-5 w-5" />
@@ -849,7 +849,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
           <div className="flex items-start justify-between gap-4">
             <h2 className="text-2xl font-black">{item.name}</h2>
             <div className="whitespace-nowrap text-2xl font-black text-[color:var(--gold)]">
-              {fmt(base)}
+              {fmt(base)} <span className="text-sm font-bold text-foreground/50">TND</span>
             </div>
           </div>
           {item.description && (
@@ -875,7 +875,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                       i === sizeIdx ? "bg-brand text-brand-foreground" : "bg-secondary"
                     }`}
                   >
-                    {s.label} · {fmt(s.price)}
+                    {s.label} · {fmt(s.price)} TND
                   </button>
                 ))}
               </div>
@@ -922,7 +922,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                         <span className="flex items-center gap-3">
                           {group.type === "supplement" && (
                             <span className="text-sm font-bold text-[color:var(--gold)]">
-                              +{fmt(optionItem.price)}
+                              +{fmt(optionItem.price)} TND
                             </span>
                           )}
                           <input
@@ -967,7 +967,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
           <div className="mx-auto flex max-w-2xl items-center gap-5">
             <div className="shrink-0">
               <div className="text-xs text-muted-foreground">Total</div>
-              <div className="text-lg font-black text-[color:var(--gold)]">{fmt(total)}</div>
+              <div className="text-lg font-black text-[color:var(--gold)]">{fmt(total)} <span className="text-xs font-bold text-foreground/50">TND</span></div>
             </div>
             <button
               disabled={item.incomplete}

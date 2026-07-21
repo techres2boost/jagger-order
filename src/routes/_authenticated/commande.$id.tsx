@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-context";
 import { BoxLogo } from "@/components/BoxLogo";
+import { OrderProgressRing, STEPS, type ProgressStatus } from "@/components/OrderProgressRing";
+import { useOrderCountdown } from "@/hooks/use-order-countdown";
 import { fmt } from "@/lib/format";
-import { CheckCircle2, Clock, PackageCheck, Truck, PartyPopper, XCircle, Ban } from "lucide-react";
+import { XCircle, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/commande/$id")({
@@ -41,16 +43,6 @@ interface OrderItemRow {
   note: string | null;
 }
 
-type ProgressStatus = "pending" | "accepted" | "ready" | "delivering" | "delivered";
-
-const STEPS: { key: ProgressStatus; label: string; Icon: typeof Clock }[] = [
-  { key: "pending", label: "Reçue", Icon: Clock },
-  { key: "accepted", label: "En préparation", Icon: CheckCircle2 },
-  { key: "ready", label: "Prête", Icon: PackageCheck },
-  { key: "delivering", label: "En livraison", Icon: Truck },
-  { key: "delivered", label: "Livrée", Icon: PartyPopper },
-];
-
 const STATUS_TEXT: Record<ProgressStatus, string> = {
   pending: "Votre commande a été reçue et est en attente de confirmation.",
   accepted: "Votre commande est en cours de préparation.",
@@ -64,59 +56,18 @@ const REFUSAL_LABEL: Record<"unavailable" | "busy", string> = {
   busy: "Restaurant occupé",
 };
 
-function ProgressRing({ stepIndex }: { stepIndex: number }) {
-  const size = 220;
-  const center = size / 2;
-  const r = 90;
-  const strokeWidth = 14;
-  const circumference = 2 * Math.PI * r;
-  const gapDeg = 6;
-  const segDeg = 72 - gapDeg;
-  const segLen = (segDeg / 360) * circumference;
-  const dashArray = `${segLen} ${circumference - segLen}`;
-  const current = STEPS[Math.max(0, stepIndex)];
-
-  return (
-    <div className="relative mx-auto" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {STEPS.map((step, i) => {
-          const filled = i <= stepIndex;
-          const startAngle = i * 72 - 90 + gapDeg / 2;
-          return (
-            <circle
-              key={step.key}
-              cx={center}
-              cy={center}
-              r={r}
-              fill="none"
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-              strokeDasharray={dashArray}
-              transform={`rotate(${startAngle} ${center} ${center})`}
-              style={{ stroke: filled ? "var(--brand)" : "var(--muted)" }}
-            />
-          );
-        })}
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-        <current.Icon className="h-9 w-9" style={{ color: "var(--brand)" }} />
-        <span className="text-sm font-bold">{current.label}</span>
-      </div>
-    </div>
-  );
-}
-
 function OrderStatusPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { add } = useCart();
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [items, setItems] = useState<OrderItemRow[]>([]);
-  const [now, setNow] = useState(Date.now());
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const expirationEnvoyee = useRef(false);
+
+  // Décompte temps réel mutualisé (interval + cleanup + repli + "Bientôt là").
+  const { now, minutesRemaining, arrivalTime, label } = useOrderCountdown(order);
 
   useEffect(() => {
     let mounted = true;
@@ -151,28 +102,6 @@ function OrderStatusPage() {
     };
   }, [id]);
 
-  useEffect(() => {
-    tickRef.current = setInterval(() => setNow(Date.now()), 1000);
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-    };
-  }, []);
-
-  // Stop le tick uniquement sur un statut terminal ; on garde le décompte vivant
-  // pendant accepted/ready/delivering pour l'arrivée estimée.
-  useEffect(() => {
-    const terminal =
-      order != null &&
-      (order.status === "delivered" ||
-        order.status === "refused" ||
-        order.status === "expired" ||
-        order.status === "cancelled");
-    if (terminal && tickRef.current) {
-      clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
-  }, [order?.status]);
-
   // Auto-expire côté client — verrou useRef pour n'envoyer qu'une seule requête
   useEffect(() => {
     if (
@@ -181,10 +110,6 @@ function OrderStatusPage() {
       !expirationEnvoyee.current
     ) {
       expirationEnvoyee.current = true;
-      if (tickRef.current) {
-        clearInterval(tickRef.current);
-        tickRef.current = null;
-      }
       supabase.rpc("expire_stale_orders");
     }
   }, [order?.status, order?.expires_at, now]);
@@ -273,19 +198,6 @@ function OrderStatusPage() {
   const remaining = Math.max(0, Math.floor((new Date(order.expires_at).getTime() - now) / 1000));
   const mm = String(Math.floor(remaining / 60)).padStart(1, "0");
   const ss = String(remaining % 60).padStart(2, "0");
-  // On décompte sur l'heure d'arrivée cible figée (prépa + trajet), calculée une
-  // seule fois côté DB. Repli sur estimated_delivery_at pour les commandes
-  // acceptées avant la mise en place de arrival_at.
-  const arrivalTarget = order.arrival_at ?? order.estimated_delivery_at;
-  const minutesRemaining = arrivalTarget
-    ? Math.ceil((new Date(arrivalTarget).getTime() - now) / 60000)
-    : null;
-  const arrivalTime = arrivalTarget
-    ? new Date(arrivalTarget).toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
@@ -296,7 +208,7 @@ function OrderStatusPage() {
           <p className="mb-4 text-sm font-semibold text-muted-foreground">{itemsLabel}</p>
         )}
 
-        <ProgressRing stepIndex={stepIndex} />
+        <OrderProgressRing stepIndex={stepIndex} />
 
         <p className="mt-4 text-sm text-muted-foreground">
           {STATUS_TEXT[order.status as ProgressStatus]}
@@ -304,9 +216,7 @@ function OrderStatusPage() {
 
         {order.status !== "delivered" && minutesRemaining != null && arrivalTime && (
           <div className="mt-4 flex items-center justify-center gap-4">
-            <div className="text-3xl font-black text-brand tabular-nums">
-              {minutesRemaining > 0 ? `${minutesRemaining} min` : "Bientôt là"}
-            </div>
+            <div className="text-3xl font-black text-brand tabular-nums">{label}</div>
             <div className="text-sm text-muted-foreground">Arrivée prévue à {arrivalTime}</div>
           </div>
         )}
@@ -373,10 +283,6 @@ function OrderStatusPage() {
                   if (error) {
                     toast.error(error.message);
                     return;
-                  }
-                  if (tickRef.current) {
-                    clearInterval(tickRef.current);
-                    tickRef.current = null;
                   }
                   setConfirmCancel(false);
                   toast.success("Commande annulée");

@@ -49,6 +49,7 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   const [phone, setPhone] = useState("");
+  const [localPhone, setLocalPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
 
@@ -82,7 +83,8 @@ function AuthPage() {
 
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
-    const normalized = normalizePhone(phone);
+    // Le badge fixe "+216" est concaténé au numéro local pour obtenir l'E.164.
+    const normalized = normalizePhone("+216" + localPhone);
     if (!normalized) {
       return toast.error("Numéro invalide. Format attendu : +216XXXXXXXX");
     }
@@ -162,18 +164,20 @@ function AuthPage() {
         {!otpSent ? (
           <form onSubmit={handleSendOtp} className="space-y-3">
             <label className="block text-sm font-semibold">Numéro de téléphone</label>
-            <input
-              required
-              type="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+216 12 345 678"
-              className="h-12 w-full rounded-xl border bg-input px-4"
-            />
-            <p className="text-xs text-muted-foreground">
-              Incluez l'indicatif pays (ex : +216 pour la Tunisie).
-            </p>
+            <div className="flex h-12 items-stretch overflow-hidden rounded-xl border bg-input">
+              <span className="flex shrink-0 items-center gap-1 border-r px-4 font-semibold">
+                🇹🇳 +216
+              </span>
+              <input
+                required
+                type="tel"
+                inputMode="tel"
+                value={localPhone}
+                onChange={(e) => setLocalPhone(e.target.value)}
+                placeholder="12 345 678"
+                className="h-full w-full flex-1 bg-transparent px-4 outline-none"
+              />
+            </div>
             <button
               disabled={loading}
               className="h-12 w-full rounded-full bg-brand font-bold text-brand-foreground disabled:opacity-50"

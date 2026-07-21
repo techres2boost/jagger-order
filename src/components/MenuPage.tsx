@@ -76,6 +76,8 @@ export function MenuPage() {
   const [search, setSearch] = useState("");
   const [priceSort, setPriceSort] = useState<"none" | "asc" | "desc">("none");
   const [showFilter, setShowFilter] = useState(false);
+  const promoScrollRef = useRef<HTMLDivElement | null>(null);
+  const [promoIndex, setPromoIndex] = useState(0);
   const prevCount = useRef(count);
   useEffect(() => {
     if (count > prevCount.current) setBounceKey((k) => k + 1);

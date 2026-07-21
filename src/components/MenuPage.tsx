@@ -5,9 +5,21 @@ import { fmt } from "@/lib/format";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
-import { ShoppingCart, Plus, User as UserIcon, Truck, LogOut, Shield } from "lucide-react";
+import {
+  ShoppingCart,
+  Plus,
+  User as UserIcon,
+  LogOut,
+  Shield,
+  Search,
+  SlidersHorizontal,
+  ArrowDownAZ,
+  ArrowUpAZ,
+  X,
+} from "lucide-react";
 import { BoxLogo } from "@/components/BoxLogo";
 import { EnableNotifications } from "@/components/EnableNotifications";
+import burger3d from "@/assets/burger-3d.png";
 import { toast } from "sonner";
 
 const DEFAULT_DISH_COLOR = "#E5E5E5";

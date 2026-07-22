@@ -337,12 +337,13 @@ function PanierPage() {
               </div>
             </div>
 
-            {/* Total row */}
-            <div className="flex items-center justify-between rounded-[22px] border border-black/5 bg-white p-5 shadow-[0_1px_6px_rgba(0,0,0,0.06)]">
+            {/* Total row — blends with background */}
+            <div className="flex items-end justify-between px-2 pt-2">
               <div>
                 <div className="text-[11px] font-black uppercase tracking-wider text-black/50">Total</div>
-                <div className="mt-1 text-3xl font-black text-black">
+                <div className="mt-1 flex items-baseline gap-1.5 text-3xl font-black text-black">
                   {fmt(total)}
+                  <span className="text-sm font-black text-black/60">TND</span>
                 </div>
               </div>
               <div className="rounded-full bg-[#F5B800] px-3 py-1 text-[11px] font-black text-black">

@@ -250,7 +250,7 @@ function PanierPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="truncate font-black text-black">
-                              {formatCartName(l.itemId, l.name)}
+                              {formatCartName(l.itemId, l.name, info?.categoryName)}
                             </div>
                             {l.size && <div className="text-xs text-black/50">{l.size}</div>}
                             {l.options && l.options.length > 0 && (

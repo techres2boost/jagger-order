@@ -19,11 +19,8 @@ export const Route = createFileRoute("/_authenticated/panier")({
   component: PanierPage,
 });
 
-function formatCartName(itemId: string, name: string, categoryName: string | undefined) {
-  if (!categoryName) return name;
-  const lower = categoryName.toLowerCase();
-  if (lower.startsWith("formule") || lower.startsWith("entrée") || lower.startsWith("entree")) return name;
-  return `${categoryName} ${name}`;
+function formatCartName(_itemId: string, name: string, _categoryName: string | undefined) {
+  return name;
 }
 
 function formatCartOptions(options: CartOptionSelection[] | undefined) {

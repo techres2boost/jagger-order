@@ -1,5 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+
+// useLayoutEffect côté client, useEffect en SSR (évite l'avertissement React).
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 import { fmt } from "@/lib/format";
 import { useCart } from "@/lib/cart-context";
@@ -702,6 +705,32 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
   const [imageOpen, setImageOpen] = useState(false);
   // Sélections par groupe d'options : groupId -> ids des option_items choisis
   const [selections, setSelections] = useState<Record<string, string[]>>({});
+
+  // Mesures de la fenêtre pour dimensionner la feuille modale :
+  //  - layoutH : hauteur du viewport de mise en page (window.innerHeight)
+  //  - keyboardInset : espace mangé par le clavier virtuel en bas (visualViewport)
+  // Cela garantit que le footer (bouton « Ajouter au panier ») reste visible,
+  // au-dessus de la bottom nav ET du clavier, sur toutes les tailles d'écran.
+  const [viewport, setViewport] = useState<{ layoutH: number; keyboardInset: number } | null>(null);
+  useIsomorphicLayoutEffect(() => {
+    const vv = window.visualViewport;
+    const update = () => {
+      const layoutH = window.innerHeight;
+      const keyboardInset = vv ? Math.max(0, layoutH - vv.height - vv.offsetTop) : 0;
+      setViewport({ layoutH, keyboardInset });
+    };
+    update();
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
   const optionGroups = item.optionGroups ?? [];
   const size = item.sizes?.[sizeIdx];
   const base = size ? size.price : (item.price ?? 0);
@@ -725,16 +754,34 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
     });
   }
 
+  // Dégagement en bas : le plus grand entre la bottom nav et le clavier virtuel,
+  // pour que le footer reste toujours visible. --bottom-nav-height est mesurée au
+  // runtime (voir BottomNavBar) : aucune valeur en dur.
+  const bottomInset = viewport
+    ? `max(var(--bottom-nav-height), ${viewport.keyboardInset}px)`
+    : "var(--bottom-nav-height)";
+  // Hauteur de la feuille = min(92dvh, espace visible réel − dégagement bas).
+  // Le footer étant un enfant flex non rétractable, la zone scrollable occupe
+  // le reste (hauteur fenêtre − footer), donc le bouton n'est jamais masqué.
+  const sheetStyle = {
+    height: "92dvh",
+    maxHeight: viewport
+      ? `calc(${viewport.layoutH}px - ${bottomInset})`
+      : "calc(100dvh - var(--bottom-nav-height))",
+    marginBottom: bottomInset,
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[var(--z-product-modal)] flex items-end bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative flex h-[92vh] w-full flex-col rounded-t-3xl bg-background animate-in slide-in-from-bottom duration-300"
+        style={sheetStyle}
+        className="relative flex w-full flex-col rounded-t-3xl bg-background animate-in slide-in-from-bottom duration-300"
       >
-        <div className="flex-1 overflow-y-auto pb-32">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {/* Photo — fond rouge, vague en bas, image non recadrée */}
           <div className="relative bg-brand pt-8 pb-16">
             <button
@@ -903,7 +950,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 z-30 border-t bg-white px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div className="shrink-0 border-t bg-white px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="mx-auto flex max-w-2xl items-center gap-5">
             <div className="shrink-0">
               <div className="text-xs text-muted-foreground">Total</div>

@@ -1,7 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
 import { Home, Search, ShoppingBag, User } from "lucide-react";
+
+// useLayoutEffect côté client, useEffect en SSR (évite l'avertissement React).
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 /*
   Composant BottomNavBar
@@ -23,11 +26,37 @@ const TABS: Array<{
 
 export function BottomNavBar() {
   const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
+  const navRef = useRef<HTMLElement | null>(null);
+
+  // On publie la hauteur réelle de la barre dans --bottom-nav-height, mesurée
+  // dynamiquement (ResizeObserver) pour rester juste sur tous les appareils.
+  // Les surfaces qui doivent la dégager (modale produit) lisent cette variable.
+  useIsomorphicLayoutEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const applyHeight = () => {
+      root.style.setProperty("--bottom-nav-height", `${el.getBoundingClientRect().height}px`);
+    };
+    applyHeight();
+    const ro = new ResizeObserver(applyHeight);
+    ro.observe(el);
+    window.addEventListener("resize", applyHeight);
+    window.addEventListener("orientationchange", applyHeight);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", applyHeight);
+      window.removeEventListener("orientationchange", applyHeight);
+      // La barre est démontée (staff, page sans nav) : plus aucun dégagement.
+      root.style.setProperty("--bottom-nav-height", "0px");
+    };
+  }, []);
 
   return (
     <nav
+      ref={navRef}
       aria-label="Navigation principale"
-      className="fixed left-0 right-0 bottom-0 z-[999] box-border w-full bg-white/95 backdrop-blur-md"
+      className="fixed left-0 right-0 bottom-0 z-[var(--z-bottom-nav)] box-border w-full bg-white/95 backdrop-blur-md"
       style={{ height: 64, paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="mx-auto flex h-full max-w-xl items-center justify-between px-4">

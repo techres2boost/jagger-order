@@ -81,6 +81,16 @@
   --border: oklch(0.92 0.005 20);
   --input: oklch(0.94 0.005 20);
   --ring: oklch(0.58 0.22 27);
+
+  /* Empilement (z-index) — jetons partagés pour garantir que la modale
+     produit et son footer passent TOUJOURS au-dessus de la bottom nav,
+     quelle que soit la valeur de cette dernière. */
+  --z-bottom-nav: 900;
+  --z-product-modal: 1000;
+
+  /* Hauteur réelle de la bottom nav, mesurée au runtime (voir BottomNavBar).
+     Vaut 0 quand la barre est masquée : la modale occupe alors tout l'espace. */
+  --bottom-nav-height: 0px;
 }
 
 .dark {

@@ -373,7 +373,7 @@ function PanierPage() {
       </main>
 
       {lines.length > 0 && (
-        <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-black/5 bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/5 bg-white/95 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
           <div className="mx-auto max-w-2xl">
             <button
               disabled={submitting}

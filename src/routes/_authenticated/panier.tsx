@@ -225,8 +225,8 @@ function PanierPage() {
             {/* Items */}
             <div className="space-y-3">
               {lines.map((l) => {
-                const item = MENU.find((m) => m.id === l.itemId);
-                const img = item?.image;
+                const info = menuInfo[l.itemId];
+                const img = info?.image;
                 const unit = l.unitPrice + (l.options ?? []).reduce((s, o) => s + o.price, 0);
                 return (
                   <div

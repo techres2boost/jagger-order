@@ -4,7 +4,7 @@ import { useCart } from "@/lib/cart-context";
 import { fmt } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Trash2, MapPin } from "lucide-react";
+import { ArrowLeft, Trash2, MapPin, ShoppingBag } from "lucide-react";
 import { MENU, CATEGORIES } from "@/data/menu";
 import type { CartOptionSelection } from "@/lib/cart-context";
 import { haversineDistanceKm, RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
@@ -170,7 +170,7 @@ function PanierPage() {
   }
 
   const mapBg = profile?.lat != null && profile?.lng != null
-    ? `https://api.maptiler.com/maps/streets-v2/static/${profile.lng},${profile.lat},14/600x300.png?key=get_your_own_OpIi9ZULNHzrESv6T2vL&attribution=false`
+    ? `https://staticmap.openstreetmap.de/staticmap.php?center=${profile.lat},${profile.lng}&zoom=15&size=600x300&maptype=mapnik&markers=${profile.lat},${profile.lng},red-pushpin`
     : null;
 
   return (
@@ -183,12 +183,8 @@ function PanierPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
+          <ShoppingBag className="h-5 w-5 text-[#F5B800]" />
           <h1 className="text-lg font-black tracking-tight">Mon panier</h1>
-          {lines.length > 0 && (
-            <span className="ml-auto rounded-full bg-[#F5B800] px-3 py-1 text-xs font-black text-black">
-              {lines.reduce((s, l) => s + l.qty, 0)} article{lines.reduce((s, l) => s + l.qty, 0) > 1 ? "s" : ""}
-            </span>
-          )}
         </div>
       </header>
 
@@ -341,12 +337,13 @@ function PanierPage() {
               </div>
             </div>
 
-            {/* Total row */}
-            <div className="flex items-center justify-between rounded-[22px] border border-black/5 bg-white p-5 shadow-[0_1px_6px_rgba(0,0,0,0.06)]">
+            {/* Total row — blends with background */}
+            <div className="flex items-end justify-between px-2 pt-2">
               <div>
                 <div className="text-[11px] font-black uppercase tracking-wider text-black/50">Total</div>
-                <div className="mt-1 text-3xl font-black text-black">
+                <div className="mt-1 flex items-baseline gap-1.5 text-3xl font-black text-black">
                   {fmt(total)}
+                  <span className="text-sm font-black text-black/60">TND</span>
                 </div>
               </div>
               <div className="rounded-full bg-[#F5B800] px-3 py-1 text-[11px] font-black text-black">
@@ -365,11 +362,8 @@ function PanierPage() {
               onClick={confirm}
               className="press h-14 w-full rounded-full bg-[#E11D2E] text-base font-black text-white shadow-lg transition-colors hover:bg-[#B22222] disabled:opacity-50"
             >
-              {submitting ? "Envoi…" : `Confirmer la commande · ${fmt(total)}`}
+              {submitting ? "Envoi…" : `Confirmer la commande · ${fmt(total)} TND`}
             </button>
-            <p className="mt-2 text-center text-[11px] text-black/50">
-              Paiement en personne au restaurant.
-            </p>
           </div>
         </div>
       )}

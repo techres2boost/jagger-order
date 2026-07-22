@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Trash2, MapPin } from "lucide-react";
 import { MENU, CATEGORIES } from "@/data/menu";
 import type { CartOptionSelection } from "@/lib/cart-context";
-import { haversineDistanceKm, RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
+import { deliveryDistanceKm, isWithinDeliveryZone, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { z } from "zod";
 
 const panierSearchSchema = z.object({
@@ -41,7 +41,13 @@ function PanierPage() {
   const [profile, setProfile] = useState<{
     full_name: string;
     phone: string;
-    address: string;
+  } | null>(null);
+  // Adresse de livraison réellement sélectionnée par le client : elle vit dans
+  // la table `addresses` (celle marquée par défaut, sinon la plus récente), et
+  // non plus dans les colonnes héritées `profiles.lat/lng/address`. C'est cette
+  // adresse — et ses coordonnées — qui doit servir au contrôle de zone.
+  const [deliveryAddress, setDeliveryAddress] = useState<{
+    full_address: string;
     lat: number | null;
     lng: number | null;
   } | null>(null);
@@ -54,68 +60,90 @@ function PanierPage() {
       if (!data.user) return;
       const { data: p } = await supabase
         .from("profiles")
-        .select("full_name, phone, address, lat, lng")
+        .select("full_name, phone")
         .eq("id", data.user.id)
         .maybeSingle();
-      const pp = (p ?? {}) as {
-        full_name?: string | null;
-        phone?: string | null;
-        address?: string | null;
-        lat?: number | null;
-        lng?: number | null;
-      };
+      const pp = (p ?? {}) as { full_name?: string | null; phone?: string | null };
       setProfile({
         full_name: pp.full_name ?? "",
         phone: pp.phone ?? "",
-        address: pp.address ?? "",
-        lat: pp.lat ?? null,
-        lng: pp.lng ?? null,
       });
+
+      // Adresse par défaut (is_default) sinon la plus récente : même règle de
+      // sélection que la page profil (pickPrimary).
+      const { data: addrs } = await supabase
+        .from("addresses" as never)
+        .select("full_address, latitude, longitude, is_default, created_at")
+        .eq("user_id", data.user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      const rows = (addrs ?? []) as unknown as Array<{
+        full_address: string | null;
+        latitude: number | null;
+        longitude: number | null;
+      }>;
+      const primary = rows[0];
+      setDeliveryAddress(
+        primary
+          ? {
+              full_address: primary.full_address ?? "",
+              lat: primary.latitude ?? null,
+              lng: primary.longitude ?? null,
+            }
+          : null,
+      );
     });
   }, []);
 
   useEffect(() => {
     if (autoSubmittedRef.current) return;
     if (search.autoSubmit !== 1) return;
-    if (!profile?.full_name || !profile.address) return;
+    if (!profile?.full_name || !deliveryAddress) return;
     if (lines.length === 0) return;
     if (submitting) return;
     autoSubmittedRef.current = true;
     navigate({ to: "/panier", search: {}, replace: true });
     void confirm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search.autoSubmit, profile, lines.length]);
+  }, [search.autoSubmit, profile, deliveryAddress, lines.length]);
 
   async function confirm() {
-    if (!profile?.full_name || !profile.address) {
+    // Sans profil complété ou sans adresse de livraison enregistrée, on
+    // redirige vers l'écran de complétion (où l'adresse est ajoutée/choisie).
+    if (!profile?.full_name || !deliveryAddress) {
       return navigate({ to: "/complete-profile", search: { redirect: "/panier" } });
     }
     if (lines.length === 0) return;
-    setSubmitting(true);
-    const { data: userRes } = await supabase.auth.getUser();
-    const uid = userRes.user!.id;
-    const expires = new Date(Date.now() + 2 * 60 * 1000).toISOString();
-    const distanceKm =
-      profile.lat != null && profile.lng != null
-        ? haversineDistanceKm(RESTAURANT_LOCATION, { lat: profile.lat, lng: profile.lng })
-        : null;
+    // Coordonnées de l'adresse SÉLECTIONNÉE, recalculées au moment du clic.
+    const coords = { lat: deliveryAddress.lat, lng: deliveryAddress.lng };
+    const distanceKm = deliveryDistanceKm(coords);
+    // Fail-closed : coordonnées manquantes/invalides => on bloque (on ne peut
+    // pas garantir la zone), et on invite à re-choisir l'adresse sur la carte.
+    if (distanceKm == null) {
+      return toast.error(
+        "Adresse de livraison sans localisation valide. Modifiez l'adresse et repositionnez le point sur la carte.",
+      );
+    }
     // Blocage zone de livraison : au-delà du rayon, on empêche l'envoi de la
     // commande avec un message clair (l'adresse reste enregistrable côté compte).
-    if (distanceKm != null && distanceKm > DELIVERY_RADIUS_KM) {
-      setSubmitting(false);
+    if (distanceKm > DELIVERY_RADIUS_KM) {
       return toast.error(
         `Cette adresse est hors de notre zone de livraison (rayon ${DELIVERY_RADIUS_KM} km). Choisissez une adresse plus proche du restaurant.`,
       );
     }
+    setSubmitting(true);
+    const { data: userRes } = await supabase.auth.getUser();
+    const uid = userRes.user!.id;
+    const expires = new Date(Date.now() + 2 * 60 * 1000).toISOString();
     const insertPayload = {
       user_id: uid,
       customer_name: profile.full_name,
       phone: profile.phone,
       total,
       expires_at: expires,
-      address: profile.address,
-      lat: profile.lat,
-      lng: profile.lng,
+      address: deliveryAddress.full_address,
+      lat: coords.lat,
+      lng: coords.lng,
       special_instructions: specialInstructions.trim() || null,
       distance_km: distanceKm,
     };
@@ -168,6 +196,14 @@ function PanierPage() {
     clear();
     navigate({ to: "/commande/$id", params: { id: order.id } });
   }
+
+  // Contrôle de zone pour l'affichage (bouton désactivé + message). Recalculé
+  // à chaque rendu à partir de l'adresse sélectionnée ; fail-closed.
+  const hasAddress = !!deliveryAddress;
+  const outOfZone = hasAddress && !isWithinDeliveryZone(deliveryAddress);
+  // Bouton actif tant qu'on n'est pas en cours d'envoi ni hors zone. S'il
+  // manque une adresse, le clic redirige vers l'écran d'ajout (cf. confirm()).
+  const canSubmit = !submitting && !outOfZone;
 
   return (
     <div className="min-h-screen bg-background pb-44">
@@ -259,8 +295,16 @@ function PanierPage() {
                   )}
                   <div className="mt-1 flex items-start gap-1 text-sm text-muted-foreground">
                     <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand" />
-                    <span className="break-words">{profile?.address || "Adresse manquante"}</span>
+                    <span className="break-words">
+                      {deliveryAddress?.full_address || "Adresse manquante"}
+                    </span>
                   </div>
+                  {outOfZone && (
+                    <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+                      Adresse hors de notre zone de livraison (rayon {DELIVERY_RADIUS_KM} km).
+                      Choisissez une adresse plus proche du restaurant.
+                    </p>
+                  )}
                 </div>
                 <Link
                   to="/complete-profile"
@@ -297,11 +341,11 @@ function PanierPage() {
               <div className="text-xl font-black text-[color:var(--gold)]">{fmt(total)}</div>
             </div>
             <button
-              disabled={submitting}
+              disabled={!canSubmit}
               onClick={confirm}
               className="press ml-auto h-12 flex-1 rounded-full brand-gradient font-bold text-white shadow-lg disabled:opacity-50"
             >
-              {submitting ? "Envoi…" : "Confirmer la commande"}
+              {submitting ? "Envoi…" : outOfZone ? "Adresse hors zone" : "Confirmer la commande"}
             </button>
           </div>
           <p className="mx-auto mt-2 max-w-2xl text-center text-[11px] text-muted-foreground">

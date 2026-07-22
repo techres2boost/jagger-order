@@ -210,7 +210,7 @@ function PanierPage() {
       : null;
 
   return (
-    <div className="min-h-screen bg-white pb-44">
+    <div className="min-h-screen bg-white">
       <header className="sticky top-0 z-20 border-b border-black/10 bg-black text-white">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link
@@ -224,10 +224,18 @@ function PanierPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-5">
+      <main className="mx-auto max-w-2xl px-4 py-5 pb-28">
         {lines.length === 0 ? (
-          <div className="rounded-[28px] border border-black/5 bg-[#F1F2F4] p-10 text-center">
-            <p className="text-sm text-black/60">Votre panier est vide.</p>
+          <div className="space-y-5">
+            <div className="rounded-[28px] border border-black/5 bg-[#F1F2F4] p-10 text-center">
+              <p className="text-sm text-black/60">Votre panier est vide.</p>
+            </div>
+            <Link
+              to="/"
+              className="press flex h-14 w-full items-center justify-center rounded-full bg-[#E11D2E] text-base font-black text-white shadow-lg transition-colors hover:bg-[#B22222]"
+            >
+              Voir le menu
+            </Link>
           </div>
         ) : (
           <div className="space-y-5">
@@ -386,20 +394,8 @@ function PanierPage() {
                 Paiement sur place
               </div>
             </div>
-          </div>
-        )}
-      </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/5 bg-white/95 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
-        <div className="mx-auto max-w-2xl">
-          {lines.length === 0 ? (
-            <Link
-              to="/"
-              className="press flex h-14 w-full items-center justify-center rounded-full bg-[#E11D2E] text-base font-black text-white shadow-lg transition-colors hover:bg-[#B22222]"
-            >
-              Voir le menu
-            </Link>
-          ) : (
+            {/* Action button — part of the page, not fixed */}
             <button
               disabled={!canSubmit}
               onClick={confirm}
@@ -411,9 +407,9 @@ function PanierPage() {
                   ? "Adresse hors zone"
                   : `Confirmer la commande · ${fmt(total)} TND`}
             </button>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

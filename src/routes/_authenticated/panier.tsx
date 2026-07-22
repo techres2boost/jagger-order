@@ -19,11 +19,8 @@ export const Route = createFileRoute("/_authenticated/panier")({
   component: PanierPage,
 });
 
-function formatCartName(itemId: string, name: string, categoryName: string | undefined) {
-  if (!categoryName) return name;
-  const lower = categoryName.toLowerCase();
-  if (lower.startsWith("formule") || lower.startsWith("entrée") || lower.startsWith("entree")) return name;
-  return `${categoryName} ${name}`;
+function formatCartName(_itemId: string, name: string, _categoryName: string | undefined) {
+  return name;
 }
 
 function formatCartOptions(options: CartOptionSelection[] | undefined) {
@@ -322,7 +319,7 @@ function PanierPage() {
             <div className="group relative overflow-hidden rounded-[22px] border border-black/5 bg-black text-white shadow-[0_1px_6px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.2)]">
               {/* Map / grid background */}
               <div
-                className="absolute inset-0 opacity-25 transition-opacity duration-500 group-hover:opacity-40"
+                className="absolute inset-0 opacity-60 transition-opacity duration-500 group-hover:opacity-75"
                 style={{
                   backgroundImage: mapBg
                     ? `url(${mapBg})`
@@ -331,7 +328,7 @@ function PanierPage() {
                   backgroundPosition: "center",
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-[#E11D2E]/40" />
+              <div className="absolute inset-0 bg-gradient-to-br from-black/55 via-black/35 to-[#E11D2E]/30" />
               <div className="relative p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -376,7 +373,7 @@ function PanierPage() {
       </main>
 
       {lines.length > 0 && (
-        <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-black/5 bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/5 bg-white/95 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
           <div className="mx-auto max-w-2xl">
             <button
               disabled={submitting}

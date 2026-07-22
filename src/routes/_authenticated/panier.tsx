@@ -170,7 +170,7 @@ function PanierPage() {
   }
 
   const mapBg = profile?.lat != null && profile?.lng != null
-    ? `https://api.maptiler.com/maps/streets-v2/static/${profile.lng},${profile.lat},14/600x300.png?key=get_your_own_OpIi9ZULNHzrESv6T2vL&attribution=false`
+    ? `https://staticmap.openstreetmap.de/staticmap.php?center=${profile.lat},${profile.lng}&zoom=15&size=600x300&maptype=mapnik&markers=${profile.lat},${profile.lng},red-pushpin`
     : null;
 
   return (
@@ -183,12 +183,8 @@ function PanierPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
+          <ShoppingBag className="h-5 w-5 text-[#F5B800]" />
           <h1 className="text-lg font-black tracking-tight">Mon panier</h1>
-          {lines.length > 0 && (
-            <span className="ml-auto rounded-full bg-[#F5B800] px-3 py-1 text-xs font-black text-black">
-              {lines.reduce((s, l) => s + l.qty, 0)} article{lines.reduce((s, l) => s + l.qty, 0) > 1 ? "s" : ""}
-            </span>
-          )}
         </div>
       </header>
 

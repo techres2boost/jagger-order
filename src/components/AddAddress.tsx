@@ -226,7 +226,10 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
   const mapReady = center !== null;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex flex-col bg-white">
+    // z-index cohérent avec le design system : la modale/plein écran passe sous
+    // la bottom nav (--z-bottom-nav) qui reste ainsi visible et fonctionnelle,
+    // tandis que le bouton de confirmation est dégagé au-dessus d'elle (voir plus bas).
+    <div className="fixed inset-0 z-[var(--z-product-modal)] flex flex-col bg-white">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-3">
         <button
@@ -306,7 +309,16 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
 
           {/* Search bar + results */}
           {mapReady && (
-            <div className="absolute inset-x-0 bottom-0 z-[500] space-y-2 bg-gradient-to-t from-white via-white/95 to-transparent p-4 pt-8">
+            // paddingBottom dynamique = padding d'origine (1rem) + hauteur réelle de
+            // la bottom nav mesurée au runtime (--bottom-nav-height, cf. BottomNavBar).
+            // Aucune valeur en dur : sur un écran sans nav la variable vaut 0px.
+            // Le bouton de confirmation reste ainsi visible au-dessus de la nav, et
+            // la barre de recherche/résultats (au-dessus, séparés par space-y-2) ne
+            // le chevauchent pas.
+            <div
+              className="absolute inset-x-0 bottom-0 z-[500] space-y-2 bg-gradient-to-t from-white via-white/95 to-transparent p-4 pt-8"
+              style={{ paddingBottom: "calc(1rem + var(--bottom-nav-height))" }}
+            >
               {results.length > 0 && (
                 <div className="max-h-56 overflow-y-auto rounded-2xl border bg-white shadow-lg">
                   {results.map((r, i) => (

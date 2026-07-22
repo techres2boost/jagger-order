@@ -362,11 +362,8 @@ function PanierPage() {
               onClick={confirm}
               className="press h-14 w-full rounded-full bg-[#E11D2E] text-base font-black text-white shadow-lg transition-colors hover:bg-[#B22222] disabled:opacity-50"
             >
-              {submitting ? "Envoi…" : `Confirmer la commande · ${fmt(total)}`}
+              {submitting ? "Envoi…" : `Confirmer la commande · ${fmt(total)} TND`}
             </button>
-            <p className="mt-2 text-center text-[11px] text-black/50">
-              Paiement en personne au restaurant.
-            </p>
           </div>
         </div>
       )}

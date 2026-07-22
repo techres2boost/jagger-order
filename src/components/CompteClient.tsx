@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
 import { Trash, Edit, MapPinOff } from "lucide-react";
-import { haversineDistanceKm, RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
+import { deliveryDistanceKm, DELIVERY_RADIUS_KM } from "@/lib/geo";
 
 // Types locaux
 
@@ -275,12 +275,9 @@ export function CompteClient() {
 
           <div className="mt-3 grid gap-3">
             {addresses.map((a) => {
-              // Distance au restaurant via la fonction Haversine existante (aucune
-              // écriture en base, purement de l'affichage). Hors zone si > rayon.
-              const hasCoords = Number.isFinite(a.latitude) && Number.isFinite(a.longitude);
-              const distanceKm = hasCoords
-                ? haversineDistanceKm(RESTAURANT_LOCATION, { lat: a.latitude, lng: a.longitude })
-                : null;
+              // Distance au restaurant via le helper partagé (aucune écriture en
+              // base, purement de l'affichage). Hors zone si > rayon.
+              const distanceKm = deliveryDistanceKm({ lat: a.latitude, lng: a.longitude });
               const outOfZone = distanceKm != null && distanceKm > DELIVERY_RADIUS_KM;
               return (
               <div key={a.id} className="overflow-hidden rounded-xl border bg-white">

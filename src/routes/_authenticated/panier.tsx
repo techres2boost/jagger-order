@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { fmt } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,15 +7,9 @@ import { toast } from "sonner";
 import { ArrowLeft, Trash2, MapPin, ShoppingBag } from "lucide-react";
 
 import type { CartOptionSelection } from "@/lib/cart-context";
-import { haversineDistanceKm, RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
-import { z } from "zod";
-
-const panierSearchSchema = z.object({
-  autoSubmit: z.coerce.number().optional(),
-});
+import { deliveryDistanceKm, isWithinDeliveryZone, DELIVERY_RADIUS_KM } from "@/lib/geo";
 
 export const Route = createFileRoute("/_authenticated/panier")({
-  validateSearch: panierSearchSchema,
   component: PanierPage,
 });
 
@@ -33,18 +27,22 @@ function formatCartOptions(options: CartOptionSelection[] | undefined) {
 function PanierPage() {
   const { lines, setQty, remove, setNote, total, clear } = useCart();
   const navigate = useNavigate();
-  const search = useSearch({ from: "/_authenticated/panier" });
   const [profile, setProfile] = useState<{
     full_name: string;
     phone: string;
-    address: string;
+  } | null>(null);
+  // Adresse de livraison réellement sélectionnée par le client : elle vit dans
+  // la table `addresses` (celle marquée par défaut, sinon la plus récente), et
+  // non plus dans les colonnes héritées `profiles.lat/lng/address`. C'est cette
+  // adresse — et ses coordonnées — qui doit servir au contrôle de zone.
+  const [deliveryAddress, setDeliveryAddress] = useState<{
+    full_address: string;
     lat: number | null;
     lng: number | null;
   } | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [menuInfo, setMenuInfo] = useState<Record<string, { image?: string; categoryName?: string }>>({});
-  const autoSubmittedRef = useRef(false);
 
   useEffect(() => {
     const ids = Array.from(new Set(lines.map((l) => l.itemId))).filter(Boolean);
@@ -72,68 +70,78 @@ function PanierPage() {
       if (!data.user) return;
       const { data: p } = await supabase
         .from("profiles")
-        .select("full_name, phone, address, lat, lng")
+        .select("full_name, phone")
         .eq("id", data.user.id)
         .maybeSingle();
-      const pp = (p ?? {}) as {
-        full_name?: string | null;
-        phone?: string | null;
-        address?: string | null;
-        lat?: number | null;
-        lng?: number | null;
-      };
+      const pp = (p ?? {}) as { full_name?: string | null; phone?: string | null };
       setProfile({
         full_name: pp.full_name ?? "",
         phone: pp.phone ?? "",
-        address: pp.address ?? "",
-        lat: pp.lat ?? null,
-        lng: pp.lng ?? null,
       });
+
+      // Adresse par défaut (is_default) sinon la plus récente : même règle de
+      // sélection que la page profil (pickPrimary).
+      const { data: addrs } = await supabase
+        .from("addresses" as never)
+        .select("full_address, latitude, longitude, is_default, created_at")
+        .eq("user_id", data.user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      const rows = (addrs ?? []) as unknown as Array<{
+        full_address: string | null;
+        latitude: number | null;
+        longitude: number | null;
+      }>;
+      const primary = rows[0];
+      setDeliveryAddress(
+        primary
+          ? {
+              full_address: primary.full_address ?? "",
+              lat: primary.latitude ?? null,
+              lng: primary.longitude ?? null,
+            }
+          : null,
+      );
     });
   }, []);
 
-  useEffect(() => {
-    if (autoSubmittedRef.current) return;
-    if (search.autoSubmit !== 1) return;
-    if (!profile?.full_name || !profile.address) return;
-    if (lines.length === 0) return;
-    if (submitting) return;
-    autoSubmittedRef.current = true;
-    navigate({ to: "/panier", search: {}, replace: true });
-    void confirm();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search.autoSubmit, profile, lines.length]);
-
   async function confirm() {
-    if (!profile?.full_name || !profile.address) {
+    // Sans profil complété ou sans adresse de livraison enregistrée, on
+    // redirige vers l'écran de complétion (où l'adresse est ajoutée/choisie).
+    if (!profile?.full_name || !deliveryAddress) {
       return navigate({ to: "/complete-profile", search: { redirect: "/panier" } });
     }
     if (lines.length === 0) return;
-    setSubmitting(true);
-    const { data: userRes } = await supabase.auth.getUser();
-    const uid = userRes.user!.id;
-    const expires = new Date(Date.now() + 2 * 60 * 1000).toISOString();
-    const distanceKm =
-      profile.lat != null && profile.lng != null
-        ? haversineDistanceKm(RESTAURANT_LOCATION, { lat: profile.lat, lng: profile.lng })
-        : null;
+    // Coordonnées de l'adresse SÉLECTIONNÉE, recalculées au moment du clic.
+    const coords = { lat: deliveryAddress.lat, lng: deliveryAddress.lng };
+    const distanceKm = deliveryDistanceKm(coords);
+    // Fail-closed : coordonnées manquantes/invalides => on bloque (on ne peut
+    // pas garantir la zone), et on invite à re-choisir l'adresse sur la carte.
+    if (distanceKm == null) {
+      return toast.error(
+        "Adresse de livraison sans localisation valide. Modifiez l'adresse et repositionnez le point sur la carte.",
+      );
+    }
     // Blocage zone de livraison : au-delà du rayon, on empêche l'envoi de la
     // commande avec un message clair (l'adresse reste enregistrable côté compte).
-    if (distanceKm != null && distanceKm > DELIVERY_RADIUS_KM) {
-      setSubmitting(false);
+    if (distanceKm > DELIVERY_RADIUS_KM) {
       return toast.error(
         `Cette adresse est hors de notre zone de livraison (rayon ${DELIVERY_RADIUS_KM} km). Choisissez une adresse plus proche du restaurant.`,
       );
     }
+    setSubmitting(true);
+    const { data: userRes } = await supabase.auth.getUser();
+    const uid = userRes.user!.id;
+    const expires = new Date(Date.now() + 2 * 60 * 1000).toISOString();
     const insertPayload = {
       user_id: uid,
       customer_name: profile.full_name,
       phone: profile.phone,
       total,
       expires_at: expires,
-      address: profile.address,
-      lat: profile.lat,
-      lng: profile.lng,
+      address: deliveryAddress.full_address,
+      lat: coords.lat,
+      lng: coords.lng,
       special_instructions: specialInstructions.trim() || null,
       distance_km: distanceKm,
     };
@@ -187,9 +195,19 @@ function PanierPage() {
     navigate({ to: "/commande/$id", params: { id: order.id } });
   }
 
-  const mapBg = profile?.lat != null && profile?.lng != null
-    ? `https://staticmap.openstreetmap.de/staticmap.php?center=${profile.lat},${profile.lng}&zoom=15&size=600x300&maptype=mapnik&markers=${profile.lat},${profile.lng},red-pushpin`
-    : null;
+  // Contrôle de zone pour l'affichage (bouton désactivé + message). Recalculé
+  // à chaque rendu à partir de l'adresse sélectionnée ; fail-closed.
+  const hasAddress = !!deliveryAddress;
+  const outOfZone = hasAddress && !isWithinDeliveryZone(deliveryAddress);
+  // Bouton actif tant qu'on n'est pas en cours d'envoi ni hors zone. S'il
+  // manque une adresse, le clic redirige vers l'écran d'ajout (cf. confirm()).
+  const canSubmit = !submitting && !outOfZone;
+  // Fond de carte du bloc livraison, basé sur les coordonnées de l'adresse
+  // SÉLECTIONNÉE (table `addresses`), pas sur les colonnes profil héritées.
+  const mapBg =
+    deliveryAddress?.lat != null && deliveryAddress?.lng != null
+      ? `https://staticmap.openstreetmap.de/staticmap.php?center=${deliveryAddress.lat},${deliveryAddress.lng}&zoom=15&size=600x300&maptype=mapnik&markers=${deliveryAddress.lat},${deliveryAddress.lng},red-pushpin`
+      : null;
 
   return (
     <div className="min-h-screen bg-white pb-44">
@@ -341,8 +359,14 @@ function PanierPage() {
                       <div className="text-xs text-white/70">{profile.phone}</div>
                     )}
                     <div className="mt-1 text-sm text-white/90">
-                      {profile?.address || "Adresse manquante"}
+                      {deliveryAddress?.full_address || "Adresse manquante"}
                     </div>
+                    {outOfZone && (
+                      <p className="mt-2 rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
+                        Adresse hors de notre zone de livraison (rayon {DELIVERY_RADIUS_KM} km).
+                        Choisissez une adresse plus proche du restaurant.
+                      </p>
+                    )}
                   </div>
                   <Link
                     to="/complete-profile"
@@ -376,11 +400,15 @@ function PanierPage() {
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/5 bg-white/95 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
           <div className="mx-auto max-w-2xl">
             <button
-              disabled={submitting}
+              disabled={!canSubmit}
               onClick={confirm}
               className="press h-14 w-full rounded-full bg-[#E11D2E] text-base font-black text-white shadow-lg transition-colors hover:bg-[#B22222] disabled:opacity-50"
             >
-              {submitting ? "Envoi…" : `Confirmer la commande · ${fmt(total)} TND`}
+              {submitting
+                ? "Envoi…"
+                : outOfZone
+                  ? "Adresse hors zone"
+                  : `Confirmer la commande · ${fmt(total)} TND`}
             </button>
           </div>
         </div>

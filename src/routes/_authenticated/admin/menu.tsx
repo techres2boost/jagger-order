@@ -117,6 +117,9 @@ function AdminMenuPage() {
   const [loading, setLoading] = useState(false);
   const [categoryForm, setCategoryForm] = useState<CategoryFormState | null>(null);
   const [itemForm, setItemForm] = useState<ItemFormState | null>(null);
+  // Erreurs inline « doublon » affichées sous le champ nom concerné.
+  const [categoryNameError, setCategoryNameError] = useState<string | null>(null);
+  const [itemNameError, setItemNameError] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -210,19 +213,44 @@ function AdminMenuPage() {
     event.preventDefault();
     if (!categoryForm) return;
 
-    if (!categoryForm.name.trim()) {
+    const name = categoryForm.name.trim();
+    if (!name) {
       toast.error("Le nom de la catégorie est requis.");
       return;
     }
 
+    // Vérification préventive : un nom identique (insensible casse + espaces)
+    // existe-t-il déjà ? On exclut la catégorie en cours d'édition.
+    const norm = name.toLowerCase();
+    const { data: existing, error: checkError } = await supabase
+      .from("categories")
+      .select("id, name");
+    if (checkError) {
+      toast.error(checkError.message);
+      return;
+    }
+    const duplicate = (existing ?? []).some(
+      (c) => (c.name ?? "").trim().toLowerCase() === norm && c.id !== categoryForm.id,
+    );
+    if (duplicate) {
+      setCategoryNameError("Cette catégorie existe déjà");
+      return;
+    }
+    setCategoryNameError(null);
+
     const values = {
       id: categoryForm.id,
-      name: categoryForm.name.trim(),
+      name,
       display_order: categories.length + 1,
     };
 
     const { error } = await supabase.from("categories").upsert(values);
     if (error) {
+      // Filet de sécurité : violation d'unicité (double clic / course).
+      if (error.code === "23505") {
+        setCategoryNameError("Cette catégorie existe déjà");
+        return;
+      }
       toast.error(error.message);
       return;
     }
@@ -250,7 +278,8 @@ function AdminMenuPage() {
     event.preventDefault();
     if (!itemForm) return;
 
-    if (!itemForm.name.trim()) {
+    const itemName = itemForm.name.trim();
+    if (!itemName) {
       toast.error("Le nom du plat est requis.");
       return;
     }
@@ -259,6 +288,27 @@ function AdminMenuPage() {
       toast.error("La catégorie du plat est requise.");
       return;
     }
+
+    // Vérification préventive : un plat du même nom (insensible casse + espaces)
+    // existe-t-il déjà DANS la catégorie sélectionnée ? On exclut le plat en
+    // cours d'édition. (Le même nom reste autorisé dans une autre catégorie.)
+    const normItem = itemName.toLowerCase();
+    const { data: existingItems, error: itemCheckError } = await supabase
+      .from("menu_items")
+      .select("id, name")
+      .eq("category_id", itemForm.category_id);
+    if (itemCheckError) {
+      toast.error(itemCheckError.message);
+      return;
+    }
+    const itemDuplicate = (existingItems ?? []).some(
+      (it) => (it.name ?? "").trim().toLowerCase() === normItem && it.id !== itemForm.id,
+    );
+    if (itemDuplicate) {
+      setItemNameError("Un plat avec ce nom existe déjà dans cette catégorie");
+      return;
+    }
+    setItemNameError(null);
 
     const parsedSizes: Array<{ id?: string; label: string; price: number }> = [];
 
@@ -320,6 +370,10 @@ function AdminMenuPage() {
         .single();
 
       if (error) {
+        if (error.code === "23505") {
+          setItemNameError("Un plat avec ce nom existe déjà dans cette catégorie");
+          return;
+        }
         toast.error(error.message);
         return;
       }
@@ -332,6 +386,11 @@ function AdminMenuPage() {
         .single();
 
       if (error) {
+        // Filet de sécurité : violation d'unicité (double clic / course).
+        if (error.code === "23505") {
+          setItemNameError("Un plat avec ce nom existe déjà dans cette catégorie");
+          return;
+        }
         toast.error(error.message);
         return;
       }
@@ -459,6 +518,7 @@ function AdminMenuPage() {
   }
 
   function openCategoryEditor(category?: CategoryRow) {
+    setCategoryNameError(null);
     setCategoryForm(
       category
         ? {
@@ -477,6 +537,7 @@ function AdminMenuPage() {
 
   function openItemEditor(item?: MenuItemRow) {
     resetImageState();
+    setItemNameError(null);
     setOriginalImageUrl(item?.image_url ?? null);
     const existingSizes = item ? (sizesByItemId[item.id] ?? []) : [];
     setOriginalSizes(existingSizes);
@@ -785,13 +846,17 @@ function AdminMenuPage() {
                       <label className="mb-1 block text-sm font-semibold">Nom</label>
                       <Input
                         value={categoryForm.name}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setCategoryNameError(null);
                           setCategoryForm({
                             ...categoryForm,
                             name: event.target.value,
-                          })
-                        }
+                          });
+                        }}
                       />
+                      {categoryNameError && (
+                        <p className="mt-1 text-sm text-destructive">{categoryNameError}</p>
+                      )}
                     </div>
                   </div>
 
@@ -833,9 +898,10 @@ function AdminMenuPage() {
                         <label className="mb-1 block text-sm font-semibold">Catégorie</label>
                         <select
                           value={itemForm.category_id}
-                          onChange={(event) =>
-                            setItemForm({ ...itemForm, category_id: event.target.value })
-                          }
+                          onChange={(event) => {
+                            setItemNameError(null);
+                            setItemForm({ ...itemForm, category_id: event.target.value });
+                          }}
                           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         >
                           <option value="" disabled>
@@ -852,10 +918,14 @@ function AdminMenuPage() {
                         <label className="mb-1 block text-sm font-semibold">Nom du plat</label>
                         <Input
                           value={itemForm.name}
-                          onChange={(event) =>
-                            setItemForm({ ...itemForm, name: event.target.value })
-                          }
+                          onChange={(event) => {
+                            setItemNameError(null);
+                            setItemForm({ ...itemForm, name: event.target.value });
+                          }}
                         />
+                        {itemNameError && (
+                          <p className="mt-1 text-sm text-destructive">{itemNameError}</p>
+                        )}
                       </div>
                     </div>
 

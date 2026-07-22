@@ -319,7 +319,7 @@ function PanierPage() {
             <div className="group relative overflow-hidden rounded-[22px] border border-black/5 bg-black text-white shadow-[0_1px_6px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.2)]">
               {/* Map / grid background */}
               <div
-                className="absolute inset-0 opacity-25 transition-opacity duration-500 group-hover:opacity-40"
+                className="absolute inset-0 opacity-60 transition-opacity duration-500 group-hover:opacity-75"
                 style={{
                   backgroundImage: mapBg
                     ? `url(${mapBg})`
@@ -328,7 +328,7 @@ function PanierPage() {
                   backgroundPosition: "center",
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-[#E11D2E]/40" />
+              <div className="absolute inset-0 bg-gradient-to-br from-black/55 via-black/35 to-[#E11D2E]/30" />
               <div className="relative p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

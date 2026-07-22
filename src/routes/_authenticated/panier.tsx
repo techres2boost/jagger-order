@@ -5,7 +5,7 @@ import { fmt } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Trash2, MapPin, ShoppingBag } from "lucide-react";
-import { MENU, CATEGORIES } from "@/data/menu";
+import { CATEGORIES } from "@/data/menu";
 import type { CartOptionSelection } from "@/lib/cart-context";
 import { haversineDistanceKm, RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { z } from "zod";

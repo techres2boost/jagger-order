@@ -46,7 +46,29 @@ function PanierPage() {
   } | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [menuInfo, setMenuInfo] = useState<Record<string, { image?: string; categoryName?: string }>>({});
   const autoSubmittedRef = useRef(false);
+
+  useEffect(() => {
+    const ids = Array.from(new Set(lines.map((l) => l.itemId))).filter(Boolean);
+    if (ids.length === 0) {
+      setMenuInfo({});
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("menu_items")
+        .select("id, image_url, categories(name)")
+        .in("id", ids);
+      if (!data) return;
+      const map: Record<string, { image?: string; categoryName?: string }> = {};
+      for (const row of data as Array<{ id: string; image_url: string | null; categories: { name: string } | { name: string }[] | null }>) {
+        const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+        map[row.id] = { image: row.image_url ?? undefined, categoryName: cat?.name };
+      }
+      setMenuInfo(map);
+    })();
+  }, [lines]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {

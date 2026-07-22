@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { fmt } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,14 +8,8 @@ import { ArrowLeft, Trash2, MapPin } from "lucide-react";
 import { MENU, CATEGORIES } from "@/data/menu";
 import type { CartOptionSelection } from "@/lib/cart-context";
 import { deliveryDistanceKm, isWithinDeliveryZone, DELIVERY_RADIUS_KM } from "@/lib/geo";
-import { z } from "zod";
-
-const panierSearchSchema = z.object({
-  autoSubmit: z.coerce.number().optional(),
-});
 
 export const Route = createFileRoute("/_authenticated/panier")({
-  validateSearch: panierSearchSchema,
   component: PanierPage,
 });
 
@@ -37,7 +31,6 @@ function formatCartOptions(options: CartOptionSelection[] | undefined) {
 function PanierPage() {
   const { lines, setQty, remove, setNote, total, clear } = useCart();
   const navigate = useNavigate();
-  const search = useSearch({ from: "/_authenticated/panier" });
   const [profile, setProfile] = useState<{
     full_name: string;
     phone: string;
@@ -53,7 +46,6 @@ function PanierPage() {
   } | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const autoSubmittedRef = useRef(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -94,18 +86,6 @@ function PanierPage() {
       );
     });
   }, []);
-
-  useEffect(() => {
-    if (autoSubmittedRef.current) return;
-    if (search.autoSubmit !== 1) return;
-    if (!profile?.full_name || !deliveryAddress) return;
-    if (lines.length === 0) return;
-    if (submitting) return;
-    autoSubmittedRef.current = true;
-    navigate({ to: "/panier", search: {}, replace: true });
-    void confirm();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search.autoSubmit, profile, deliveryAddress, lines.length]);
 
   async function confirm() {
     // Sans profil complété ou sans adresse de livraison enregistrée, on

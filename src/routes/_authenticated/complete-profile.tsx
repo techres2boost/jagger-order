@@ -113,12 +113,11 @@ function CompleteProfilePage() {
     setSavingProfile(false);
     if (error) return toast.error(error.message);
     toast.success("Profil enregistré");
+    // « Enregistrer » sauvegarde uniquement le profil, puis renvoie vers la
+    // destination (le panier le cas échéant). La commande n'est PAS créée ici :
+    // elle l'est seulement via le bouton « Confirmer la commande » du panier.
     const dest = search.redirect ?? "/";
-    if (dest === "/panier") {
-      navigate({ to: "/panier", search: { autoSubmit: 1 } });
-    } else {
-      navigate({ to: dest });
-    }
+    navigate({ to: dest });
   }
 
   function openAdd() {

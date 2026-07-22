@@ -5,7 +5,7 @@ import { fmt } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Trash2, MapPin, ShoppingBag } from "lucide-react";
-import { MENU, CATEGORIES } from "@/data/menu";
+
 import type { CartOptionSelection } from "@/lib/cart-context";
 import { haversineDistanceKm, RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { z } from "zod";
@@ -19,12 +19,11 @@ export const Route = createFileRoute("/_authenticated/panier")({
   component: PanierPage,
 });
 
-function formatCartName(itemId: string, name: string) {
-  const item = MENU.find((m) => m.id === itemId);
-  if (!item) return name;
-  if (item.category === "formules" || item.category === "entrees") return name;
-  const label = CATEGORIES.find((c) => c.id === item.category)?.label ?? item.category;
-  return `${label} ${name}`;
+function formatCartName(itemId: string, name: string, categoryName: string | undefined) {
+  if (!categoryName) return name;
+  const lower = categoryName.toLowerCase();
+  if (lower.startsWith("formule") || lower.startsWith("entrée") || lower.startsWith("entree")) return name;
+  return `${categoryName} ${name}`;
 }
 
 function formatCartOptions(options: CartOptionSelection[] | undefined) {
@@ -47,7 +46,29 @@ function PanierPage() {
   } | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [menuInfo, setMenuInfo] = useState<Record<string, { image?: string; categoryName?: string }>>({});
   const autoSubmittedRef = useRef(false);
+
+  useEffect(() => {
+    const ids = Array.from(new Set(lines.map((l) => l.itemId))).filter(Boolean);
+    if (ids.length === 0) {
+      setMenuInfo({});
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("menu_items")
+        .select("id, image_url, categories(name)")
+        .in("id", ids);
+      if (!data) return;
+      const map: Record<string, { image?: string; categoryName?: string }> = {};
+      for (const row of data as Array<{ id: string; image_url: string | null; categories: { name: string } | { name: string }[] | null }>) {
+        const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+        map[row.id] = { image: row.image_url ?? undefined, categoryName: cat?.name };
+      }
+      setMenuInfo(map);
+    })();
+  }, [lines]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -204,8 +225,8 @@ function PanierPage() {
             {/* Items */}
             <div className="space-y-3">
               {lines.map((l) => {
-                const item = MENU.find((m) => m.id === l.itemId);
-                const img = item?.image;
+                const info = menuInfo[l.itemId];
+                const img = info?.image;
                 const unit = l.unitPrice + (l.options ?? []).reduce((s, o) => s + o.price, 0);
                 return (
                   <div
@@ -229,7 +250,7 @@ function PanierPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="truncate font-black text-black">
-                              {formatCartName(l.itemId, l.name)}
+                              {formatCartName(l.itemId, l.name, info?.categoryName)}
                             </div>
                             {l.size && <div className="text-xs text-black/50">{l.size}</div>}
                             {l.options && l.options.length > 0 && (

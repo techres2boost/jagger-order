@@ -1,6 +1,9 @@
 // Coordonnées GPS fixes du restaurant, confirmées par le client.
 export const RESTAURANT_LOCATION = { lat: 36.84130243040511, lng: 10.156443054054316 };
 
+// Rayon de livraison (km) : au-delà, l'adresse est considérée hors zone.
+export const DELIVERY_RADIUS_KM = 7;
+
 const EARTH_RADIUS_KM = 6371;
 
 function toRad(deg: number) {

@@ -16,7 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
-import { Trash, Edit } from "lucide-react";
+import { Trash, Edit, MapPinOff } from "lucide-react";
+import { haversineDistanceKm, RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
 
 // Types locaux
 
@@ -273,14 +274,34 @@ export function CompteClient() {
           )}
 
           <div className="mt-3 grid gap-3">
-            {addresses.map((a) => (
+            {addresses.map((a) => {
+              // Distance au restaurant via la fonction Haversine existante (aucune
+              // écriture en base, purement de l'affichage). Hors zone si > rayon.
+              const hasCoords = Number.isFinite(a.latitude) && Number.isFinite(a.longitude);
+              const distanceKm = hasCoords
+                ? haversineDistanceKm(RESTAURANT_LOCATION, { lat: a.latitude, lng: a.longitude })
+                : null;
+              const outOfZone = distanceKm != null && distanceKm > DELIVERY_RADIUS_KM;
+              return (
               <div key={a.id} className="overflow-hidden rounded-xl border bg-white">
                 <div className="p-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-baseline justify-between">
+                      <div className="flex items-start justify-between gap-2">
                         <strong>{a.label || "Adresse"}</strong>
-                        <span className="text-xs text-neutral-400">{a.address_type}</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-xs text-neutral-400">{a.address_type}</span>
+                          {distanceKm != null &&
+                            (outOfZone ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                <MapPinOff className="h-3 w-3" /> Hors zone de livraison
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                                En zone de livraison
+                              </span>
+                            ))}
+                        </div>
                       </div>
                       <p className="mt-2 text-sm text-neutral-600">{a.full_address}</p>
                     </div>
@@ -314,7 +335,8 @@ export function CompteClient() {
                   </MapContainer>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
           {addresses.length >= 5 && (
             <p className="mt-2 text-sm text-neutral-500">Limite de 5 adresses atteinte.</p>

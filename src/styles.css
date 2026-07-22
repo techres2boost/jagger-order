@@ -82,11 +82,15 @@
   --input: oklch(0.94 0.005 20);
   --ring: oklch(0.58 0.22 27);
 
-  /* Empilement (z-index) — jetons partagés pour garantir que la modale
-     produit et son footer passent TOUJOURS au-dessus de la bottom nav,
-     quelle que soit la valeur de cette dernière. */
-  --z-bottom-nav: 900;
-  --z-product-modal: 1000;
+  /* Empilement (z-index) — jetons partagés.
+     La bottom nav reste AU-DESSUS de l'overlay de la modale produit : elle
+     demeure ainsi visible et fonctionnelle quand la modale est ouverte (elle
+     n'est ni retirée du DOM ni masquée). Le footer de la modale n'est pas
+     caché pour autant : il est positionné juste au-dessus de la nav grâce à
+     --bottom-nav-height (voir MenuPage / DishDetail), donc les deux ne se
+     chevauchent jamais. La modale, elle, passe au-dessus du reste de la page. */
+  --z-product-modal: 900;
+  --z-bottom-nav: 1000;
 
   /* Hauteur réelle de la bottom nav, mesurée au runtime (voir BottomNavBar).
      Vaut 0 quand la barre est masquée : la modale occupe alors tout l'espace. */

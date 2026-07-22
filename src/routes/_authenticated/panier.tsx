@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Trash2, MapPin } from "lucide-react";
 import { MENU, CATEGORIES } from "@/data/menu";
 import type { CartOptionSelection } from "@/lib/cart-context";
-import { haversineDistanceKm, RESTAURANT_LOCATION } from "@/lib/geo";
+import { haversineDistanceKm, RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { z } from "zod";
 
 const panierSearchSchema = z.object({
@@ -99,6 +99,14 @@ function PanierPage() {
       profile.lat != null && profile.lng != null
         ? haversineDistanceKm(RESTAURANT_LOCATION, { lat: profile.lat, lng: profile.lng })
         : null;
+    // Blocage zone de livraison : au-delà du rayon, on empêche l'envoi de la
+    // commande avec un message clair (l'adresse reste enregistrable côté compte).
+    if (distanceKm != null && distanceKm > DELIVERY_RADIUS_KM) {
+      setSubmitting(false);
+      return toast.error(
+        `Cette adresse est hors de notre zone de livraison (rayon ${DELIVERY_RADIUS_KM} km). Choisissez une adresse plus proche du restaurant.`,
+      );
+    }
     const insertPayload = {
       user_id: uid,
       customer_name: profile.full_name,

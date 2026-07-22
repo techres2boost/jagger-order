@@ -19,11 +19,11 @@ export const Route = createFileRoute("/_authenticated/panier")({
   component: PanierPage,
 });
 
-function formatCartName(itemId: string, name: string, categoryId: string | undefined) {
-  if (!categoryId) return name;
-  if (categoryId === "formules" || categoryId === "entrees") return name;
-  const label = CATEGORIES.find((c) => c.id === categoryId)?.label ?? categoryId;
-  return `${label} ${name}`;
+function formatCartName(itemId: string, name: string, categoryName: string | undefined) {
+  if (!categoryName) return name;
+  const lower = categoryName.toLowerCase();
+  if (lower.startsWith("formule") || lower.startsWith("entrée") || lower.startsWith("entree")) return name;
+  return `${categoryName} ${name}`;
 }
 
 function formatCartOptions(options: CartOptionSelection[] | undefined) {

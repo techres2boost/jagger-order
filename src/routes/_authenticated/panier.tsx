@@ -19,11 +19,10 @@ export const Route = createFileRoute("/_authenticated/panier")({
   component: PanierPage,
 });
 
-function formatCartName(itemId: string, name: string) {
-  const item = MENU.find((m) => m.id === itemId);
-  if (!item) return name;
-  if (item.category === "formules" || item.category === "entrees") return name;
-  const label = CATEGORIES.find((c) => c.id === item.category)?.label ?? item.category;
+function formatCartName(itemId: string, name: string, categoryId: string | undefined) {
+  if (!categoryId) return name;
+  if (categoryId === "formules" || categoryId === "entrees") return name;
+  const label = CATEGORIES.find((c) => c.id === categoryId)?.label ?? categoryId;
   return `${label} ${name}`;
 }
 

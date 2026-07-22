@@ -228,12 +228,6 @@ function PanierPage() {
         {lines.length === 0 ? (
           <div className="rounded-[28px] border border-black/5 bg-[#F1F2F4] p-10 text-center">
             <p className="text-sm text-black/60">Votre panier est vide.</p>
-            <Link
-              to="/"
-              className="press mt-5 inline-block h-11 rounded-full bg-[#E11D2E] px-6 pt-3 font-bold text-white shadow-lg hover:bg-[#B22222]"
-            >
-              Voir le menu
-            </Link>
           </div>
         ) : (
           <div className="space-y-5">
@@ -396,9 +390,16 @@ function PanierPage() {
         )}
       </main>
 
-      {lines.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/5 bg-white/95 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
-          <div className="mx-auto max-w-2xl">
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-black/5 bg-white/95 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
+        <div className="mx-auto max-w-2xl">
+          {lines.length === 0 ? (
+            <Link
+              to="/"
+              className="press flex h-14 w-full items-center justify-center rounded-full bg-[#E11D2E] text-base font-black text-white shadow-lg transition-colors hover:bg-[#B22222]"
+            >
+              Voir le menu
+            </Link>
+          ) : (
             <button
               disabled={!canSubmit}
               onClick={confirm}
@@ -410,9 +411,9 @@ function PanierPage() {
                   ? "Adresse hors zone"
                   : `Confirmer la commande · ${fmt(total)} TND`}
             </button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

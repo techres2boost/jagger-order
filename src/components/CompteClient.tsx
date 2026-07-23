@@ -131,13 +131,20 @@ export function CompteClient() {
     if (!profile.full_name || profile.full_name.trim().length < 2)
       return toast.error("Nom invalide");
     setLoading(true);
-    const row = { full_name: profile.full_name.trim(), phone: profile.phone ?? null };
+    // Téléphone vidé => null (reste hors de l'index unique partiel).
+    const row = { full_name: profile.full_name.trim(), phone: profile.phone?.trim() || null };
     const { error } = await supabase
       .from("profiles")
       .upsert({ id: user.id, ...row } as any);
 
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      // Violation d'unicité du téléphone (index profiles_phone_unique).
+      if (error.code === "23505" || /profiles_phone_unique|phone/i.test(error.message)) {
+        return toast.error("Ce numéro de téléphone est déjà utilisé par un autre compte.");
+      }
+      return toast.error(error.message);
+    }
     toast.success("Profil mis à jour");
     setEditing(false);
   }

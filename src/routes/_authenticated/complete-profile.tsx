@@ -111,7 +111,13 @@ function CompleteProfilePage() {
       .update({ full_name: name.trim(), phone: phone.trim() || null } as never)
       .eq("id", data.user.id);
     setSavingProfile(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      // Violation d'unicité du téléphone (index profiles_phone_unique).
+      if (error.code === "23505" || /profiles_phone_unique|phone/i.test(error.message)) {
+        return toast.error("Ce numéro de téléphone est déjà utilisé par un autre compte.");
+      }
+      return toast.error(error.message);
+    }
     toast.success("Profil enregistré");
     // « Enregistrer » sauvegarde uniquement le profil, puis renvoie vers la
     // destination (le panier le cas échéant). La commande n'est PAS créée ici :

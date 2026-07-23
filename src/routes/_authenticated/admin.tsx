@@ -410,7 +410,7 @@ function AdminPage() {
       return;
     }
     toast.success("Commande prête — recherche d'un livreur…");
-    const { error: rpcError } = await supabase.rpc("admin_process_assignments");
+    const { error: rpcError } = await (supabase as any).rpc("admin_process_assignments");
     if (rpcError) {
       // Non bloquant : le cron réessaiera de toute façon.
       console.warn("admin_process_assignments:", rpcError.message);

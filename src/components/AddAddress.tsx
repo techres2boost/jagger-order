@@ -135,12 +135,18 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
+  // True quand l'URL signée existante n'arrive pas à charger (bucket vide,
+  // policy, projet changé…). On bascule alors sur l'état "Ajouter/Changer".
+  const [previewBroken, setPreviewBroken] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   const geocodedRef = useRef(false);
 
-  // Miniature de la photo existante (édition) via URL signée.
+  // Miniature de la photo existante (édition) via URL signée fraîche à chaque
+  // ouverture du formulaire (le composant est re-monté par le parent).
   useEffect(() => {
     let revoked = false;
+    setPreviewBroken(false);
     if (editing?.photo_url) {
       signAddressPhoto(editing.photo_url).then((url) => {
         if (!revoked && url) setPhotoPreview(url);
@@ -162,14 +168,20 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
     }
     setPhotoError(null);
     setRemovePhoto(false);
+    setPreviewBroken(false);
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
+  }
+
+  function openPhotoPicker() {
+    photoInputRef.current?.click();
   }
 
   function clearPhoto() {
     setPhotoFile(null);
     setPhotoPreview(null);
     setPhotoError(null);
+    setPreviewBroken(false);
     setRemovePhoto(true);
   }
 

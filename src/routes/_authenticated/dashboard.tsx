@@ -48,6 +48,7 @@ interface OrderRow {
   refusal_reason?: string | null;
   total: number;
   address?: string | null;
+  city?: string | null;
 }
 
 interface ItemRow {
@@ -89,6 +90,19 @@ function DashboardPage() {
   const [endOpen, setEndOpen] = useState(false);
 
   const periodValid = !!startDate && !!endDate && endDate >= startDate;
+
+  // Raccourcis de période : pré-remplissent start/end utilisés par l'export.
+  // Les heures sont normalisées par exportExcel (00:00:00 → 23:59:59).
+  function setQuickRange(kind: "today" | "month" | "year") {
+    const now = new Date();
+    const end = new Date(now);
+    let start: Date;
+    if (kind === "today") start = new Date(now);
+    else if (kind === "month") start = new Date(now.getFullYear(), now.getMonth(), 1);
+    else start = new Date(now.getFullYear(), 0, 1);
+    setStartDate(start);
+    setEndDate(end);
+  }
 
   useEffect(() => {
     (async () => {
@@ -615,9 +629,12 @@ function DashboardPage() {
                 order.status,
                 acceptSeconds,
                 order.address ?? "",
+                // Ville issue de l'adresse liée à la commande (orders.city).
+                // Vide si absente : aucune valeur inventée.
+                order.city ?? "",
               ];
             })
-          : [["Aucune donnée sur cette période", "", "", "", "", "", "", ""]];
+          : [["Aucune donnée sur cette période", "", "", "", "", "", "", "", ""]];
 
       const biggestOrder =
         periodOrders.length > 0
@@ -670,7 +687,7 @@ function DashboardPage() {
       const sheets = [
         {
           name: "Historique des commandes",
-          headers: ["ID commande", "Date", "Heure", "Items", "Montant total", "Statut", "Temps d'acceptation (s)", "Adresse de livraison"],
+          headers: ["ID commande", "Date", "Heure", "Items", "Montant total", "Statut", "Temps d'acceptation (s)", "Adresse de livraison", "Ville"],
           rows: historyRows,
         },
         { name: "Top plats vendus", headers: ["Plat", "Quantité vendue"], rows: topPlatsRows },
@@ -734,6 +751,19 @@ function DashboardPage() {
       </header>
 
       <main className="mx-auto max-w-4xl space-y-4 px-4 py-5">
+        {/* Raccourcis de période (en plus du calendrier personnalisé ci-dessous) */}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setQuickRange("today")}>
+            Aujourd'hui
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setQuickRange("month")}>
+            Ce mois-ci
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setQuickRange("year")}>
+            Cette année
+          </Button>
+        </div>
+
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center">
           <Popover open={startOpen} onOpenChange={setStartOpen}>
             <PopoverTrigger asChild>

@@ -258,8 +258,8 @@ function AdminPage() {
       const max = parseFloat(appliedAmount.max);
       if (!Number.isNaN(max)) query = query.lte("total", max);
       if (clientFilter !== "all") query = query.eq("user_id", clientFilter);
-      if (addressFilter !== "all") query = query.eq("address", addressFilter);
-      if (cityFilter !== "all") query = query.eq("city", cityFilter);
+      if (addressFilter !== "all") query = (query as any).eq("address", addressFilter);
+      if (cityFilter !== "all") query = (query as any).eq("city", cityFilter);
       const { data, error } = await query;
       if (!cancelled && !error) setHistoryRows((data as OrderRow[]) ?? []);
     })();

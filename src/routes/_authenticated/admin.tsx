@@ -239,7 +239,7 @@ function AdminPage() {
   // Options des filtres (clients/villes/adresses) via RPC admin, chargées une fois.
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.rpc("admin_order_filters");
+      const { data, error } = await (supabase as any).rpc("admin_order_filters");
       if (!error && data) setFilterOptions(data as AdminFilterOptions);
     })();
   }, []);
@@ -258,8 +258,8 @@ function AdminPage() {
       const max = parseFloat(appliedAmount.max);
       if (!Number.isNaN(max)) query = query.lte("total", max);
       if (clientFilter !== "all") query = query.eq("user_id", clientFilter);
-      if (addressFilter !== "all") query = query.eq("address", addressFilter);
-      if (cityFilter !== "all") query = query.eq("city", cityFilter);
+      if (addressFilter !== "all") query = (query as any).eq("address", addressFilter);
+      if (cityFilter !== "all") query = (query as any).eq("city", cityFilter);
       const { data, error } = await query;
       if (!cancelled && !error) setHistoryRows((data as OrderRow[]) ?? []);
     })();
@@ -410,7 +410,7 @@ function AdminPage() {
       return;
     }
     toast.success("Commande prête — recherche d'un livreur…");
-    const { error: rpcError } = await supabase.rpc("admin_process_assignments");
+    const { error: rpcError } = await (supabase as any).rpc("admin_process_assignments");
     if (rpcError) {
       // Non bloquant : le cron réessaiera de toute façon.
       console.warn("admin_process_assignments:", rpcError.message);

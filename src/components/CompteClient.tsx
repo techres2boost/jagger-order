@@ -85,6 +85,11 @@ export function CompteClient() {
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
 
+  // Email + liaison Google (Task 3).
+  const [emailInput, setEmailInput] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [linkingGoogle, setLinkingGoogle] = useState(false);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -95,6 +100,7 @@ export function CompteClient() {
         return;
       }
       setUser(u.user);
+      setEmailInput(u.user.email ?? "");
 
       const { data: p, error: pErr } = await supabase
         .from("profiles")
@@ -131,15 +137,58 @@ export function CompteClient() {
     if (!profile.full_name || profile.full_name.trim().length < 2)
       return toast.error("Nom invalide");
     setLoading(true);
-    const row = { full_name: profile.full_name.trim(), phone: profile.phone ?? null };
+    // Téléphone vidé => null (reste hors de l'index unique partiel).
+    const row = { full_name: profile.full_name.trim(), phone: profile.phone?.trim() || null };
     const { error } = await supabase
       .from("profiles")
       .upsert({ id: user.id, ...row } as any);
 
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      // Violation d'unicité du téléphone (index profiles_phone_unique).
+      if (error.code === "23505" || /profiles_phone_unique|phone/i.test(error.message)) {
+        return toast.error("Ce numéro de téléphone est déjà utilisé par un autre compte.");
+      }
+      return toast.error(error.message);
+    }
     toast.success("Profil mis à jour");
     setEditing(false);
+  }
+
+  // Ajoute/modifie l'email du compte via le flux natif Supabase : updateUser
+  // envoie un email de confirmation, l'adresse n'est vérifiée qu'après clic.
+  async function saveEmail(e: React.FormEvent) {
+    e.preventDefault();
+    const email = emailInput.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast.error("Adresse email invalide");
+    setSavingEmail(true);
+    const { error } = await supabase.auth.updateUser({ email });
+    setSavingEmail(false);
+    if (error) {
+      const code = (error as { code?: string }).code;
+      if (code === "email_exists" || /already|registered|exist|in use|utilis/i.test(error.message)) {
+        return toast.error("Cette adresse email est déjà utilisée par un autre compte.");
+      }
+      return toast.error(error.message);
+    }
+    toast.success(
+      "Un email de confirmation vous a été envoyé. Cliquez sur le lien pour vérifier votre adresse.",
+    );
+  }
+
+  // Liaison native d'un compte Google au compte courant (linkIdentity). Redirige
+  // vers Google puis revient sur /compte ; l'identité est rattachée à l'utilisateur.
+  async function linkGoogle() {
+    setLinkingGoogle(true);
+    const { error } = await supabase.auth.linkIdentity({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/compte` },
+    });
+    if (error) {
+      setLinkingGoogle(false);
+      toast.error("Liaison Google impossible : " + error.message);
+    }
+    // Sinon le navigateur redirige vers Google (aucune navigation manuelle ici).
   }
 
   async function reloadAddresses() {
@@ -273,6 +322,58 @@ export function CompteClient() {
               </div>
             </form>
           )}
+        </section>
+
+        <section className="mt-6 rounded-xl border bg-white p-4">
+          <h2 className="text-lg font-semibold">Email & connexion</h2>
+
+          <form onSubmit={saveEmail} className="mt-4 space-y-2">
+            <label className="text-sm text-muted-foreground">Adresse email</label>
+            <Input
+              type="email"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              placeholder="vous@exemple.com"
+            />
+            {user?.email &&
+              (user.email_confirmed_at ? (
+                <p className="text-xs text-emerald-600">Email vérifié : {user.email}</p>
+              ) : (
+                <p className="text-xs text-amber-600">Email non vérifié.</p>
+              ))}
+            {user?.new_email && (
+              <p className="text-xs text-amber-600">
+                Changement en attente de confirmation : {user.new_email}
+              </p>
+            )}
+            <button
+              disabled={savingEmail}
+              className="h-10 rounded-full bg-[#B22222] px-4 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {savingEmail ? "Envoi…" : user?.email ? "Modifier l'email" : "Ajouter un email"}
+            </button>
+          </form>
+
+          <div className="mt-5 border-t pt-4">
+            <p className="text-sm text-muted-foreground">Compte Google</p>
+            {user?.identities?.some((i) => i.provider === "google") ? (
+              <p className="mt-1 text-sm font-semibold text-emerald-600">Compte Google lié</p>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={linkingGoogle}
+                  onClick={linkGoogle}
+                  className="mt-2 h-10 rounded-full border px-4 text-sm font-semibold disabled:opacity-50"
+                >
+                  {linkingGoogle ? "Redirection…" : "Lier mon compte Google"}
+                </button>
+                <p className="mt-2 text-xs text-neutral-400">
+                  Vérifiez d'abord votre email pour un rattachement automatique fiable.
+                </p>
+              </>
+            )}
+          </div>
         </section>
 
         <section className="mt-6">

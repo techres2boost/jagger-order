@@ -239,7 +239,7 @@ function AdminPage() {
   // Options des filtres (clients/villes/adresses) via RPC admin, chargées une fois.
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.rpc("admin_order_filters");
+      const { data, error } = await (supabase as any).rpc("admin_order_filters");
       if (!error && data) setFilterOptions(data as AdminFilterOptions);
     })();
   }, []);

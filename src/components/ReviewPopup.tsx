@@ -1,46 +1,43 @@
 "use client";
 
-// Feature 4 — Popup d'avis automatique après livraison.
-// Monté globalement dans le layout authentifié : dès qu'une commande du client
-// passe à `delivered` (via Realtime) et n'a pas encore d'avis, une invitation à
-// noter apparaît. Si le client n'était pas là au changement de statut, le popup
-// s'affiche à la prochaine ouverture (calcul des commandes livrées sans avis au
-// montage). Une commande déjà notée ne redéclenche jamais le popup (contrôle sur
-// l'existence d'un avis lié à order_id). Chaque commande livrée = son propre popup.
-import { useCallback, useEffect, useRef, useState } from "react";
+// Feature 4 (règle révisée) — Popup d'avis automatique après livraison.
+// Monté globalement dans le layout authentifié.
+//
+// Règles :
+//  - PAS de rattrapage : le popup ne se déclenche QUE lorsqu'une commande du
+//    client passe à `delivered` EN TEMPS RÉEL pendant que l'app est ouverte
+//    (transition old.status != 'delivered' -> new.status = 'delivered'). Les
+//    commandes déjà livrées avant l'ouverture ne sont jamais rattrapées.
+//  - "Plus tard" = définitif : on enregistre un marqueur durable
+//    (order_ratings.dismissed = true) et le popup ne réapparaît plus jamais pour
+//    cette commande.
+//  - Un avis existant (noté OU ignoré) empêche tout ré-affichage (contrôle sur
+//    l'existence d'une ligne order_ratings pour l'order_id).
+//  - On n'affiche pas le popup pendant un checkout en cours (pages panier /
+//    complétion de profil) : il reste en attente et s'affiche au retour sur un
+//    écran neutre, avec un léger délai.
+import { useEffect, useRef, useState } from "react";
+import { useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, StarOff } from "lucide-react";
 
+// Écrans de composition/validation de commande : on n'interrompt pas.
+const CHECKOUT_PREFIXES = ["/panier", "/complete-profile"];
+
 export function ReviewPopup() {
+  const location = useLocation();
+  const onCheckout = CHECKOUT_PREFIXES.some((p) => location.pathname.startsWith(p));
+
   const [uid, setUid] = useState<string | null>(null);
-  const [queue, setQueue] = useState<string[]>([]);
-  const dismissedRef = useRef<Set<string>>(new Set());
+  const [pending, setPending] = useState<string[]>([]);
+  const seenRef = useRef<Set<string>>(new Set());
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [ratingValue, setRatingValue] = useState(0);
   const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Recalcule les commandes livrées de CE client sans avis (et non écartées).
-  const refresh = useCallback(async (userId: string) => {
-    const { data: delivered } = await supabase
-      .from("orders")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "delivered");
-    const ids = ((delivered as { id: string }[] | null) ?? []).map((o) => o.id);
-    if (ids.length === 0) {
-      setQueue([]);
-      return;
-    }
-    const { data: rated } = await supabase
-      .from("order_ratings")
-      .select("order_id")
-      .in("order_id", ids);
-    const ratedSet = new Set(((rated as { order_id: string }[] | null) ?? []).map((r) => r.order_id));
-    setQueue(ids.filter((id) => !ratedSet.has(id) && !dismissedRef.current.has(id)));
-  }, []);
-
+  // Abonnement Realtime : réagit UNIQUEMENT à la transition vers `delivered`.
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     (async () => {
@@ -48,33 +45,57 @@ export function ReviewPopup() {
       const userId = data.user?.id;
       if (!userId) return;
       setUid(userId);
-      await refresh(userId);
       channel = supabase
         .channel(`review-popup-${userId}`)
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "orders", filter: `user_id=eq.${userId}` },
-          () => refresh(userId),
+          { event: "UPDATE", schema: "public", table: "orders", filter: `user_id=eq.${userId}` },
+          async (payload) => {
+            const newRow = payload.new as { id?: string; status?: string };
+            const oldRow = payload.old as { status?: string };
+            // Seulement la vraie transition -> delivered (orders a REPLICA IDENTITY
+            // FULL, donc old.status est disponible).
+            if (newRow?.status !== "delivered" || oldRow?.status === "delivered") return;
+            const orderId = newRow.id;
+            if (!orderId || seenRef.current.has(orderId)) return;
+            seenRef.current.add(orderId);
+            // Déjà noté OU déjà ignoré (marqueur durable) => on n'affiche pas.
+            const { data: existing } = await supabase
+              .from("order_ratings")
+              .select("order_id")
+              .eq("order_id", orderId)
+              .maybeSingle();
+            if (existing) return;
+            setPending((q) => (q.includes(orderId) ? q : [...q, orderId]));
+          },
         )
         .subscribe();
     })();
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [refresh]);
+  }, []);
 
-  // Sélectionne la prochaine commande à noter dès qu'aucun popup n'est ouvert.
+  // Promotion d'une commande en attente vers l'affichage : pas pendant un
+  // checkout, et après un court délai pour éviter d'apparaître en plein geste.
   useEffect(() => {
-    if (activeOrderId) return;
-    const next = queue.find((id) => !dismissedRef.current.has(id));
-    if (next) {
-      setActiveOrderId(next);
+    if (activeOrderId || pending.length === 0 || onCheckout) return;
+    const t = setTimeout(() => {
+      setActiveOrderId(pending[0]);
       setRatingValue(0);
       setComment("");
-    }
-  }, [queue, activeOrderId]);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [pending, activeOrderId, onCheckout]);
 
   if (!activeOrderId) return null;
+
+  function finishActive() {
+    const id = activeOrderId;
+    setPending((q) => q.filter((x) => x !== id));
+    setActiveOrderId(null);
+    setSaving(false);
+  }
 
   async function submit() {
     if (ratingValue < 1 || ratingValue > 5) {
@@ -89,27 +110,28 @@ export function ReviewPopup() {
         user_id: uid,
         rating: ratingValue,
         comment: comment.trim() || null,
+        dismissed: false,
       } as never,
       { onConflict: "order_id" },
     );
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast.error(error.message);
       return;
     }
     toast.success("Merci pour votre note !");
-    const done = activeOrderId;
-    setQueue((q) => q.filter((id) => id !== done));
-    setActiveOrderId(null);
+    finishActive();
   }
 
-  // Fermer sans noter : écarté pour la session (réapparaîtra à la prochaine
-  // ouverture tant qu'aucun avis n'est enregistré).
-  function dismiss() {
-    if (activeOrderId) dismissedRef.current.add(activeOrderId);
-    const done = activeOrderId;
-    setQueue((q) => q.filter((id) => id !== done));
-    setActiveOrderId(null);
+  // "Plus tard" = ne plus jamais demander : marqueur durable dismissed = true.
+  async function dismiss() {
+    if (uid && activeOrderId) {
+      await supabase.from("order_ratings").upsert(
+        { order_id: activeOrderId, user_id: uid, rating: null, dismissed: true } as never,
+        { onConflict: "order_id" },
+      );
+    }
+    finishActive();
   }
 
   return (

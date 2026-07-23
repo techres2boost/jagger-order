@@ -22,10 +22,19 @@ import {
   List,
   ListChecks,
   Bike,
+  RotateCcw,
 } from "lucide-react";
 import { EnableNotifications } from "@/components/EnableNotifications";
 import { toast } from "sonner";
 import { computeEstimatedTimes } from "@/lib/order-timing";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 type RefusalReason = "unavailable" | "busy";
 
@@ -45,27 +54,59 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
+type AdminOrderStatus =
+  | "pending"
+  | "accepted"
+  | "ready"
+  | "delivering"
+  | "delivered"
+  | "refused"
+  | "expired"
+  | "cancelled";
+
 interface OrderRow {
   id: string;
+  user_id?: string | null;
   customer_name: string;
   phone: string;
   total: number;
-  status:
-    | "pending"
-    | "accepted"
-    | "ready"
-    | "delivering"
-    | "delivered"
-    | "refused"
-    | "expired"
-    | "cancelled";
+  status: AdminOrderStatus;
   expires_at: string;
   created_at: string;
   address?: string | null;
+  city?: string | null;
   special_instructions?: string | null;
   distance_km?: number | null;
   assigned_livreur_id?: string | null;
 }
+
+// Statuts non-« pending » = onglet Historique (côté admin).
+const ADMIN_HISTORY_STATUSES: AdminOrderStatus[] = [
+  "accepted",
+  "ready",
+  "delivering",
+  "delivered",
+  "refused",
+  "expired",
+  "cancelled",
+];
+
+const ADMIN_STATUS_LABEL: Record<AdminOrderStatus, string> = {
+  pending: "En attente",
+  accepted: "Acceptée",
+  ready: "Prête",
+  delivering: "En livraison",
+  delivered: "Livrée",
+  refused: "Refusée",
+  expired: "Expirée",
+  cancelled: "Annulée",
+};
+
+type AdminFilterOptions = {
+  clients: Array<{ user_id: string; customer_name: string }>;
+  cities: string[];
+  addresses: string[];
+};
 interface LivreurRow {
   id: string;
   nom: string;
@@ -96,6 +137,23 @@ function AdminPage() {
   const [livreurs, setLivreurs] = useState<LivreurRow[]>([]);
   const [now, setNow] = useState(Date.now());
   const [tab, setTab] = useState<"pending" | "history">("pending");
+  // --- Filtres historique (Feature 1) : tous appliqués côté serveur ---
+  const [statusFilter, setStatusFilter] = useState<AdminOrderStatus | "all">("all");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+  const [appliedAmount, setAppliedAmount] = useState<{ min: string; max: string }>({
+    min: "",
+    max: "",
+  });
+  const [clientFilter, setClientFilter] = useState<string>("all");
+  const [addressFilter, setAddressFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
+  const [historyRows, setHistoryRows] = useState<OrderRow[]>([]);
+  const [filterOptions, setFilterOptions] = useState<AdminFilterOptions>({
+    clients: [],
+    cities: [],
+    addresses: [],
+  });
   const [refusingId, setRefusingId] = useState<string | null>(null);
   const [refuseReason, setRefuseReason] = useState<RefusalReason>("unavailable");
   const [readyOrderId, setReadyOrderId] = useState<string | null>(null);
@@ -172,6 +230,70 @@ function AdminPage() {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  // Débounce des montants pour ne pas requêter à chaque frappe.
+  useEffect(() => {
+    const t = setTimeout(() => setAppliedAmount({ min: minAmount, max: maxAmount }), 400);
+    return () => clearTimeout(t);
+  }, [minAmount, maxAmount]);
+
+  // Options des filtres (clients/villes/adresses) via RPC admin, chargées une fois.
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.rpc("admin_order_filters");
+      if (!error && data) setFilterOptions(data as AdminFilterOptions);
+    })();
+  }, []);
+
+  // Historique filtré CÔTÉ SERVEUR (statut + montant + client + adresse + ville).
+  // Se recharge quand un filtre change, ou quand `orders` change (Realtime/poll).
+  useEffect(() => {
+    if (tab !== "history" || isNestedAdminRoute) return;
+    let cancelled = false;
+    (async () => {
+      let query = supabase.from("orders").select("*").order("created_at", { ascending: false });
+      if (statusFilter === "all") query = query.neq("status", "pending");
+      else query = query.eq("status", statusFilter);
+      const min = parseFloat(appliedAmount.min);
+      if (!Number.isNaN(min)) query = query.gte("total", min);
+      const max = parseFloat(appliedAmount.max);
+      if (!Number.isNaN(max)) query = query.lte("total", max);
+      if (clientFilter !== "all") query = query.eq("user_id", clientFilter);
+      if (addressFilter !== "all") query = query.eq("address", addressFilter);
+      if (cityFilter !== "all") query = query.eq("city", cityFilter);
+      const { data, error } = await query;
+      if (!cancelled && !error) setHistoryRows((data as OrderRow[]) ?? []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    tab,
+    isNestedAdminRoute,
+    statusFilter,
+    appliedAmount,
+    clientFilter,
+    addressFilter,
+    cityFilter,
+    orders,
+  ]);
+
+  const filtersActive =
+    statusFilter !== "all" ||
+    appliedAmount.min !== "" ||
+    appliedAmount.max !== "" ||
+    clientFilter !== "all" ||
+    addressFilter !== "all" ||
+    cityFilter !== "all";
+
+  function resetHistoryFilters() {
+    setStatusFilter("all");
+    setMinAmount("");
+    setMaxAmount("");
+    setClientFilter("all");
+    setAddressFilter("all");
+    setCityFilter("all");
+  }
 
   // Pending count derived below via filter, but we compute here too for effects.
   const pendingCount = orders.filter((o) => o.status === "pending").length;
@@ -348,8 +470,9 @@ function AdminPage() {
   }
 
   const pending = orders.filter((o) => o.status === "pending");
-  const history = orders.filter((o) => o.status !== "pending");
-  const list = tab === "pending" ? pending : history;
+  // L'historique provient d'une requête filtrée côté serveur (historyRows),
+  // pas d'un filtrage en mémoire, pour rester performant si la table grossit.
+  const list = tab === "pending" ? pending : historyRows;
 
   return (
     <div className="min-h-screen bg-background pb-10">
@@ -443,9 +566,117 @@ function AdminPage() {
         <Outlet />
       ) : (
         <main className="mx-auto max-w-4xl space-y-3 px-4 py-4">
+          {tab === "history" && (
+            <div className="flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground">Statut</label>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(v) => setStatusFilter(v as AdminOrderStatus | "all")}
+                >
+                  <SelectTrigger className="h-10 w-40">
+                    <SelectValue placeholder="Tous" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    {ADMIN_HISTORY_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {ADMIN_STATUS_LABEL[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground">Client</label>
+                <Select value={clientFilter} onValueChange={setClientFilter}>
+                  <SelectTrigger className="h-10 w-44">
+                    <SelectValue placeholder="Tous" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les clients</SelectItem>
+                    {filterOptions.clients.map((c) => (
+                      <SelectItem key={c.user_id} value={c.user_id}>
+                        {c.customer_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground">Ville</label>
+                <Select value={cityFilter} onValueChange={setCityFilter}>
+                  <SelectTrigger className="h-10 w-40">
+                    <SelectValue placeholder="Toutes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les villes</SelectItem>
+                    {filterOptions.cities.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground">Adresse</label>
+                <Select value={addressFilter} onValueChange={setAddressFilter}>
+                  <SelectTrigger className="h-10 w-56">
+                    <SelectValue placeholder="Toutes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les adresses</SelectItem>
+                    {filterOptions.addresses.map((a) => (
+                      <SelectItem key={a} value={a}>
+                        {a}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground">Montant min</label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(e.target.value)}
+                  placeholder="0"
+                  className="h-10 w-24"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground">Montant max</label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                  placeholder="—"
+                  className="h-10 w-24"
+                />
+              </div>
+              {filtersActive && (
+                <button
+                  type="button"
+                  onClick={resetHistoryFilters}
+                  className="inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-bold"
+                >
+                  <RotateCcw className="h-4 w-4" /> Réinitialiser
+                </button>
+              )}
+            </div>
+          )}
           {list.length === 0 && (
             <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
-              Aucune commande {tab === "pending" ? "en attente" : "traitée"}.
+              {tab === "pending"
+                ? "Aucune commande en attente."
+                : filtersActive
+                  ? "Aucune commande ne correspond à ces filtres."
+                  : "Aucune commande traitée."}
             </div>
           )}
           {list.map((o) => {

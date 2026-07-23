@@ -1,20 +1,26 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   ArrowRight,
-  CheckCircle2,
   Clock,
-  PackageCheck,
+  RotateCcw,
   ShoppingBag,
   Star,
   StarOff,
-  XCircle,
 } from "lucide-react";
 import { fmt } from "@/lib/format";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { OrderProgressRing, STEPS } from "@/components/OrderProgressRing";
 import { useOrderCountdown } from "@/hooks/use-order-countdown";
 
@@ -92,11 +98,9 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
   cancelled: "bg-muted text-muted-foreground",
 };
 
-const isCurrentStatus = (status: OrderStatus) =>
-  status === "pending" || status === "accepted" || status === "ready" || status === "delivering";
-
-const isHistoryStatus = (status: OrderStatus) =>
-  status === "delivered" || status === "refused" || status === "expired" || status === "cancelled";
+// Statuts regroupés par onglet. Le filtre serveur s'appuie dessus (voir loadOrders).
+const CURRENT_STATUSES: OrderStatus[] = ["pending", "accepted", "ready", "delivering"];
+const HISTORY_STATUSES: OrderStatus[] = ["delivered", "refused", "expired", "cancelled"];
 
 function CommandesPage() {
   const navigate = useNavigate();
@@ -112,16 +116,48 @@ function CommandesPage() {
   const [ratingComment, setRatingComment] = useState("");
   const [savingRating, setSavingRating] = useState(false);
 
+  // --- Filtres (Feature 1) : statut + montant min/max, appliqués côté serveur ---
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+  // Montant appliqué (débounce) pour éviter une requête à chaque frappe.
+  const [appliedAmount, setAppliedAmount] = useState<{ min: string; max: string }>({
+    min: "",
+    max: "",
+  });
+  // Incrémenté par le Realtime pour redéclencher un rechargement filtré.
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const filtersActive =
+    statusFilter !== "all" || appliedAmount.min !== "" || appliedAmount.max !== "";
+
+  function resetFilters() {
+    setStatusFilter("all");
+    setMinAmount("");
+    setMaxAmount("");
+  }
+
+  useEffect(() => {
+    const t = setTimeout(() => setAppliedAmount({ min: minAmount, max: maxAmount }), 400);
+    return () => clearTimeout(t);
+  }, [minAmount, maxAmount]);
+
   useEffect(() => {
     let isMounted = true;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
 
     async function loadOrders() {
       setLoading(true);
-      const { data: ordersData, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const group = tab === "current" ? CURRENT_STATUSES : HISTORY_STATUSES;
+      let query = supabase.from("orders").select("*").order("created_at", { ascending: false });
+      // Statut : soit un statut précis, soit l'ensemble des statuts de l'onglet.
+      if (statusFilter === "all") query = query.in("status", group);
+      else query = query.eq("status", statusFilter);
+      // Montant : bornes optionnelles sur le total de la commande.
+      const min = parseFloat(appliedAmount.min);
+      if (!Number.isNaN(min)) query = query.gte("total", min);
+      const max = parseFloat(appliedAmount.max);
+      if (!Number.isNaN(max)) query = query.lte("total", max);
+      const { data: ordersData, error } = await query;
       if (error) {
         toast.error(error.message);
         if (isMounted) setLoading(false);
@@ -204,42 +240,34 @@ function CommandesPage() {
 
     loadOrders();
 
-    async function subscribeToOrders() {
+    return () => {
+      isMounted = false;
+    };
+  }, [tab, statusFilter, appliedAmount, refreshKey]);
+
+  // Realtime : un changement sur les commandes du client redéclenche le
+  // rechargement filtré (via refreshKey), en conservant les filtres actifs.
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    (async () => {
       const user = await supabase.auth.getUser();
       const uid = user.data.user?.id;
       if (!uid) return;
-
       channel = supabase
         .channel(`orders-user-${uid}`)
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "orders", filter: `user_id=eq.${uid}` },
-          () => {
-            loadOrders();
-          },
+          () => setRefreshKey((k) => k + 1),
         )
         .subscribe();
-    }
-
-    subscribeToOrders();
-
+    })();
     return () => {
-      isMounted = false;
       if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
-  const currentOrders = useMemo(
-    () => orders.filter((order) => isCurrentStatus(order.status)),
-    [orders],
-  );
-
-  const historyOrders = useMemo(
-    () => orders.filter((order) => isHistoryStatus(order.status)),
-    [orders],
-  );
-
-  const selectedOrders = tab === "current" ? currentOrders : historyOrders;
+  const selectedOrders = orders;
 
   const openRating = (orderId: string) => {
     setRatingOrderId(orderId);
@@ -341,18 +369,82 @@ function CommandesPage() {
       </header>
 
       <main className="mx-auto max-w-4xl space-y-4 px-4 py-4">
-        <Tabs value={tab} onValueChange={(value) => setTab(value as "current" | "history")}>
+        <Tabs
+          value={tab}
+          onValueChange={(value) => {
+            setTab(value as "current" | "history");
+            // Les statuts diffèrent d'un onglet à l'autre : on réinitialise le
+            // filtre statut pour éviter une sélection hors-onglet.
+            setStatusFilter("all");
+          }}
+        >
           <TabsList className="gap-2">
             <TabsTrigger value="current">En cours</TabsTrigger>
             <TabsTrigger value="history">Historique</TabsTrigger>
           </TabsList>
           <TabsContent value="current">
-            <SectionHeader count={currentOrders.length} label="En cours" />
+            <SectionHeader count={orders.length} label="En cours" />
           </TabsContent>
           <TabsContent value="history">
-            <SectionHeader count={historyOrders.length} label="Historique" />
+            <SectionHeader count={orders.length} label="Historique" />
           </TabsContent>
         </Tabs>
+
+        {/* Filtres : statut (dropdown) + montant min/max, combinables, réinitialisables */}
+        <div className="flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Statut</label>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as OrderStatus | "all")}
+            >
+              <SelectTrigger className="h-10 w-44">
+                <SelectValue placeholder="Tous les statuts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                {(tab === "current" ? CURRENT_STATUSES : HISTORY_STATUSES).map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {STATUS_LABEL[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Montant min</label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              value={minAmount}
+              onChange={(e) => setMinAmount(e.target.value)}
+              placeholder="0"
+              className="h-10 w-28"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Montant max</label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              value={maxAmount}
+              onChange={(e) => setMaxAmount(e.target.value)}
+              placeholder="—"
+              className="h-10 w-28"
+            />
+          </div>
+          {filtersActive && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="press inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold"
+            >
+              <RotateCcw className="h-4 w-4" /> Réinitialiser
+            </button>
+          )}
+        </div>
 
         {loading ? (
           <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
@@ -360,9 +452,11 @@ function CommandesPage() {
           </div>
         ) : selectedOrders.length === 0 ? (
           <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
-            {tab === "current"
-              ? "Aucune commande en cours. Passez une nouvelle commande pour commencer."
-              : "Aucun historique de commande pour le moment."}
+            {filtersActive
+              ? "Aucune commande ne correspond à ces filtres."
+              : tab === "current"
+                ? "Aucune commande en cours. Passez une nouvelle commande pour commencer."
+                : "Aucun historique de commande pour le moment."}
           </div>
         ) : (
           <div className="space-y-4">
@@ -389,7 +483,7 @@ function CommandesPage() {
                       <div className="mt-3 text-sm text-muted-foreground">
                         {order.customer_name} · {fmt(Number(order.total))}
                       </div>
-                      {isCurrentStatus(order.status) && order.status !== "pending" && (
+                      {CURRENT_STATUSES.includes(order.status) && order.status !== "pending" && (
                         <OrderCountdownBadge order={order} />
                       )}
                     </div>

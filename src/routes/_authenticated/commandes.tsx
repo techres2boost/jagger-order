@@ -111,10 +111,6 @@ function CommandesPage() {
   const [ratings, setRatings] = useState<Record<string, OrderRatingRow>>({});
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"current" | "history">("current");
-  const [ratingOrderId, setRatingOrderId] = useState<string | null>(null);
-  const [ratingValue, setRatingValue] = useState(0);
-  const [ratingComment, setRatingComment] = useState("");
-  const [savingRating, setSavingRating] = useState(false);
 
   // --- Filtres (Feature 1) : statut + montant min/max, appliqués côté serveur ---
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
@@ -268,63 +264,6 @@ function CommandesPage() {
   }, []);
 
   const selectedOrders = orders;
-
-  const openRating = (orderId: string) => {
-    setRatingOrderId(orderId);
-    setRatingValue(ratings[orderId]?.rating ?? 0);
-    setRatingComment(ratings[orderId]?.comment ?? "");
-  };
-
-  const closeRating = () => {
-    setRatingOrderId(null);
-    setRatingValue(0);
-    setRatingComment("");
-    setSavingRating(false);
-  };
-
-  async function submitRating(orderId: string) {
-    if (ratingValue < 1 || ratingValue > 5) {
-      toast.error("Choisissez une note entre 1 et 5 étoiles.");
-      return;
-    }
-
-    setSavingRating(true);
-    const user = await supabase.auth.getUser();
-    const uid = user.data.user?.id;
-    if (!uid) {
-      toast.error("Utilisateur introuvable.");
-      setSavingRating(false);
-      return;
-    }
-
-    const { data, error } = await supabase.from("order_ratings").upsert(
-      {
-        order_id: orderId,
-        user_id: uid,
-        rating: ratingValue,
-        comment: ratingComment.trim() || null,
-      } as never,
-      { onConflict: "order_id" },
-    );
-
-    if (error) {
-      toast.error(error.message);
-      setSavingRating(false);
-      return;
-    }
-
-    setRatings((prev) => ({
-      ...prev,
-      [orderId]: {
-        id: (data as OrderRatingRow[] | null)?.[0]?.id ?? prev[orderId]?.id ?? orderId,
-        order_id: orderId,
-        rating: ratingValue,
-        comment: ratingComment.trim() || null,
-      },
-    }));
-    toast.success("Merci pour votre note !");
-    closeRating();
-  }
 
   function addOrderToCart(order: OrderRow) {
     const orderItems = items[order.id] ?? [];
@@ -542,6 +481,8 @@ function CommandesPage() {
                         </div>
                       ))}
                     </div>
+                    {/* Avis en lecture seule. La saisie/modification se fait
+                        uniquement via le popup automatique post-livraison. */}
                     {rating ? (
                       <div className="rounded-2xl border border-brand/30 bg-brand/5 p-3 text-sm">
                         <p className="font-semibold">Votre note</p>
@@ -557,23 +498,8 @@ function CommandesPage() {
                         {rating.comment ? (
                           <p className="mt-2 text-xs text-muted-foreground">{rating.comment}</p>
                         ) : null}
-                        <button
-                          type="button"
-                          onClick={() => openRating(order.id)}
-                          className="mt-3 inline-flex h-10 items-center rounded-full border px-3 text-sm font-semibold"
-                        >
-                          Modifier la note
-                        </button>
                       </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => openRating(order.id)}
-                        className="mt-2 inline-flex h-11 items-center gap-2 rounded-full border border-brand text-brand px-4 text-sm font-semibold"
-                      >
-                        <Star className="h-4 w-4" /> Évaluer cette commande
-                      </button>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               );
@@ -581,75 +507,6 @@ function CommandesPage() {
           </div>
         )}
       </main>
-
-      {ratingOrderId ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-card p-6 shadow-xl">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-black">Évaluer la commande</h2>
-                <p className="text-sm text-muted-foreground">Donnez une note pour améliorer BOX.</p>
-              </div>
-              <button
-                type="button"
-                onClick={closeRating}
-                className="text-sm font-semibold text-muted-foreground"
-              >
-                Fermer
-              </button>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center gap-2">
-                {Array.from({ length: 5 }, (_, index) => {
-                  const value = index + 1;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setRatingValue(value)}
-                      className={`rounded-full p-2 transition ${
-                        ratingValue >= value
-                          ? "bg-[#E11D2E] text-white"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      <Star className="h-5 w-5" />
-                    </button>
-                  );
-                })}
-              </div>
-
-              <label className="block text-sm font-semibold">Commentaire (optionnel)</label>
-              <textarea
-                value={ratingComment}
-                onChange={(event) => setRatingComment(event.target.value)}
-                rows={4}
-                className="w-full rounded-2xl border bg-input p-3 text-sm"
-                placeholder="Ce que vous avez aimé ou ce qu'on peut améliorer..."
-              />
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={closeRating}
-                  className="flex-1 rounded-full border px-4 py-3 text-sm font-semibold"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={() => submitRating(ratingOrderId)}
-                  disabled={savingRating}
-                  className="flex-1 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-brand-foreground disabled:opacity-50"
-                >
-                  {savingRating ? "Enregistrement…" : "Enregistrer"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

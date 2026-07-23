@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { ReviewPopup } from "@/components/ReviewPopup";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -11,5 +12,12 @@ export const Route = createFileRoute("/_authenticated")({
     }
     return { user: data.user };
   },
-  component: () => <Outlet />,
+  component: () => (
+    <>
+      <Outlet />
+      {/* Popup d'avis automatique post-livraison (Feature 4), disponible sur
+          toutes les pages authentifiées. */}
+      <ReviewPopup />
+    </>
+  ),
 });

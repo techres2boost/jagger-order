@@ -78,6 +78,8 @@ interface OrderRow {
   special_instructions?: string | null;
   distance_km?: number | null;
   assigned_livreur_id?: string | null;
+  pending_assignment?: boolean | null;
+  assignment_expires_at?: string | null;
 }
 
 // Statuts non-« pending » = onglet Historique (côté admin).
@@ -156,9 +158,6 @@ function AdminPage() {
   });
   const [refusingId, setRefusingId] = useState<string | null>(null);
   const [refuseReason, setRefuseReason] = useState<RefusalReason>("unavailable");
-  const [readyOrderId, setReadyOrderId] = useState<string | null>(null);
-  const [selectedLivreurId, setSelectedLivreurId] = useState<string | null>(null);
-  const [assigningLivreur, setAssigningLivreur] = useState(false);
   const [muted, setMuted] = useState(false);
   const prevPendingCountRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -395,44 +394,27 @@ function AdminPage() {
     else toast.success("Commande acceptée");
   }
 
-  function openReadyModal(id: string) {
-    setSelectedLivreurId(null);
-    setReadyOrderId(id);
-  }
-
-  async function confirmAssignLivreur() {
-    if (!readyOrderId || !selectedLivreurId) return;
-    setAssigningLivreur(true);
+  // Feature 2 : marquer prête = passer le statut à `ready`. L'assignation d'un
+  // livreur est ENSUITE automatique (worker serveur : proposition 2 min, timeout,
+  // file d'attente). On déclenche une tentative immédiate via l'RPC admin ; le
+  // cron couvre les timeouts et les reprises.
+  async function markReady(id: string) {
     const readyAt = new Date().toISOString();
-    const { error: readyError } = await supabase
+    const { error } = await supabase
       .from("orders")
-      .update({
-        status: "ready",
-        ready_at: readyAt,
-        assigned_livreur_id: selectedLivreurId,
-      } as never)
-      .eq("id", readyOrderId)
+      .update({ status: "ready", ready_at: readyAt } as never)
+      .eq("id", id)
       .eq("status", "accepted");
-    if (readyError) {
-      setAssigningLivreur(false);
-      toast.error(readyError.message);
+    if (error) {
+      toast.error(error.message);
       return;
     }
-    // La transition ready -> delivering est immédiate une fois le livreur assigné.
-    const deliveringAt = new Date().toISOString();
-    const { error: deliveringError } = await supabase
-      .from("orders")
-      .update({ status: "delivering", delivering_at: deliveringAt } as never)
-      .eq("id", readyOrderId)
-      .eq("status", "ready");
-    setAssigningLivreur(false);
-    if (deliveringError) {
-      toast.error(deliveringError.message);
-      return;
+    toast.success("Commande prête — recherche d'un livreur…");
+    const { error: rpcError } = await supabase.rpc("admin_process_assignments");
+    if (rpcError) {
+      // Non bloquant : le cron réessaiera de toute façon.
+      console.warn("admin_process_assignments:", rpcError.message);
     }
-    toast.success("Commande en livraison");
-    setReadyOrderId(null);
-    setSelectedLivreurId(null);
   }
 
   async function markDelivered(id: string) {
@@ -473,6 +455,10 @@ function AdminPage() {
   // L'historique provient d'une requête filtrée côté serveur (historyRows),
   // pas d'un filtrage en mémoire, pour rester performant si la table grossit.
   const list = tab === "pending" ? pending : historyRows;
+
+  // Feature 2 : commandes prêtes sans livreur (file d'attente) + noms des livreurs.
+  const queuedOrders = orders.filter((o) => o.pending_assignment);
+  const livreurNameById = Object.fromEntries(livreurs.map((l) => [l.id, l.nom]));
 
   return (
     <div className="min-h-screen bg-background pb-10">
@@ -566,6 +552,28 @@ function AdminPage() {
         <Outlet />
       ) : (
         <main className="mx-auto max-w-4xl space-y-3 px-4 py-4">
+          {/* Feature 2 : alerte fiable (fallback du push) — commandes prêtes sans
+              livreur disponible, en file d'attente jusqu'à ce qu'un livreur se libère. */}
+          {queuedOrders.length > 0 && (
+            <div className="rounded-2xl border-2 border-warning/50 bg-warning/10 p-4">
+              <div className="flex items-center gap-2 text-sm font-black text-warning">
+                <Bell className="h-4 w-4" />
+                {queuedOrders.length} commande{queuedOrders.length > 1 ? "s" : ""} en attente
+                d&apos;un livreur
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Aucun livreur disponible pour le moment. L&apos;assignation reprendra
+                automatiquement dès qu&apos;un livreur se libère.
+              </p>
+              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                {queuedOrders.map((o) => (
+                  <li key={o.id} className="font-mono">
+                    #{o.id.slice(0, 8)} — {o.customer_name} — {fmt(Number(o.total))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {tab === "history" && (
             <div className="flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-3">
               <div className="flex flex-col gap-1">
@@ -702,6 +710,22 @@ function AdminPage() {
                   <div className="text-right">
                     <div className="text-xl font-black text-brand">{fmt(Number(o.total))}</div>
                     <StatusBadge status={o.status} />
+                    {/* Feature 2 : état d'assignation du livreur (info admin). */}
+                    {o.status === "ready" && o.pending_assignment && (
+                      <div className="mt-1 text-[10px] font-bold text-warning">
+                        En attente d&apos;un livreur
+                      </div>
+                    )}
+                    {o.status === "ready" && !o.pending_assignment && o.assigned_livreur_id && (
+                      <div className="mt-1 text-[10px] font-semibold text-muted-foreground">
+                        Proposée à {livreurNameById[o.assigned_livreur_id] ?? "livreur"}
+                      </div>
+                    )}
+                    {o.status === "delivering" && o.assigned_livreur_id && (
+                      <div className="mt-1 text-[10px] font-semibold text-muted-foreground">
+                        Livreur : {livreurNameById[o.assigned_livreur_id] ?? "—"}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -771,7 +795,7 @@ function AdminPage() {
                 {o.status === "accepted" && (
                   <div className="mt-4 flex items-center justify-end">
                     <button
-                      onClick={() => openReadyModal(o.id)}
+                      onClick={() => markReady(o.id)}
                       className="flex h-10 items-center gap-1 rounded-full bg-blue-600 px-4 text-sm font-bold text-white"
                     >
                       <PackageCheck className="h-4 w-4" /> Marquer comme prête
@@ -844,79 +868,6 @@ function AdminPage() {
         </div>
       )}
 
-      {readyOrderId && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => !assigningLivreur && setReadyOrderId(null)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-black">Assigner un livreur</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Choisissez le livreur qui prendra en charge cette commande.
-            </p>
-
-            {livreurs.length === 0 ? (
-              <div className="mt-4 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                Aucun livreur actif. Créez-en un depuis la section{" "}
-                <Link to="/admin/livreurs" className="font-semibold text-brand underline">
-                  Livreurs
-                </Link>
-                .
-              </div>
-            ) : (
-              <div className="mt-4 space-y-2">
-                {livreurs.map((l) => {
-                  const busy = orders.some(
-                    (o) => o.status === "delivering" && o.assigned_livreur_id === l.id,
-                  );
-                  return (
-                    <label
-                      key={l.id}
-                      className={`flex cursor-pointer items-center justify-between rounded-xl border-2 p-3 ${selectedLivreurId === l.id ? "border-brand bg-brand/5" : "border-border"}`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="livreur"
-                          checked={selectedLivreurId === l.id}
-                          onChange={() => setSelectedLivreurId(l.id)}
-                          className="h-4 w-4 accent-brand"
-                        />
-                        <span className="text-sm font-semibold">{l.nom}</span>
-                      </span>
-                      {busy && (
-                        <span className="rounded-full bg-warning/20 px-2 py-0.5 text-[10px] font-bold text-warning">
-                          Occupé
-                        </span>
-                      )}
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="mt-5 flex gap-2">
-              <button
-                disabled={assigningLivreur}
-                onClick={() => setReadyOrderId(null)}
-                className="flex-1 rounded-full border-2 px-4 py-2 text-sm font-bold disabled:opacity-50"
-              >
-                Annuler
-              </button>
-              <button
-                disabled={!selectedLivreurId || assigningLivreur}
-                onClick={confirmAssignLivreur}
-                className="flex-1 rounded-full bg-brand px-4 py-2 text-sm font-bold text-brand-foreground disabled:opacity-50"
-              >
-                {assigningLivreur ? "…" : "Confirmer"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

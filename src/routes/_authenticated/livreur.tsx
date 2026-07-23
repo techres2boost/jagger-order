@@ -35,6 +35,7 @@ interface OrderRow {
   lng?: number | null;
   total: number;
   assigned_livreur_id?: string | null;
+  assignment_expires_at?: string | null;
 }
 
 interface OrderItemRow {
@@ -107,6 +108,12 @@ function LivreurPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   // Miniature de la photo du logement pour la commande ouverte (aide au repérage).
   const [addressPhotoUrl, setAddressPhotoUrl] = useState<string | null>(null);
+  // Horloge pour le compte à rebours d'acceptation (2 min) des propositions.
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -156,11 +163,13 @@ function LivreurPage() {
         id,
         "AND status = 'delivering'",
       );
+      // Feature 2 : on charge les propositions (ready, en attente d'acceptation)
+      // ET les livraisons en cours (delivering) assignées à ce livreur.
       const { data: ordersData, error } = await supabase
         .from("orders")
         .select("*")
         .eq("assigned_livreur_id", id)
-        .eq("status", "delivering");
+        .in("status", ["ready", "delivering"]);
       console.log("[livreur] résultat orders:", ordersData, "| error:", error);
       if (error) {
         toast.error(error.message);
@@ -217,6 +226,29 @@ function LivreurPage() {
     };
   }, []);
 
+  // Feature 2 : le livreur accepte une proposition (ready -> delivering) dans les
+  // 2 minutes. Garde-fou serveur : si la proposition a expiré / été réassignée,
+  // l'UPDATE ne matche aucune ligne et on informe le livreur.
+  async function acceptProposal(orderId: string) {
+    if (!livreurId) return;
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ status: "delivering", delivering_at: new Date().toISOString() } as never)
+      .eq("id", orderId)
+      .eq("assigned_livreur_id", livreurId)
+      .eq("status", "ready")
+      .select("id");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (!data || (data as { id: string }[]).length === 0) {
+      toast.error("Trop tard : la commande a été réattribuée.");
+      return;
+    }
+    toast.success("Commande acceptée — en livraison");
+  }
+
   async function markDelivered(orderId: string) {
     if (!livreurId) return;
     const { error } = await supabase
@@ -234,6 +266,14 @@ function LivreurPage() {
   }
 
   const selectedOrder = orders.find((o) => o.id === selectedOrderId) ?? null;
+
+  // Feature 2 : propositions à accepter (ready) vs livraisons en cours (delivering).
+  const proposals = orders.filter((o) => o.status === "ready");
+  const deliveries = orders.filter((o) => o.status === "delivering");
+  const remainingSec = (o: OrderRow) =>
+    o.assignment_expires_at
+      ? Math.max(0, Math.floor((new Date(o.assignment_expires_at).getTime() - now) / 1000))
+      : 0;
 
   // Récupère et signe la photo du logement liée à la commande ouverte (RLS :
   // le livreur assigné a le droit de lecture). Absente => rien n'est affiché.
@@ -279,28 +319,87 @@ function LivreurPage() {
             Aucune livraison assignée pour le moment.
           </div>
         ) : (
-          orders.map((order) => (
-            <button
-              key={order.id}
-              type="button"
-              onClick={() => setSelectedOrderId(order.id)}
-              className="w-full rounded-3xl border bg-card p-4 text-left shadow-sm transition hover:border-brand/40"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-mono text-sm font-bold">#{order.id.slice(0, 8)}</span>
-                <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[11px] font-bold text-blue-600">
-                  {STATUS_LABEL[order.status] ?? order.status}
-                </span>
-              </div>
-              <div className="mt-2 font-black">{order.customer_name || "Client"}</div>
-              <div className="mt-1 flex items-start gap-1 text-sm text-muted-foreground">
-                <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand" />
-                <span className="line-clamp-1 break-words">
-                  {order.address ?? "Adresse non renseignée"}
-                </span>
-              </div>
-            </button>
-          ))
+          <>
+            {/* Propositions à accepter (fallback visible du push) : compte à rebours
+                de 2 min + bouton Accepter. Passé le délai, réattribution serveur. */}
+            {proposals.map((order) => {
+              const secs = remainingSec(order);
+              const mm = Math.floor(secs / 60);
+              const ss = String(secs % 60).padStart(2, "0");
+              const expired = secs <= 0;
+              return (
+                <div
+                  key={order.id}
+                  className="w-full rounded-3xl border-2 border-brand bg-brand/5 p-4 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-sm font-bold">#{order.id.slice(0, 8)}</span>
+                    <span className="rounded-full bg-brand/20 px-2 py-0.5 text-[11px] font-bold text-brand">
+                      Nouvelle proposition
+                    </span>
+                  </div>
+                  <div className="mt-2 font-black">{order.customer_name || "Client"}</div>
+                  <div className="mt-1 flex items-start gap-1 text-sm text-muted-foreground">
+                    <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand" />
+                    <span className="line-clamp-1 break-words">
+                      {order.address ?? "Adresse non renseignée"}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="text-sm font-semibold">
+                      {expired ? (
+                        <span className="text-muted-foreground">Délai expiré…</span>
+                      ) : (
+                        <span className="tabular-nums text-brand">
+                          Temps pour accepter : {mm}:{ss}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrderId(order.id)}
+                        className="rounded-full border px-3 py-2 text-sm font-semibold"
+                      >
+                        Détails
+                      </button>
+                      <button
+                        type="button"
+                        disabled={expired}
+                        onClick={() => acceptProposal(order.id)}
+                        className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-brand-foreground disabled:opacity-50"
+                      >
+                        Accepter
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {deliveries.map((order) => (
+              <button
+                key={order.id}
+                type="button"
+                onClick={() => setSelectedOrderId(order.id)}
+                className="w-full rounded-3xl border bg-card p-4 text-left shadow-sm transition hover:border-brand/40"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-mono text-sm font-bold">#{order.id.slice(0, 8)}</span>
+                  <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[11px] font-bold text-blue-600">
+                    {STATUS_LABEL[order.status] ?? order.status}
+                  </span>
+                </div>
+                <div className="mt-2 font-black">{order.customer_name || "Client"}</div>
+                <div className="mt-1 flex items-start gap-1 text-sm text-muted-foreground">
+                  <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand" />
+                  <span className="line-clamp-1 break-words">
+                    {order.address ?? "Adresse non renseignée"}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </>
         )}
       </main>
 
@@ -396,6 +495,17 @@ function LivreurPage() {
                 {fmt(Number(selectedOrder.total))}
               </div>
             </div>
+
+            {selectedOrder.status === "ready" && (
+              <button
+                disabled={remainingSec(selectedOrder) <= 0}
+                onClick={() => acceptProposal(selectedOrder.id)}
+                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand font-bold text-brand-foreground disabled:opacity-50"
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                {remainingSec(selectedOrder) > 0 ? "Accepter la livraison" : "Délai expiré"}
+              </button>
+            )}
 
             {selectedOrder.status === "delivering" && (
               <button

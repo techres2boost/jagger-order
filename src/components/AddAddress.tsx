@@ -549,33 +549,51 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold">Photo du logement (optionnel)</label>
-              {photoPreview ? (
-                <div className="relative w-full overflow-hidden rounded-xl border">
-                  <img
-                    src={photoPreview}
-                    alt="Photo du logement"
-                    className="h-40 w-full object-cover"
-                  />
+              {/* Input file toujours monté : déclenché par "Ajouter" ou "Changer". */}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={onPickPhoto}
+                className="hidden"
+              />
+              {photoPreview && !previewBroken ? (
+                <div className="space-y-2">
+                  <div className="relative w-full overflow-hidden rounded-xl border">
+                    <img
+                      key={photoPreview}
+                      src={photoPreview}
+                      alt="Photo du logement"
+                      className="h-40 w-full object-cover"
+                      onError={() => setPreviewBroken(true)}
+                    />
+                    <button
+                      type="button"
+                      onClick={clearPhoto}
+                      className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-red-600 shadow"
+                      aria-label="Retirer la photo"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    onClick={clearPhoto}
-                    className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-red-600 shadow"
-                    aria-label="Retirer la photo"
+                    onClick={openPhotoPicker}
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-full border border-neutral-300 bg-white text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <ImagePlus className="h-4 w-4" />
+                    Changer la photo
                   </button>
                 </div>
               ) : (
-                <label className="flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed bg-neutral-50 text-sm text-neutral-500 hover:bg-neutral-100">
+                <button
+                  type="button"
+                  onClick={openPhotoPicker}
+                  className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed bg-neutral-50 text-sm text-neutral-500 hover:bg-neutral-100"
+                >
                   <ImagePlus className="h-5 w-5" />
-                  Ajouter une photo
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    onChange={onPickPhoto}
-                    className="hidden"
-                  />
-                </label>
+                  {previewBroken ? "Photo indisponible — en ajouter une" : "Ajouter une photo"}
+                </button>
               )}
               {photoError ? (
                 <p className="text-xs text-red-600">{photoError}</p>

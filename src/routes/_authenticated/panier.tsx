@@ -36,9 +36,11 @@ function PanierPage() {
   // non plus dans les colonnes héritées `profiles.lat/lng/address`. C'est cette
   // adresse — et ses coordonnées — qui doit servir au contrôle de zone.
   const [deliveryAddress, setDeliveryAddress] = useState<{
+    id: string | null;
     full_address: string;
     lat: number | null;
     lng: number | null;
+    city: string | null;
   } | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -83,22 +85,26 @@ function PanierPage() {
       // sélection que la page profil (pickPrimary).
       const { data: addrs } = await supabase
         .from("addresses" as never)
-        .select("full_address, latitude, longitude, is_default, created_at")
+        .select("id, full_address, latitude, longitude, is_default, created_at, city")
         .eq("user_id", data.user.id)
         .order("is_default", { ascending: false })
         .order("created_at", { ascending: false });
       const rows = (addrs ?? []) as unknown as Array<{
+        id: string;
         full_address: string | null;
         latitude: number | null;
         longitude: number | null;
+        city: string | null;
       }>;
       const primary = rows[0];
       setDeliveryAddress(
         primary
           ? {
+              id: primary.id,
               full_address: primary.full_address ?? "",
               lat: primary.latitude ?? null,
               lng: primary.longitude ?? null,
+              city: primary.city ?? null,
             }
           : null,
       );
@@ -140,6 +146,8 @@ function PanierPage() {
       total,
       expires_at: expires,
       address: deliveryAddress.full_address,
+      address_id: deliveryAddress.id,
+      city: deliveryAddress.city,
       lat: coords.lat,
       lng: coords.lng,
       special_instructions: specialInstructions.trim() || null,

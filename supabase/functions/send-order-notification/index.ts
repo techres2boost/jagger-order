@@ -2,10 +2,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import webpush from "npm:web-push@3.6.7";
 
-// Edge Function invoquée par le trigger Postgres `trg_order_status_notify`
-// à chaque changement de orders.status. Envoie un push aux abonnements du
-// client concerné (push_subscriptions.role = 'client'), avec le même texte
-// que celui affiché dans l'écran de suivi de commande.
+// Edge Function invoquée par le Database Webhook `notify-order-ready`
+// (supabase_functions.http_request) à chaque INSERT/UPDATE de `orders`, et
+// tolérante aux appels directs { order_id, status }. Envoie un push aux
+// abonnements du client concerné (push_subscriptions.role = 'client') avec le
+// même texte que l'écran de suivi de commande, uniquement quand le statut change.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -100,11 +101,29 @@ serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const orderId = body?.order_id as string | undefined;
-    const status = body?.status as OrderStatus | undefined;
+
+    // Supporte deux formes de payload :
+    //  - Database Webhook Supabase : { type, table, record, old_record }
+    //  - Appel direct : { order_id, status }
+    const record = (body?.record ?? null) as
+      | { id?: string; status?: OrderStatus; user_id?: string; refusal_reason?: string | null }
+      | null;
+    const oldRecord = (body?.old_record ?? null) as { status?: OrderStatus } | null;
+
+    const orderId = (record?.id ?? body?.order_id) as string | undefined;
+    const status = (record?.status ?? body?.status) as OrderStatus | undefined;
     if (!orderId || !status) {
       return new Response(JSON.stringify({ error: "order_id and status required" }), {
         status: 400,
+      });
+    }
+
+    // Le webhook se déclenche sur INSERT et sur CHAQUE UPDATE. On n'envoie une
+    // notification que lorsque le statut a réellement changé, pour éviter les
+    // doublons sur les updates sans changement de statut (assignation, timestamps…).
+    if (record && oldRecord && oldRecord.status === record.status) {
+      return new Response(JSON.stringify({ ok: true, skipped: "status_unchanged" }), {
+        status: 200,
       });
     }
 
@@ -114,25 +133,32 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: true, skipped: true }), { status: 200 });
     }
 
-    const { data: order, error: orderError } = await supabaseAdmin
-      .from("orders")
-      .select("user_id, refusal_reason")
-      .eq("id", orderId)
-      .single();
-    if (orderError || !order) {
-      return new Response(
-        JSON.stringify({ error: "order_not_found", detail: orderError?.message }),
-        { status: 404 },
-      );
+    // Résout user_id + refusal_reason : depuis le record du webhook si présent,
+    // sinon via une lecture ciblée (appel direct).
+    let userId = record?.user_id;
+    let refusalReason: string | null = record?.refusal_reason ?? null;
+    if (!userId) {
+      const { data: order, error: orderError } = await supabaseAdmin
+        .from("orders")
+        .select("user_id, refusal_reason")
+        .eq("id", orderId)
+        .single();
+      if (orderError || !order) {
+        return new Response(
+          JSON.stringify({ error: "order_not_found", detail: orderError?.message }),
+          { status: 404 },
+        );
+      }
+      userId = order.user_id;
+      refusalReason = order.refusal_reason ?? null;
     }
 
-    const finalMessage =
-      status === "refused" ? buildMessage(status, order.refusal_reason ?? null) : message;
+    const finalMessage = status === "refused" ? buildMessage(status, refusalReason) : message;
 
     const { data: subscriptions, error: subsError } = await supabaseAdmin
       .from("push_subscriptions")
       .select("endpoint, p256dh, auth")
-      .eq("user_id", order.user_id)
+      .eq("user_id", userId)
       .eq("role", "client");
     if (subsError) {
       return new Response(JSON.stringify({ error: "subs_lookup_failed", detail: subsError.message }), {

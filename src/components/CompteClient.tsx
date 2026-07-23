@@ -18,6 +18,7 @@ import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
 import { Trash, Edit, MapPinOff } from "lucide-react";
 import { deliveryDistanceKm, DELIVERY_RADIUS_KM } from "@/lib/geo";
+import { signAddressPhoto } from "@/lib/address-photo";
 
 // Types locaux
 
@@ -34,6 +35,8 @@ type Address = {
   latitude: number;
   longitude: number;
   is_default?: boolean;
+  city?: string | null;
+  photo_url?: string | null;
 };
 
 // Fix icon for leaflet marker
@@ -56,6 +59,26 @@ export function CompteClient() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editingAddress, setEditingAddress] = useState<EditAddress | null>(null);
+  // URLs signées des miniatures de photo d'adresse (bucket privé).
+  const [addressPhotos, setAddressPhotos] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        addresses
+          .filter((a) => a.photo_url)
+          .map(async (a) => [a.id, await signAddressPhoto(a.photo_url)] as const),
+      );
+      if (cancelled) return;
+      const map: Record<string, string> = {};
+      for (const [id, url] of entries) if (url) map[id] = url;
+      setAddressPhotos(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [addresses]);
 
   // Delete account dialog
   const [openDelete, setOpenDelete] = useState(false);
@@ -321,6 +344,15 @@ export function CompteClient() {
                     </div>
                   </div>
                 </div>
+                {addressPhotos[a.id] && (
+                  <div className="h-32 w-full overflow-hidden border-t">
+                    <img
+                      src={addressPhotos[a.id]}
+                      alt="Photo du logement"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                )}
                 <div className="relative z-0 h-32 w-full overflow-hidden">
                   <MapContainer
                     center={[a.latitude, a.longitude]}

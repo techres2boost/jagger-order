@@ -6,6 +6,7 @@ import { EnableNotifications } from "@/components/EnableNotifications";
 import { fmt } from "@/lib/format";
 import { toast } from "sonner";
 import { MapPin, Phone, CheckCircle2, Navigation, X } from "lucide-react";
+import { signAddressPhoto } from "@/lib/address-photo";
 
 export const Route = createFileRoute("/_authenticated/livreur")({
   ssr: false,
@@ -29,6 +30,7 @@ interface OrderRow {
   customer_name: string;
   phone: string;
   address?: string | null;
+  address_id?: string | null;
   lat?: number | null;
   lng?: number | null;
   total: number;
@@ -103,6 +105,8 @@ function LivreurPage() {
   const [itemOptions, setItemOptions] = useState<Record<string, ItemOptionRow[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  // Miniature de la photo du logement pour la commande ouverte (aide au repérage).
+  const [addressPhotoUrl, setAddressPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -231,6 +235,28 @@ function LivreurPage() {
 
   const selectedOrder = orders.find((o) => o.id === selectedOrderId) ?? null;
 
+  // Récupère et signe la photo du logement liée à la commande ouverte (RLS :
+  // le livreur assigné a le droit de lecture). Absente => rien n'est affiché.
+  useEffect(() => {
+    let cancelled = false;
+    setAddressPhotoUrl(null);
+    const addressId = selectedOrder?.address_id;
+    if (!addressId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("addresses" as never)
+        .select("photo_url")
+        .eq("id", addressId)
+        .maybeSingle();
+      const path = (data as { photo_url?: string | null } | null)?.photo_url ?? null;
+      const url = await signAddressPhoto(path);
+      if (!cancelled) setAddressPhotoUrl(url);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedOrder?.address_id]);
+
   return (
     <div className="min-h-screen bg-background pb-10">
       <header className="sticky top-0 z-20 border-b border-black/40 hero-gradient px-4 py-3 text-white">
@@ -330,6 +356,17 @@ function LivreurPage() {
                 <Navigation className="h-4 w-4" /> Itinéraire
               </span>
             </button>
+
+            {/* Photo du logement (si le client en a ajouté une) pour repérer le lieu */}
+            {addressPhotoUrl && (
+              <div className="mt-3 overflow-hidden rounded-2xl border">
+                <img
+                  src={addressPhotoUrl}
+                  alt="Photo du logement"
+                  className="h-40 w-full object-cover"
+                />
+              </div>
+            )}
 
             <ul className="mt-4 space-y-1 border-t pt-3 text-sm">
               {(items[selectedOrder.id] ?? []).map((it) => (

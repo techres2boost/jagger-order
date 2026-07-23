@@ -3,9 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import { X, LocateFixed, Search, Loader2 } from "lucide-react";
+import { X, LocateFixed, Search, Loader2, ImagePlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  validateAddressPhoto,
+  uploadAddressPhoto,
+  signAddressPhoto,
+} from "@/lib/address-photo";
 
 // Leaflet default icon fix for bundlers
 const markerIcon = L.icon({
@@ -37,15 +42,30 @@ async function nominatimSearch(
   }));
 }
 
-async function nominatimReverse(lat: number, lng: number): Promise<string | null> {
+type ReverseResult = { label: string | null; city: string | null };
+
+async function nominatimReverse(lat: number, lng: number): Promise<ReverseResult> {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
     const res = await fetch(url, { headers: NOMINATIM_HEADERS });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { display_name?: string };
-    return data.display_name ?? null;
+    if (!res.ok) return { label: null, city: null };
+    const data = (await res.json()) as {
+      display_name?: string;
+      address?: {
+        city?: string;
+        town?: string;
+        village?: string;
+        municipality?: string;
+        county?: string;
+      };
+    };
+    const a = data.address ?? {};
+    // Ville structurée renvoyée par Nominatim (aucune donnée inventée) : on prend
+    // le premier niveau administratif disponible du plus fin au plus large.
+    const city = a.city ?? a.town ?? a.village ?? a.municipality ?? a.county ?? null;
+    return { label: data.display_name ?? null, city };
   } catch {
-    return null;
+    return { label: null, city: null };
   }
 }
 
@@ -68,6 +88,8 @@ export type EditAddress = {
   latitude: number;
   longitude: number;
   is_default: boolean;
+  city?: string | null;
+  photo_url?: string | null;
 };
 
 type Props = {
@@ -105,7 +127,51 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
   const [isDefault, setIsDefault] = useState(editing?.is_default ?? false);
   const [saving, setSaving] = useState(false);
 
+  // Ville dérivée du reverse-geocode (Feature 5). Conservée si déjà présente.
+  const [city, setCity] = useState(editing?.city ?? "");
+
+  // Photo optionnelle (Feature 3).
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
+
   const geocodedRef = useRef(false);
+
+  // Miniature de la photo existante (édition) via URL signée.
+  useEffect(() => {
+    let revoked = false;
+    if (editing?.photo_url) {
+      signAddressPhoto(editing.photo_url).then((url) => {
+        if (!revoked && url) setPhotoPreview(url);
+      });
+    }
+    return () => {
+      revoked = true;
+    };
+  }, [editing?.photo_url]);
+
+  function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permet de re-sélectionner le même fichier
+    if (!file) return;
+    const err = validateAddressPhoto(file);
+    if (err) {
+      setPhotoError(err);
+      return;
+    }
+    setPhotoError(null);
+    setRemovePhoto(false);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  }
+
+  function clearPhoto() {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoError(null);
+    setRemovePhoto(true);
+  }
 
   // Geocode restaurant address once for default center
   useEffect(() => {
@@ -160,7 +226,7 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
     if (!marker) return;
     setReverseLoading(true);
     setReverseFailed(false);
-    const label = await nominatimReverse(marker.lat, marker.lng);
+    const { label, city: revCity } = await nominatimReverse(marker.lat, marker.lng);
     setReverseLoading(false);
     if (label) {
       setAddressText(label);
@@ -168,6 +234,9 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
       setAddressText("");
       setReverseFailed(true);
     }
+    // On ne remplace la ville que si le reverse en a trouvé une (sinon on garde
+    // celle déjà présente en édition, jamais de valeur inventée).
+    if (revCity) setCity(revCity);
     setStep("details");
   }
 
@@ -194,6 +263,7 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
       latitude: marker.lat,
       longitude: marker.lng,
       is_default: isDefault,
+      city: city.trim() || null,
     };
 
     let resultId: string | null = null;
@@ -216,9 +286,34 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
       error = res.error;
       resultId = (res.data as { id: string } | null)?.id ?? null;
     }
+    if (error) {
+      setSaving(false);
+      return toast.error(error.message);
+    }
+
+    // Gestion de la photo une fois l'id d'adresse connu (chemin = {uid}/{id}/…).
+    let photoWarning: string | null = null;
+    if (resultId && photoFile) {
+      const { path, error: upErr } = await uploadAddressPhoto(u.user.id, resultId, photoFile);
+      if (upErr || !path) {
+        photoWarning = "Adresse enregistrée, mais la photo n'a pas pu être envoyée.";
+      } else {
+        const { error: linkErr } = await supabase
+          .from("addresses" as never)
+          .update({ photo_url: path } as never)
+          .eq("id", resultId);
+        if (linkErr) photoWarning = "Adresse enregistrée, mais la photo n'a pas pu être liée.";
+      }
+    } else if (resultId && removePhoto && editing?.photo_url) {
+      await supabase
+        .from("addresses" as never)
+        .update({ photo_url: null } as never)
+        .eq("id", resultId);
+    }
+
     setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success(editing ? "Adresse mise à jour" : "Adresse enregistrée");
+    if (photoWarning) toast.warning(photoWarning);
+    else toast.success(editing ? "Adresse mise à jour" : "Adresse enregistrée");
     if (resultId) onSaved?.(resultId);
     onClose();
   }
@@ -438,6 +533,43 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
                 placeholder="Point de repère, instructions livreur…"
                 className="w-full rounded-xl border bg-white p-3 text-sm"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Photo du logement (optionnel)</label>
+              {photoPreview ? (
+                <div className="relative w-full overflow-hidden rounded-xl border">
+                  <img
+                    src={photoPreview}
+                    alt="Photo du logement"
+                    className="h-40 w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearPhoto}
+                    className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-red-600 shadow"
+                    aria-label="Retirer la photo"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed bg-neutral-50 text-sm text-neutral-500 hover:bg-neutral-100">
+                  <ImagePlus className="h-5 w-5" />
+                  Ajouter une photo
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    onChange={onPickPhoto}
+                    className="hidden"
+                  />
+                </label>
+              )}
+              {photoError ? (
+                <p className="text-xs text-red-600">{photoError}</p>
+              ) : (
+                <p className="text-xs text-neutral-400">JPG ou PNG, 2 Mo maximum.</p>
+              )}
             </div>
 
             <div className="space-y-1">

@@ -154,6 +154,7 @@ export type Database = {
         Row: {
           comment: string | null;
           created_at: string;
+          dismissed: boolean;
           id: string;
           order_id: string;
           rating: number;
@@ -162,6 +163,7 @@ export type Database = {
         Insert: {
           comment?: string | null;
           created_at?: string;
+          dismissed?: boolean;
           id?: string;
           order_id: string;
           rating: number;
@@ -170,6 +172,7 @@ export type Database = {
         Update: {
           comment?: string | null;
           created_at?: string;
+          dismissed?: boolean;
           id?: string;
           order_id?: string;
           rating?: number;

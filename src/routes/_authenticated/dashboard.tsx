@@ -988,6 +988,101 @@ function DashboardPage() {
         );
       }
 
+      // ============ Feuille "Avis" ============
+      // Table: order_ratings (order_id, rating, comment, created_at, dismissed)
+      // Exclut systématiquement dismissed = true ou rating IS NULL.
+      const { data: ratingsData, error: ratingsError } = await (supabase as any)
+        .from("order_ratings")
+        .select("order_id, rating, comment, created_at, dismissed")
+        .gte("created_at", from.toISOString())
+        .lte("created_at", to.toISOString())
+        .not("rating", "is", null)
+        .neq("dismissed", true)
+        .order("created_at", { ascending: false });
+      if (ratingsError) throw ratingsError;
+      const ratings = (ratingsData as Array<{
+        order_id: string;
+        rating: number;
+        comment: string | null;
+        created_at: string;
+        dismissed: boolean | null;
+      }>) ?? [];
+
+      const validRatings = ratings.filter((r) => r.rating != null && r.dismissed !== true);
+      const totalCount = validRatings.length;
+      const avgOverall =
+        totalCount > 0 ? validRatings.reduce((s, r) => s + r.rating, 0) / totalCount : null;
+
+      const distribution = [1, 2, 3, 4, 5].map((n) => ({
+        rating: n,
+        count: validRatings.filter((r) => r.rating === n).length,
+      }));
+
+      const dailyMap = new Map<string, { sum: number; count: number }>();
+      for (const r of validRatings) {
+        const day = format(new Date(r.created_at), "yyyy-MM-dd");
+        const cur = dailyMap.get(day) ?? { sum: 0, count: 0 };
+        cur.sum += r.rating;
+        cur.count += 1;
+        dailyMap.set(day, cur);
+      }
+      const dailyAvg = Array.from(dailyMap.entries())
+        .map(([date, v]) => ({ date, avg: v.sum / v.count, count: v.count }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // Top plats : join order_ratings.order_id -> order_items.order_id, group by name
+      const ratingByOrder = new Map<string, number[]>();
+      for (const r of validRatings) {
+        const arr = ratingByOrder.get(r.order_id) ?? [];
+        arr.push(r.rating);
+        ratingByOrder.set(r.order_id, arr);
+      }
+      const ratedOrderIds = Array.from(ratingByOrder.keys());
+      let topDishes: Array<{ name: string; avg: number; count: number }> = [];
+      if (ratedOrderIds.length > 0) {
+        const { data: ratedItemsData, error: ratedItemsError } = await supabase
+          .from("order_items")
+          .select("order_id, name")
+          .in("order_id", ratedOrderIds);
+        if (ratedItemsError) throw ratedItemsError;
+        const ratedItems = (ratedItemsData as Array<{ order_id: string; name: string }>) ?? [];
+        const dishMap = new Map<string, { sum: number; count: number }>();
+        for (const it of ratedItems) {
+          const orderRatings = ratingByOrder.get(it.order_id) ?? [];
+          for (const rating of orderRatings) {
+            const cur = dishMap.get(it.name) ?? { sum: 0, count: 0 };
+            cur.sum += rating;
+            cur.count += 1;
+            dishMap.set(it.name, cur);
+          }
+        }
+        topDishes = Array.from(dishMap.entries())
+          .map(([name, v]) => ({ name, avg: v.sum / v.count, count: v.count }))
+          .sort((a, b) => b.avg - a.avg || b.count - a.count)
+          .slice(0, 5);
+      }
+
+      const detailed = validRatings.map((r) => ({
+        date: format(new Date(r.created_at), "yyyy-MM-dd HH:mm"),
+        rating: r.rating,
+        comment: r.comment ?? "",
+      }));
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        makeAvisSheet(startDate, endDate, {
+          avgOverall,
+          totalCount,
+          distribution,
+          dailyAvg,
+          topDishes,
+          detailed,
+        }),
+        "Avis",
+      );
+
+
+
       workbook.Workbook = {
         Sheets: workbook.SheetNames.map((name) => ({
           name,

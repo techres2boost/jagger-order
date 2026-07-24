@@ -7,6 +7,8 @@ import { fmt } from "@/lib/format";
 import { toast } from "sonner";
 import { MapPin, Phone, CheckCircle2, Navigation, X } from "lucide-react";
 import { signAddressPhoto } from "@/lib/address-photo";
+import { DriverLocationBroadcaster } from "@/components/DriverLocationBroadcaster";
+import { OrderChat } from "@/components/OrderChat";
 
 export const Route = createFileRoute("/_authenticated/livreur")({
   ssr: false,
@@ -101,6 +103,8 @@ function openItinerary(order: OrderRow) {
 
 function LivreurPage() {
   const [livreurId, setLivreurId] = useState<string | null>(null);
+  // Compte auth du livreur (= sender_id des messages qu'il envoie).
+  const [userId, setUserId] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [items, setItems] = useState<Record<string, OrderItemRow[]>>({});
   const [itemOptions, setItemOptions] = useState<Record<string, ItemOptionRow[]>>({});
@@ -123,6 +127,7 @@ function LivreurPage() {
       const { data: u } = await supabase.auth.getUser();
       console.log("[livreur] auth.uid =", u.user?.id);
       if (!u.user) return;
+      setUserId(u.user.id);
       const { data: livreur, error: livreurError } = await supabase
         .from("livreurs")
         .select("id")
@@ -514,6 +519,17 @@ function LivreurPage() {
               >
                 <CheckCircle2 className="h-5 w-5" /> Marquer comme livrée
               </button>
+            )}
+
+            {/* Live tracking + chat : uniquement pendant la livraison active.
+                Le broadcaster diffuse la position GPS du livreur ; le chat permet
+                d'échanger avec le client. Démontés dès que le statut change ou
+                que le détail est fermé. */}
+            {selectedOrder.status === "delivering" && userId && (
+              <div className="mt-4 space-y-3 border-t pt-4">
+                <DriverLocationBroadcaster orderId={selectedOrder.id} active />
+                <OrderChat orderId={selectedOrder.id} currentUserId={userId} />
+              </div>
             )}
           </div>
         </div>

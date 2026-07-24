@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.notify-livreur]
 verify_jwt = false
+
+[functions.notify-order-message]
+verify_jwt = false

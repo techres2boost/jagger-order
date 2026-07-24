@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useCart } from "@/lib/cart-context";
+import { useCart, WELCOME_PROMO_CODE, promoDiscountAmount } from "@/lib/cart-context";
 import { fmt } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Trash2, MapPin, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Trash2, MapPin, ShoppingBag, BadgePercent } from "lucide-react";
 
 import type { CartOptionSelection } from "@/lib/cart-context";
 import { deliveryDistanceKm, isWithinDeliveryZone, DELIVERY_RADIUS_KM } from "@/lib/geo";
@@ -25,8 +25,19 @@ function formatCartOptions(options: CartOptionSelection[] | undefined) {
 }
 
 function PanierPage() {
-  const { lines, setQty, remove, setNote, total, clear } = useCart();
+  const { lines, setQty, remove, setNote, total, clear, promoCode } = useCart();
   const navigate = useNavigate();
+  // `total` du contexte = sous-total des articles (aucun frais de livraison
+  // n'est ajouté au total dans cette app : le calcul Haversine/`geo` ne sert
+  // qu'au contrôle de zone). La réduction promo s'applique donc au sous-total.
+  const subtotal = total;
+
+  // Éligibilité de l'offre de bienvenue (réservée à la première commande).
+  //  null  = en cours de vérification / non pertinent (pas de code promo)
+  //  true  = première commande → réduction applicable
+  //  false = l'utilisateur a déjà une commande → « Offre déjà utilisée »
+  const [welcomeEligible, setWelcomeEligible] = useState<boolean | null>(null);
+  const hasWelcomePromo = promoCode === WELCOME_PROMO_CODE;
   const [profile, setProfile] = useState<{
     full_name: string;
     phone: string;
@@ -111,6 +122,52 @@ function PanierPage() {
     });
   }, []);
 
+  // Règle « première commande » : on vérifie si l'utilisateur connecté a déjà
+  // une commande réellement passée (on exclut les statuts qui n'aboutissent pas
+  // à un achat : expirée / annulée / refusée). Le checkout étant authentifié,
+  // un utilisateur est toujours présent ici. Sans code promo, aucune requête.
+  useEffect(() => {
+    if (!hasWelcomePromo) {
+      setWelcomeEligible(null);
+      return;
+    }
+    let cancelled = false;
+    setWelcomeEligible(null);
+    (async () => {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) {
+        // Invité (cas théorique ici) : on applique l'offre par défaut.
+        if (!cancelled) setWelcomeEligible(true);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("user_id", uid)
+        .in("status", ["pending", "accepted", "ready", "delivering", "delivered"])
+        .limit(1);
+      if (cancelled) return;
+      // Fail-open discret : en cas d'erreur de lecture, on ne bloque pas l'offre.
+      if (error) {
+        setWelcomeEligible(true);
+        return;
+      }
+      setWelcomeEligible((data ?? []).length === 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasWelcomePromo]);
+
+  // Réduction effectivement appliquée : uniquement si le code est WELCOME10 ET
+  // que l'utilisateur y est éligible (première commande). Sinon 0.
+  const discount =
+    hasWelcomePromo && welcomeEligible === true ? promoDiscountAmount(subtotal, promoCode) : 0;
+  const finalTotal = Math.round((subtotal - discount) * 1000) / 1000;
+  // Message discret quand l'offre est présente mais déjà consommée.
+  const welcomeAlreadyUsed = hasWelcomePromo && welcomeEligible === false;
+
   async function confirm() {
     // Sans profil complété ou sans adresse de livraison enregistrée, on
     // redirige vers l'écran de complétion (où l'adresse est ajoutée/choisie).
@@ -143,7 +200,8 @@ function PanierPage() {
       user_id: uid,
       customer_name: profile.full_name,
       phone: profile.phone,
-      total,
+      // Total réellement facturé = sous-total moins la réduction promo éventuelle.
+      total: finalTotal,
       expires_at: expires,
       address: deliveryAddress.full_address,
       address_id: deliveryAddress.id,
@@ -389,17 +447,40 @@ function PanierPage() {
               </div>
             </div>
 
-            {/* Total row — blends with background */}
-            <div className="flex items-end justify-between px-2 pt-2">
-              <div>
-                <div className="text-[11px] font-black uppercase tracking-wider text-black/50">Total</div>
-                <div className="mt-1 flex items-baseline gap-1.5 text-3xl font-black text-black">
-                  {fmt(total)}
-                  <span className="text-sm font-black text-black/60">TND</span>
+            {/* Récapitulatif : sous-total, réduction éventuelle, puis total. */}
+            <div className="space-y-1 px-2 pt-2">
+              {/* On n'affiche le sous-total que s'il y a une réduction à montrer. */}
+              {discount > 0 && (
+                <div className="flex items-center justify-between text-sm font-bold text-black/60">
+                  <span>Sous-total</span>
+                  <span>{fmt(subtotal)} TND</span>
                 </div>
-              </div>
-              <div className="rounded-full bg-[#F5B800] px-3 py-1 text-[11px] font-black text-black">
-                Paiement sur place
+              )}
+              {discount > 0 && (
+                <div className="flex items-center justify-between text-sm font-black text-[#E11D2E]">
+                  <span className="flex items-center gap-1.5">
+                    <BadgePercent className="h-4 w-4" />
+                    Réduction bienvenue -10 %
+                  </span>
+                  <span>-{fmt(discount)} TND</span>
+                </div>
+              )}
+              {/* Message discret quand l'offre est présente mais non applicable. */}
+              {welcomeAlreadyUsed && (
+                <div className="text-xs font-semibold text-black/40">Offre déjà utilisée</div>
+              )}
+
+              <div className="flex items-end justify-between pt-1">
+                <div>
+                  <div className="text-[11px] font-black uppercase tracking-wider text-black/50">Total</div>
+                  <div className="mt-1 flex items-baseline gap-1.5 text-3xl font-black text-black">
+                    {fmt(finalTotal)}
+                    <span className="text-sm font-black text-black/60">TND</span>
+                  </div>
+                </div>
+                <div className="rounded-full bg-[#F5B800] px-3 py-1 text-[11px] font-black text-black">
+                  Paiement sur place
+                </div>
               </div>
             </div>
 
@@ -413,7 +494,7 @@ function PanierPage() {
                 ? "Envoi…"
                 : outOfZone
                   ? "Adresse hors zone"
-                  : `Confirmer la commande · ${fmt(total)} TND`}
+                  : `Confirmer la commande · ${fmt(finalTotal)} TND`}
             </button>
           </div>
         )}

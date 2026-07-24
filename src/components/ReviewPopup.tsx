@@ -1,6 +1,6 @@
 "use client";
 
-// Feature 4 (règle révisée) — Popup d'avis automatique après livraison.
+// Feature 4 (règle révisée) — Popup d'évaluation du livreur après livraison.
 // Monté globalement dans le layout authentifié.
 //
 // Règles :
@@ -9,10 +9,10 @@
 //    (transition old.status != 'delivered' -> new.status = 'delivered'). Les
 //    commandes déjà livrées avant l'ouverture ne sont jamais rattrapées.
 //  - "Plus tard" = définitif : on enregistre un marqueur durable
-//    (order_ratings.dismissed = true) et le popup ne réapparaît plus jamais pour
-//    cette commande.
-//  - Un avis existant (noté OU ignoré) empêche tout ré-affichage (contrôle sur
-//    l'existence d'une ligne order_ratings pour l'order_id).
+//    (livreur_ratings.dismissed = true) et le popup ne réapparaît plus jamais
+//    pour cette commande.
+//  - Une évaluation existante (notée OU ignorée) empêche tout ré-affichage
+//    (contrôle sur l'existence d'une ligne livreur_ratings pour l'order_id).
 //  - On n'affiche pas le popup pendant un checkout en cours (pages panier /
 //    complétion de profil) : il reste en attente et s'affiche au retour sur un
 //    écran neutre, avec un léger délai.
@@ -32,6 +32,10 @@ export function ReviewPopup() {
   const [uid, setUid] = useState<string | null>(null);
   const [pending, setPending] = useState<string[]>([]);
   const seenRef = useRef<Set<string>>(new Set());
+  // order_id -> livreur assigné (id + nom) capturé au moment de la livraison.
+  const detailsRef = useRef<Map<string, { livreurId: string | null; livreurNom: string | null }>>(
+    new Map(),
+  );
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [ratingValue, setRatingValue] = useState(0);
   const [comment, setComment] = useState("");
@@ -51,7 +55,11 @@ export function ReviewPopup() {
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "orders", filter: `user_id=eq.${userId}` },
           async (payload) => {
-            const newRow = payload.new as { id?: string; status?: string };
+            const newRow = payload.new as {
+              id?: string;
+              status?: string;
+              assigned_livreur_id?: string | null;
+            };
             const oldRow = payload.old as { status?: string };
             // Seulement la vraie transition -> delivered (orders a REPLICA IDENTITY
             // FULL, donc old.status est disponible).
@@ -59,13 +67,25 @@ export function ReviewPopup() {
             const orderId = newRow.id;
             if (!orderId || seenRef.current.has(orderId)) return;
             seenRef.current.add(orderId);
-            // Déjà noté OU déjà ignoré (marqueur durable) => on n'affiche pas.
+            // Déjà évalué OU déjà ignoré (marqueur durable) => on n'affiche pas.
             const { data: existing } = await supabase
-              .from("order_ratings")
+              .from("livreur_ratings")
               .select("order_id")
               .eq("order_id", orderId)
               .maybeSingle();
             if (existing) return;
+            // Nom du livreur assigné pour le sous-titre (si disponible).
+            const livreurId = newRow.assigned_livreur_id ?? null;
+            let livreurNom: string | null = null;
+            if (livreurId) {
+              const { data: liv } = await supabase
+                .from("livreurs")
+                .select("nom")
+                .eq("id", livreurId)
+                .maybeSingle();
+              livreurNom = liv?.nom ?? null;
+            }
+            detailsRef.current.set(orderId, { livreurId, livreurNom });
             setPending((q) => (q.includes(orderId) ? q : [...q, orderId]));
           },
         )
@@ -92,6 +112,7 @@ export function ReviewPopup() {
 
   function finishActive() {
     const id = activeOrderId;
+    if (id) detailsRef.current.delete(id);
     setPending((q) => q.filter((x) => x !== id));
     setActiveOrderId(null);
     setSaving(false);
@@ -104,9 +125,11 @@ export function ReviewPopup() {
     }
     if (!uid || !activeOrderId) return;
     setSaving(true);
-    const { error } = await supabase.from("order_ratings").upsert(
+    const details = detailsRef.current.get(activeOrderId);
+    const { error } = await supabase.from("livreur_ratings").upsert(
       {
         order_id: activeOrderId,
+        livreur_id: details?.livreurId ?? null,
         user_id: uid,
         rating: ratingValue,
         comment: comment.trim() || null,
@@ -119,15 +142,22 @@ export function ReviewPopup() {
       toast.error(error.message);
       return;
     }
-    toast.success("Merci pour votre note !");
+    toast.success("Merci pour votre avis !");
     finishActive();
   }
 
   // "Plus tard" = ne plus jamais demander : marqueur durable dismissed = true.
   async function dismiss() {
     if (uid && activeOrderId) {
-      await supabase.from("order_ratings").upsert(
-        { order_id: activeOrderId, user_id: uid, rating: null, dismissed: true } as never,
+      const details = detailsRef.current.get(activeOrderId);
+      await supabase.from("livreur_ratings").upsert(
+        {
+          order_id: activeOrderId,
+          livreur_id: details?.livreurId ?? null,
+          user_id: uid,
+          rating: null,
+          dismissed: true,
+        } as never,
         { onConflict: "order_id" },
       );
     }
@@ -139,9 +169,11 @@ export function ReviewPopup() {
       <div className="w-full max-w-lg rounded-3xl bg-card p-6 shadow-xl">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-black">Évaluer votre commande</h2>
+            <h2 className="text-lg font-black">Évaluer votre livreur</h2>
             <p className="text-sm text-muted-foreground">
-              Commande #{activeOrderId.slice(0, 8)} livrée — donnez votre avis.
+              {detailsRef.current.get(activeOrderId)?.livreurNom
+                ? detailsRef.current.get(activeOrderId)?.livreurNom
+                : `Commande #${activeOrderId.slice(0, 8)} livrée — donnez votre avis sur le livreur.`}
             </p>
           </div>
           <button

@@ -316,17 +316,20 @@ export function MenuPage() {
                 </Link>
               )}
               {user ? (
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    toast.success("Déconnecté");
-                  }}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
-                  title="Déconnexion"
-                  aria-label="Déconnexion"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
+                <>
+                  <HeaderAvatar userId={user.id} />
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      toast.success("Déconnecté");
+                    }}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
+                    title="Déconnexion"
+                    aria-label="Déconnexion"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </button>
+                </>
               ) : (
                 <Link
                   to="/auth"

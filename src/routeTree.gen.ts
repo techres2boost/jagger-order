@@ -23,6 +23,7 @@ import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_auth
 import { Route as AuthenticatedCommandesRouteImport } from './routes/_authenticated/commandes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCommandeIdRouteImport } from './routes/_authenticated/commande.$id'
+import { Route as AuthenticatedOrdersOrderIdTrackingRouteImport } from './routes/_authenticated/orders.$orderId.tracking'
 import { Route as AuthenticatedAdminOptionsRouteImport } from './routes/_authenticated/admin/options'
 import { Route as AuthenticatedAdminMenuRouteImport } from './routes/_authenticated/admin/menu'
 import { Route as AuthenticatedAdminLivreursRouteImport } from './routes/_authenticated/admin/livreurs'
@@ -98,6 +99,12 @@ const AuthenticatedCommandeIdRoute = AuthenticatedCommandeIdRouteImport.update({
   path: '/commande/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOrdersOrderIdTrackingRoute =
+  AuthenticatedOrdersOrderIdTrackingRouteImport.update({
+    id: '/orders/$orderId/tracking',
+    path: '/orders/$orderId/tracking',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminOptionsRoute =
   AuthenticatedAdminOptionsRouteImport.update({
     id: '/options',
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/admin/menu': typeof AuthenticatedAdminMenuRoute
   '/admin/options': typeof AuthenticatedAdminOptionsRoute
   '/commande/$id': typeof AuthenticatedCommandeIdRoute
+  '/orders/$orderId/tracking': typeof AuthenticatedOrdersOrderIdTrackingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -159,6 +167,7 @@ export interface FileRoutesByTo {
   '/admin/menu': typeof AuthenticatedAdminMenuRoute
   '/admin/options': typeof AuthenticatedAdminOptionsRoute
   '/commande/$id': typeof AuthenticatedCommandeIdRoute
+  '/orders/$orderId/tracking': typeof AuthenticatedOrdersOrderIdTrackingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -180,6 +189,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/menu': typeof AuthenticatedAdminMenuRoute
   '/_authenticated/admin/options': typeof AuthenticatedAdminOptionsRoute
   '/_authenticated/commande/$id': typeof AuthenticatedCommandeIdRoute
+  '/_authenticated/orders/$orderId/tracking': typeof AuthenticatedOrdersOrderIdTrackingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/admin/menu'
     | '/admin/options'
     | '/commande/$id'
+    | '/orders/$orderId/tracking'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/admin/menu'
     | '/admin/options'
     | '/commande/$id'
+    | '/orders/$orderId/tracking'
   id:
     | '__root__'
     | '/'
@@ -240,6 +252,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/menu'
     | '/_authenticated/admin/options'
     | '/_authenticated/commande/$id'
+    | '/_authenticated/orders/$orderId/tracking'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommandeIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/orders/$orderId/tracking': {
+      id: '/_authenticated/orders/$orderId/tracking'
+      path: '/orders/$orderId/tracking'
+      fullPath: '/orders/$orderId/tracking'
+      preLoaderRoute: typeof AuthenticatedOrdersOrderIdTrackingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/options': {
       id: '/_authenticated/admin/options'
       path: '/options'
@@ -408,6 +428,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLivreurRoute: typeof AuthenticatedLivreurRoute
   AuthenticatedPanierRoute: typeof AuthenticatedPanierRoute
   AuthenticatedCommandeIdRoute: typeof AuthenticatedCommandeIdRoute
+  AuthenticatedOrdersOrderIdTrackingRoute: typeof AuthenticatedOrdersOrderIdTrackingRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -418,6 +439,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLivreurRoute: AuthenticatedLivreurRoute,
   AuthenticatedPanierRoute: AuthenticatedPanierRoute,
   AuthenticatedCommandeIdRoute: AuthenticatedCommandeIdRoute,
+  AuthenticatedOrdersOrderIdTrackingRoute: AuthenticatedOrdersOrderIdTrackingRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

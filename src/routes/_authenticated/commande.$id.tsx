@@ -1,21 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-context";
 import { BoxLogo } from "@/components/BoxLogo";
 import { OrderProgressRing, STEPS, type ProgressStatus } from "@/components/OrderProgressRing";
-import { OrderChat } from "@/components/OrderChat";
 import { useOrderCountdown } from "@/hooks/use-order-countdown";
 import { fmt } from "@/lib/format";
-import { hasValidCoords } from "@/lib/geo";
-import { XCircle, Ban } from "lucide-react";
+import { XCircle, Ban, MapPin } from "lucide-react";
 import { toast } from "sonner";
-
-// Carte de suivi chargée dynamiquement : Leaflet touche `window` à l'import et
-// ne doit donc pas être évalué côté serveur (SSR de cette route).
-const DeliveryTrackingMap = lazy(() =>
-  import("@/components/DeliveryTrackingMap").then((m) => ({ default: m.DeliveryTrackingMap })),
-);
 
 export const Route = createFileRoute("/_authenticated/commande/$id")({
   component: OrderStatusPage,
@@ -40,10 +32,6 @@ interface OrderRow {
   refusal_reason?: "unavailable" | "busy" | null;
   estimated_delivery_at: string | null;
   arrival_at: string | null;
-  user_id: string;
-  // Colonnes présentes en base mais absentes des types générés (stale) : optionnelles.
-  lat?: number | null;
-  lng?: number | null;
 }
 
 interface OrderItemRow {
@@ -76,10 +64,6 @@ function OrderStatusPage() {
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  // Identité courante (= sender_id du chat) et coordonnées du profil client,
-  // utilisées comme adresse de livraison prioritaire pour le marker fixe.
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [profileCoords, setProfileCoords] = useState<{ lat: number; lng: number } | null>(null);
   const expirationEnvoyee = useRef(false);
 
   // Décompte temps réel mutualisé (interval + cleanup + repli + "Bientôt là").
@@ -87,21 +71,6 @@ function OrderStatusPage() {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getUser().then(({ data: u }) => {
-      if (!mounted || !u.user) return;
-      setCurrentUserId(u.user.id);
-      // profiles.lat/lng existent en base mais pas dans les types générés (stale) :
-      // on contourne via un cast, comme ailleurs dans le projet.
-      supabase
-        .from("profiles" as never)
-        .select("lat, lng")
-        .eq("id", u.user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          const coords = data as { lat: number | null; lng: number | null } | null;
-          if (mounted && hasValidCoords(coords)) setProfileCoords(coords);
-        });
-    });
     supabase
       .from("orders")
       .select("*")
@@ -278,33 +247,18 @@ function OrderStatusPage() {
             Retour au menu
           </Link>
         ) : null}
-      </div>
 
-      {/* Live tracking + chat : uniquement quand la commande est en livraison.
-          Marker fixe = adresse de livraison (profil client si dispo, sinon
-          coordonnées de la commande). Démontés à la sortie du statut. */}
-      {order.status === "delivering" &&
-        currentUserId &&
-        (() => {
-          const orderCoords = { lat: order.lat ?? null, lng: order.lng ?? null };
-          const dest = profileCoords ?? (hasValidCoords(orderCoords) ? orderCoords : null);
-          return (
-            <div className="mt-4 w-full max-w-md space-y-3">
-              {dest && (
-                <Suspense
-                  fallback={
-                    <div className="rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">
-                      Chargement de la carte…
-                    </div>
-                  }
-                >
-                  <DeliveryTrackingMap orderId={order.id} destLat={dest.lat} destLng={dest.lng} />
-                </Suspense>
-              )}
-              <OrderChat orderId={order.id} currentUserId={currentUserId} />
-            </div>
-          );
-        })()}
+        {/* Live tracking + chat sur une page dédiée, uniquement en livraison. */}
+        {order.status === "delivering" && (
+          <Link
+            to="/orders/$orderId/tracking"
+            params={{ orderId: order.id }}
+            className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-brand px-6 font-bold text-brand-foreground"
+          >
+            <MapPin className="h-4 w-4" /> Suivre ma commande
+          </Link>
+        )}
+      </div>
 
       {confirmCancel && (
         <div

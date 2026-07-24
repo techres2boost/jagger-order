@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { BoxLogo } from "@/components/BoxLogo";
+import { useAvatar } from "@/lib/use-avatar";
 import { EnableNotifications } from "@/components/EnableNotifications";
 import burger3d from "@/assets/burger-3d.png";
 import pizza3d from "@/assets/pizza-3d.png";

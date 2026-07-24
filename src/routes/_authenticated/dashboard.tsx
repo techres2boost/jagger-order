@@ -346,6 +346,7 @@ function DashboardPage() {
     "Ventes par créneau": "FF059669",
     "Commandes refusées": "FFB91C1C",
     "Commandes expirées": "FF7C3AED",
+    "Avis": "FFF59E0B",
   };
 
   const applyCellStyles = (cell: any, style: Record<string, unknown>) => {

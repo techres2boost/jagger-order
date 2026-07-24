@@ -422,8 +422,80 @@ function WaveDivider() {
 }
 
 // ── Best Sellers ─────────────────────────────────────────────────────────
-function BestSellers({ items }: { items: VitrineItem[] }) {
-  if (items.length === 0) return null;
+// Trois paires de photos avant/après, hébergées sur GitHub (URLs brutes).
+function BeforeAfter({ before, after, name }: { before: string; after: string; name: string }) {
+  const [pos, setPos] = useState(55);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragging = useRef(false);
+
+  const update = useCallback((clientX: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const p = ((clientX - rect.left) / rect.width) * 100;
+    setPos(Math.max(2, Math.min(98, p)));
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!dragging.current) return;
+      const x = "touches" in e ? e.touches[0]?.clientX ?? 0 : (e as MouseEvent).clientX;
+      update(x);
+    };
+    const onUp = () => (dragging.current = false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchend", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchend", onUp);
+    };
+  }, [update]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative aspect-[4/5] w-full overflow-hidden select-none touch-none bg-[#0A0A0A]"
+      onMouseDown={(e) => {
+        dragging.current = true;
+        update(e.clientX);
+      }}
+      onTouchStart={(e) => {
+        dragging.current = true;
+        update(e.touches[0]?.clientX ?? 0);
+      }}
+    >
+      {/* Avant (fond) */}
+      <img src={before} alt={`${name} — avant`} loading="lazy" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+      {/* Étiquette AVANT */}
+      <span className="absolute left-3 top-3 z-10 rounded-full bg-black/70 px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white/90">
+        Avant
+      </span>
+
+      {/* Après (clip par curseur) */}
+      <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${pos}%)` }}>
+        <img src={after} alt={`${name} — après`} loading="lazy" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+        <span className="absolute right-3 top-3 z-10 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white shadow-lg" style={{ background: RED }}>
+          Après
+        </span>
+      </div>
+
+      {/* Poignée */}
+      <div className="absolute inset-y-0 z-20 flex items-center" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
+        <div className="h-full w-[2px] bg-white/90 shadow-[0_0_12px_rgba(255,255,255,0.7)]" />
+        <div className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white/95 shadow-2xl" style={{ color: RED }}>
+          <ArrowRight className="h-4 w-4 -mr-1" strokeWidth={3} />
+          <ArrowRight className="h-4 w-4 rotate-180 -ml-1" strokeWidth={3} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BestSellers() {
   return (
     <section id="best-sellers" className="bg-[#D40000] pb-20 pt-4 sm:pb-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-6">
@@ -434,10 +506,13 @@ function BestSellers({ items }: { items: VitrineItem[] }) {
           <h2 className="bx-section-title mt-2 text-4xl text-white sm:text-6xl">
             Nos Stars du Menu
           </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm text-white/80">
+            Glissez la poignée pour voir la transformation « avant / après ».
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((it, i) => (
+          {BEST_SELLERS_PAIRS.map((it, i) => (
             <article
               key={it.id}
               data-reveal
@@ -446,32 +521,10 @@ function BestSellers({ items }: { items: VitrineItem[] }) {
               }`}
               style={{ transitionDelay: `${(i % 3) * 80}ms` }}
             >
-              <div className="relative aspect-[4/5] w-full overflow-hidden">
-                {it.image ? (
-                  <img
-                    src={it.image}
-                    alt={it.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="h-full w-full bx-hero-bg" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent" />
-
-                {/* Bouton Commander en fondu au survol / tap */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100 group-focus-within:bg-black/40 group-focus-within:opacity-100">
-                  <OrderButton size="md" />
-                </div>
-              </div>
-              <div className="pointer-events-none absolute bottom-0 left-0 right-0 p-5">
+              <BeforeAfter before={it.before} after={it.after} name={it.name} />
+              <div className="flex items-center justify-between gap-3 p-5">
                 <h3 className="bx-wordmark text-2xl text-white">{it.name}</h3>
-                {it.priceFrom != null && (
-                  <p className="mt-1 text-sm font-bold text-white/80">
-                    {it.hasMultipleSizes ? "dès " : ""}
-                    {fmt(it.priceFrom)} <span className="text-white/50">TND</span>
-                  </p>
-                )}
+                <OrderButton size="sm" />
               </div>
             </article>
           ))}
@@ -480,6 +533,7 @@ function BestSellers({ items }: { items: VitrineItem[] }) {
     </section>
   );
 }
+
 
 // ── Menu (onglets + recherche + tri) ─────────────────────────────────────
 function MenuSection({

@@ -468,7 +468,10 @@ export function AddAddress({ onClose, onSaved, editing = null }: Props) {
           )}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-4">
+        <div
+          className="flex-1 overflow-y-auto min-h-0 px-4 pt-4"
+          style={{ paddingBottom: "calc(1.5rem + var(--bottom-nav-height))" }}
+        >
           <div className="mx-auto max-w-md space-y-4">
             <div className="space-y-1">
               <label className="text-sm font-semibold">Adresse</label>

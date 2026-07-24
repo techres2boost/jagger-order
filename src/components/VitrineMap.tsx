@@ -23,7 +23,7 @@ const restaurantIcon = L.divIcon({
     </div>`,
 });
 
-const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${RESTAURANT_LOCATION.lat},${RESTAURANT_LOCATION.lng}`;
+const DIRECTIONS_URL = "https://maps.app.goo.gl/Csqubno1QwEvnAbw7";
 
 export function VitrineMap() {
   // Leaflet dépend de `window` : on ne monte la carte qu'après hydratation.

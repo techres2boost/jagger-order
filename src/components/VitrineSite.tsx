@@ -22,11 +22,26 @@ import {
   Truck,
   UtensilsCrossed,
   Navigation,
+  Phone,
 } from "lucide-react";
 import { fmt } from "@/lib/format";
 import { RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { useVitrineMenu, type VitrineItem } from "@/lib/vitrine-data";
 import { VitrineMap } from "@/components/VitrineMap";
+import vitrineHero from "@/assets/vitrine-hero.jpg";
+import vitrineAbout from "@/assets/vitrine-about.jpg";
+import vitrineCta from "@/assets/vitrine-cta.jpg";
+
+const PHONE_DISPLAY = "54 338 753";
+const PHONE_TEL = "+21654338753";
+
+// Best Sellers — 3 paires avant/après hébergées sur GitHub (raw).
+const GH_RAW = "https://raw.githubusercontent.com/techres2boost/box-bite-order/main/images";
+const BEST_SELLERS_PAIRS = [
+  { id: "big-cheese", name: "Big Cheese Burger", before: `${GH_RAW}/BigCheeseBurger_old.png`, after: `${GH_RAW}/BigCheeseBurger.png` },
+  { id: "kabeb", name: "Kabeb", before: `${GH_RAW}/kebeb_old.png`, after: `${GH_RAW}/kabeb.png` },
+  { id: "nuggets", name: "Nuggets", before: `${GH_RAW}/nuggets_old.png`, after: `${GH_RAW}/nuggets.png` },
+] as const;
 
 // ─────────────────────────────────────────────────────────────────────────
 // Site vitrine BOX — route publique racine ("/").
@@ -318,12 +333,18 @@ function Hero({ productCount, categoryCount }: { productCount: number; categoryC
       id="top"
       className="relative flex min-h-[100svh] items-center overflow-hidden bg-[#0A0A0A]"
     >
-      {/* Fond cinématique généré en CSS (palette noir/rouge), léger parallax */}
+      {/* Fond hero : composition IA cinématique noir/rouge, léger parallax */}
       <div
-        className="bx-hero-bg absolute inset-0"
-        style={{ transform: `translate3d(0, ${offset * 0.25}px, 0) scale(1.1)` }}
+        className="absolute inset-0"
+        style={{
+          transform: `translate3d(0, ${offset * 0.25}px, 0) scale(1.1)`,
+          backgroundImage: `url(${vitrineHero})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/60 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/70 to-[#0A0A0A]/40" />
+
 
       <div className="relative mx-auto w-full max-w-6xl px-5 pb-24 pt-28 sm:px-6">
         <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white/80">
@@ -401,8 +422,80 @@ function WaveDivider() {
 }
 
 // ── Best Sellers ─────────────────────────────────────────────────────────
-function BestSellers({ items }: { items: VitrineItem[] }) {
-  if (items.length === 0) return null;
+// Trois paires de photos avant/après, hébergées sur GitHub (URLs brutes).
+function BeforeAfter({ before, after, name }: { before: string; after: string; name: string }) {
+  const [pos, setPos] = useState(55);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragging = useRef(false);
+
+  const update = useCallback((clientX: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const p = ((clientX - rect.left) / rect.width) * 100;
+    setPos(Math.max(2, Math.min(98, p)));
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!dragging.current) return;
+      const x = "touches" in e ? e.touches[0]?.clientX ?? 0 : (e as MouseEvent).clientX;
+      update(x);
+    };
+    const onUp = () => (dragging.current = false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchend", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchend", onUp);
+    };
+  }, [update]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative aspect-[4/5] w-full overflow-hidden select-none touch-none bg-[#0A0A0A]"
+      onMouseDown={(e) => {
+        dragging.current = true;
+        update(e.clientX);
+      }}
+      onTouchStart={(e) => {
+        dragging.current = true;
+        update(e.touches[0]?.clientX ?? 0);
+      }}
+    >
+      {/* Avant (fond) */}
+      <img src={before} alt={`${name} — avant`} loading="lazy" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+      {/* Étiquette AVANT */}
+      <span className="absolute left-3 top-3 z-10 rounded-full bg-black/70 px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white/90">
+        Avant
+      </span>
+
+      {/* Après (clip par curseur) */}
+      <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${pos}%)` }}>
+        <img src={after} alt={`${name} — après`} loading="lazy" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+        <span className="absolute right-3 top-3 z-10 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white shadow-lg" style={{ background: RED }}>
+          Après
+        </span>
+      </div>
+
+      {/* Poignée */}
+      <div className="absolute inset-y-0 z-20 flex items-center" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
+        <div className="h-full w-[2px] bg-white/90 shadow-[0_0_12px_rgba(255,255,255,0.7)]" />
+        <div className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white/95 shadow-2xl" style={{ color: RED }}>
+          <ArrowRight className="h-4 w-4 -mr-1" strokeWidth={3} />
+          <ArrowRight className="h-4 w-4 rotate-180 -ml-1" strokeWidth={3} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BestSellers() {
   return (
     <section id="best-sellers" className="bg-[#D40000] pb-20 pt-4 sm:pb-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-6">
@@ -413,10 +506,13 @@ function BestSellers({ items }: { items: VitrineItem[] }) {
           <h2 className="bx-section-title mt-2 text-4xl text-white sm:text-6xl">
             Nos Stars du Menu
           </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm text-white/80">
+            Glissez la poignée pour voir la transformation « avant / après ».
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((it, i) => (
+          {BEST_SELLERS_PAIRS.map((it, i) => (
             <article
               key={it.id}
               data-reveal
@@ -425,32 +521,10 @@ function BestSellers({ items }: { items: VitrineItem[] }) {
               }`}
               style={{ transitionDelay: `${(i % 3) * 80}ms` }}
             >
-              <div className="relative aspect-[4/5] w-full overflow-hidden">
-                {it.image ? (
-                  <img
-                    src={it.image}
-                    alt={it.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="h-full w-full bx-hero-bg" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent" />
-
-                {/* Bouton Commander en fondu au survol / tap */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100 group-focus-within:bg-black/40 group-focus-within:opacity-100">
-                  <OrderButton size="md" />
-                </div>
-              </div>
-              <div className="pointer-events-none absolute bottom-0 left-0 right-0 p-5">
+              <BeforeAfter before={it.before} after={it.after} name={it.name} />
+              <div className="flex items-center justify-between gap-3 p-5">
                 <h3 className="bx-wordmark text-2xl text-white">{it.name}</h3>
-                {it.priceFrom != null && (
-                  <p className="mt-1 text-sm font-bold text-white/80">
-                    {it.hasMultipleSizes ? "dès " : ""}
-                    {fmt(it.priceFrom)} <span className="text-white/50">TND</span>
-                  </p>
-                )}
+                <OrderButton size="sm" />
               </div>
             </article>
           ))}
@@ -459,6 +533,7 @@ function BestSellers({ items }: { items: VitrineItem[] }) {
     </section>
   );
 }
+
 
 // ── Menu (onglets + recherche + tri) ─────────────────────────────────────
 function MenuSection({
@@ -622,7 +697,7 @@ function Marquee({ words }: { words: string[] }) {
 }
 
 // ── À Propos ─────────────────────────────────────────────────────────────
-function About({ aboutImage }: { aboutImage?: string }) {
+function About() {
   return (
     <section id="apropos" className="bg-[#0A0A0A] py-20 sm:py-28">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-6 lg:grid-cols-2">
@@ -658,22 +733,19 @@ function About({ aboutImage }: { aboutImage?: string }) {
 
         <div data-reveal className="bx-reveal">
           <div className="bx-about-frame relative overflow-hidden rounded-3xl">
-            {aboutImage ? (
-              <img
-                src={aboutImage}
-                alt="Une spécialité gourmande de Box"
-                loading="lazy"
-                className="aspect-[4/3] w-full object-cover"
-              />
-            ) : (
-              <div className="bx-hero-bg aspect-[4/3] w-full" />
-            )}
+            <img
+              src={vitrineAbout}
+              alt="Une spécialité gourmande de Box"
+              loading="lazy"
+              className="aspect-[4/3] w-full object-cover"
+            />
           </div>
         </div>
       </div>
     </section>
   );
 }
+
 
 // ── FAQ ──────────────────────────────────────────────────────────────────
 function Faq({ categoryNames }: { categoryNames: string[] }) {
@@ -760,14 +832,33 @@ function LocationSection() {
           </h2>
           <VitrineMap />
 
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Adresse — placeholder tant qu'elle n'est pas confirmée */}
+          <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <MapPin className="mt-0.5 h-5 w-5 shrink-0" style={{ color: RED }} />
+            <div>
+              <div className="text-sm font-extrabold text-white">Adresse</div>
+              <div className="text-[13px] text-white/55">Ariana, Tunis — adresse à confirmer</div>
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <a
+              href={`tel:${PHONE_TEL}`}
+              className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-white/20"
+            >
+              <Phone className="mt-0.5 h-5 w-5 shrink-0" style={{ color: RED }} />
+              <div>
+                <div className="text-sm font-extrabold text-white">Téléphone</div>
+                <div className="text-[13px] text-white/55">{PHONE_DISPLAY}</div>
+              </div>
+            </a>
             <a
               href={DIRECTIONS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-white/20"
             >
-              <MapPin className="mt-0.5 h-5 w-5 shrink-0" style={{ color: RED }} />
+              <Navigation className="mt-0.5 h-5 w-5 shrink-0" style={{ color: RED }} />
               <div>
                 <div className="text-sm font-extrabold text-white">Itinéraire</div>
                 <div className="text-[13px] text-white/55">Ouvrir dans Google Maps</div>
@@ -783,6 +874,7 @@ function LocationSection() {
               </div>
             </div>
           </div>
+
         </div>
 
         <div
@@ -826,10 +918,17 @@ function FinalCta() {
   return (
     <section ref={ref} className="bx-final relative overflow-hidden bg-[#0A0A0A] py-28 sm:py-36">
       <div
-        className="bx-hero-bg absolute inset-0"
-        style={{ transform: `translate3d(0, ${offset}px, 0) scale(1.15)`, opacity: 0.85 }}
+        className="absolute inset-0"
+        style={{
+          transform: `translate3d(0, ${offset}px, 0) scale(1.15)`,
+          backgroundImage: `url(${vitrineCta})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.85,
+        }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/50 to-[#0A0A0A]/80" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/60 to-[#0A0A0A]/85" />
+
       <div data-reveal className="bx-reveal relative mx-auto max-w-3xl px-5 text-center sm:px-6">
         <h2 className="bx-hero-title text-5xl leading-[0.95] text-white sm:text-7xl">
           Assez lu. On passe à table ?
@@ -946,11 +1045,9 @@ const VITRINE_CSS = `
 // ── Page ─────────────────────────────────────────────────────────────────
 export function VitrineSite() {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const { loading, categories, items, featured, productCount, categoryCount } = useVitrineMenu();
+  const { categories, items, productCount, categoryCount } = useVitrineMenu();
   useRevealRoot(rootRef);
 
-  const bestSellers = featured.length > 0 ? featured : items.slice(0, 3);
-  const aboutImage = featured.find((f) => f.image)?.image ?? items.find((i) => i.image)?.image;
   const marqueeWords = categories.map((c) => c.name.toUpperCase());
 
   return (
@@ -963,14 +1060,10 @@ export function VitrineSite() {
       <main>
         <Hero productCount={productCount} categoryCount={categoryCount} />
         <WaveDivider />
-        {loading ? (
-          <div className="bg-[#D40000] py-24 text-center text-white/80">Chargement du menu…</div>
-        ) : (
-          <BestSellers items={bestSellers} />
-        )}
+        <BestSellers />
         <MenuSection categories={categories} items={items} />
         <Marquee words={marqueeWords} />
-        <About aboutImage={aboutImage} />
+        <About />
         <Faq categoryNames={categories.map((c) => c.name)} />
         <LocationSection />
         <FinalCta />
@@ -980,5 +1073,6 @@ export function VitrineSite() {
     </div>
   );
 }
+
 
 export default VitrineSite;

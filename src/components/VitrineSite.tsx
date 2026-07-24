@@ -832,14 +832,33 @@ function LocationSection() {
           </h2>
           <VitrineMap />
 
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Adresse — placeholder tant qu'elle n'est pas confirmée */}
+          <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <MapPin className="mt-0.5 h-5 w-5 shrink-0" style={{ color: RED }} />
+            <div>
+              <div className="text-sm font-extrabold text-white">Adresse</div>
+              <div className="text-[13px] text-white/55">Ariana, Tunis — adresse à confirmer</div>
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <a
+              href={`tel:${PHONE_TEL}`}
+              className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-white/20"
+            >
+              <Phone className="mt-0.5 h-5 w-5 shrink-0" style={{ color: RED }} />
+              <div>
+                <div className="text-sm font-extrabold text-white">Téléphone</div>
+                <div className="text-[13px] text-white/55">{PHONE_DISPLAY}</div>
+              </div>
+            </a>
             <a
               href={DIRECTIONS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-white/20"
             >
-              <MapPin className="mt-0.5 h-5 w-5 shrink-0" style={{ color: RED }} />
+              <Navigation className="mt-0.5 h-5 w-5 shrink-0" style={{ color: RED }} />
               <div>
                 <div className="text-sm font-extrabold text-white">Itinéraire</div>
                 <div className="text-[13px] text-white/55">Ouvrir dans Google Maps</div>
@@ -855,6 +874,7 @@ function LocationSection() {
               </div>
             </div>
           </div>
+
         </div>
 
         <div

@@ -294,10 +294,6 @@ export function CompteClient() {
                 <p className="text-sm text-muted-foreground">Téléphone</p>
                 <p className="text-base">{profile?.phone || "—"}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Email</p>
-                <p className="text-base">{profile?.email || "—"}</p>
-              </div>
             </div>
           ) : (
             <form onSubmit={saveProfile} className="mt-4 space-y-3">
@@ -329,12 +325,8 @@ export function CompteClient() {
               </div>
             </form>
           )}
-        </section>
 
-        <section className="mt-6 rounded-xl border bg-white p-4">
-          <h2 className="text-lg font-semibold">Email & connexion</h2>
-
-          <form onSubmit={saveEmail} className="mt-4 space-y-2">
+          <form onSubmit={saveEmail} className="mt-5 space-y-2">
             <label className="text-sm text-muted-foreground">Adresse email</label>
             <Input
               type="email"
@@ -382,6 +374,7 @@ export function CompteClient() {
             )}
           </div>
         </section>
+
 
         <section className="mt-6">
           <div className="flex items-center justify-between">

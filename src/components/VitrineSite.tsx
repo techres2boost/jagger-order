@@ -697,7 +697,7 @@ function Marquee({ words }: { words: string[] }) {
 }
 
 // ── À Propos ─────────────────────────────────────────────────────────────
-function About({ aboutImage }: { aboutImage?: string }) {
+function About() {
   return (
     <section id="apropos" className="bg-[#0A0A0A] py-20 sm:py-28">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-6 lg:grid-cols-2">
@@ -733,22 +733,19 @@ function About({ aboutImage }: { aboutImage?: string }) {
 
         <div data-reveal className="bx-reveal">
           <div className="bx-about-frame relative overflow-hidden rounded-3xl">
-            {aboutImage ? (
-              <img
-                src={aboutImage}
-                alt="Une spécialité gourmande de Box"
-                loading="lazy"
-                className="aspect-[4/3] w-full object-cover"
-              />
-            ) : (
-              <div className="bx-hero-bg aspect-[4/3] w-full" />
-            )}
+            <img
+              src={vitrineAbout}
+              alt="Une spécialité gourmande de Box"
+              loading="lazy"
+              className="aspect-[4/3] w-full object-cover"
+            />
           </div>
         </div>
       </div>
     </section>
   );
 }
+
 
 // ── FAQ ──────────────────────────────────────────────────────────────────
 function Faq({ categoryNames }: { categoryNames: string[] }) {

@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { BoxLogo } from "@/components/BoxLogo";
+import { useAvatar } from "@/lib/use-avatar";
 import { EnableNotifications } from "@/components/EnableNotifications";
 import burger3d from "@/assets/burger-3d.png";
 import pizza3d from "@/assets/pizza-3d.png";
@@ -316,17 +317,20 @@ export function MenuPage() {
                 </Link>
               )}
               {user ? (
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    toast.success("Déconnecté");
-                  }}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
-                  title="Déconnexion"
-                  aria-label="Déconnexion"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
+                <>
+                  <HeaderAvatar userId={user.id} />
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      toast.success("Déconnecté");
+                    }}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
+                    title="Déconnexion"
+                    aria-label="Déconnexion"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </button>
+                </>
               ) : (
                 <Link
                   to="/auth"
@@ -1022,5 +1026,24 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
         </div>
       )}
     </div>
+  );
+}
+
+// Petit avatar utilisateur dans le header : photo si dispo, sinon icône générique.
+function HeaderAvatar({ userId }: { userId: string }) {
+  const { avatarUrl } = useAvatar(userId);
+  return (
+    <Link
+      to="/compte"
+      className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
+      title="Mon compte"
+      aria-label="Mon compte"
+    >
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <UserIcon className="h-5 w-5" />
+      )}
+    </Link>
   );
 }

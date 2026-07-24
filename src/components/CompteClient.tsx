@@ -19,6 +19,7 @@ import L from "leaflet";
 import { Trash, Edit, MapPinOff } from "lucide-react";
 import { deliveryDistanceKm, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { signAddressPhoto } from "@/lib/address-photo";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 
 // Types locaux
 
@@ -264,6 +265,12 @@ export function CompteClient() {
     <div className="min-h-screen pb-20">
       <div className="mx-auto max-w-2xl p-4">
         <h1 className="text-2xl font-bold">Mon compte</h1>
+
+        {user && (
+          <div className="mt-6 flex justify-center rounded-xl border bg-white p-4">
+            <ProfileAvatar userId={user.id} />
+          </div>
+        )}
 
         <section className="mt-6 rounded-xl border bg-white p-4">
           <div className="flex items-center justify-between">

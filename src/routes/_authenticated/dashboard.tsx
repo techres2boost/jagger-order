@@ -216,7 +216,11 @@ function DashboardPage() {
     right: { style: "thin", color: { rgb: "FFCBD5E1" } },
   };
 
-  const ACCEPTED_ORDER_STATUSES = new Set(["accepted", "ready"]);
+  // Une commande acceptée par le restaurant progresse ensuite
+  // (accepted -> ready -> delivering -> delivered) : son statut courant n'est
+  // donc pas forcément "accepted". On considère comme acceptée toute commande à
+  // ce statut ou au-delà. Valeurs strictement conformes à l'enum order_status.
+  const ACCEPTED_ORDER_STATUSES = new Set(["accepted", "ready", "delivering", "delivered"]);
   const DINAR_FORMAT = "#,##0.000 \"DT\"";
   const formatDinar = (value: number) =>
     `${value.toLocaleString("fr-FR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} DT`;
@@ -321,7 +325,7 @@ function DashboardPage() {
       refused: number;
       expired: number;
       cancelled: number;
-      avgAccept: number;
+      avgAccept: string;
       totalRevenue: number;
       panierMoyen: number;
       acceptanceRate: number;
@@ -344,7 +348,7 @@ function DashboardPage() {
       ],
       [overviewValues.totalOrders, overviewValues.refused, overviewValues.expired, overviewValues.cancelled],
       [
-        "DÉLAI MOYEN D'ACCEPTATION",
+        "DÉLAI MOYEN D'ACCEPTATION (SECONDES)",
         "CHIFFRE D'AFFAIRES TOTAL",
         "PANIER MOYEN",
         "TAUX D'ACCEPTATION",
@@ -673,12 +677,12 @@ function DashboardPage() {
           refused: refusedOrders.length,
           expired: expiredOrders.length,
           cancelled: periodOrders.filter((order) => order.status === "cancelled").length,
-          avgAccept,
+          avgAccept: `${Math.round(avgAccept)} s`,
           totalRevenue,
           panierMoyen,
           acceptanceRate,
-          biggestOrder: biggestOrder ? `${biggestOrder.id} (${formatDinar(biggestOrder.total)})` : "",
-          smallestOrder: smallestOrder ? `${smallestOrder.id} (${formatDinar(smallestOrder.total)})` : "",
+          biggestOrder: biggestOrder ? formatDinar(biggestOrder.total) : "",
+          smallestOrder: smallestOrder ? formatDinar(smallestOrder.total) : "",
           bestDay: bestDay || "",
         }),
         "Vue d'ensemble",

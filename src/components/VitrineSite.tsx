@@ -1021,11 +1021,9 @@ const VITRINE_CSS = `
 // ── Page ─────────────────────────────────────────────────────────────────
 export function VitrineSite() {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const { loading, categories, items, featured, productCount, categoryCount } = useVitrineMenu();
+  const { categories, items, productCount, categoryCount } = useVitrineMenu();
   useRevealRoot(rootRef);
 
-  const bestSellers = featured.length > 0 ? featured : items.slice(0, 3);
-  const aboutImage = featured.find((f) => f.image)?.image ?? items.find((i) => i.image)?.image;
   const marqueeWords = categories.map((c) => c.name.toUpperCase());
 
   return (
@@ -1038,14 +1036,10 @@ export function VitrineSite() {
       <main>
         <Hero productCount={productCount} categoryCount={categoryCount} />
         <WaveDivider />
-        {loading ? (
-          <div className="bg-[#D40000] py-24 text-center text-white/80">Chargement du menu…</div>
-        ) : (
-          <BestSellers items={bestSellers} />
-        )}
+        <BestSellers />
         <MenuSection categories={categories} items={items} />
         <Marquee words={marqueeWords} />
-        <About aboutImage={aboutImage} />
+        <About />
         <Faq categoryNames={categories.map((c) => c.name)} />
         <LocationSection />
         <FinalCta />
@@ -1055,5 +1049,6 @@ export function VitrineSite() {
     </div>
   );
 }
+
 
 export default VitrineSite;

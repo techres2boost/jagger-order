@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { MapPin, Phone, CheckCircle2, Navigation, X } from "lucide-react";
 import { signAddressPhoto } from "@/lib/address-photo";
 import { DriverLocationBroadcaster } from "@/components/DriverLocationBroadcaster";
-import { OrderChat } from "@/components/OrderChat";
 
 // Statuts d'une commande "active/en cours" pour un livreur : proposition à
 // accepter (ready) + livraison en cours (delivering). Le chat n'existe lui que
@@ -96,8 +95,6 @@ function openItinerary(order: OrderRow) {
 // extrait en composant pour être monté par la route /driver/orders.
 export function DriverOrders() {
   const [livreurId, setLivreurId] = useState<string | null>(null);
-  // Compte auth du livreur (= sender_id des messages qu'il envoie).
-  const [userId, setUserId] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [items, setItems] = useState<Record<string, OrderItemRow[]>>({});
   const [itemOptions, setItemOptions] = useState<Record<string, ItemOptionRow[]>>({});
@@ -119,7 +116,6 @@ export function DriverOrders() {
     async function init() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-      setUserId(u.user.id);
       const { data: livreur } = await supabase
         .from("livreurs")
         .select("id")
@@ -364,26 +360,39 @@ export function DriverOrders() {
             })}
 
             {deliveries.map((order) => (
-              <button
+              <div
                 key={order.id}
-                type="button"
-                onClick={() => setSelectedOrderId(order.id)}
-                className="w-full rounded-3xl border bg-card p-4 text-left shadow-sm transition hover:border-brand/40"
+                className="w-full rounded-3xl border bg-card p-4 shadow-sm transition hover:border-brand/40"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-sm font-bold">#{order.id.slice(0, 8)}</span>
-                  <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[11px] font-bold text-blue-600">
-                    {STATUS_LABEL[order.status] ?? order.status}
-                  </span>
-                </div>
-                <div className="mt-2 font-black">{order.customer_name || "Client"}</div>
-                <div className="mt-1 flex items-start gap-1 text-sm text-muted-foreground">
-                  <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand" />
-                  <span className="line-clamp-1 break-words">
-                    {order.address ?? "Adresse non renseignée"}
-                  </span>
-                </div>
-              </button>
+                {/* Zone cliquable : ouvre le modal détails (hors bouton ci-dessous). */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrderId(order.id)}
+                  className="w-full text-left"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-sm font-bold">#{order.id.slice(0, 8)}</span>
+                    <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[11px] font-bold text-blue-600">
+                      {STATUS_LABEL[order.status] ?? order.status}
+                    </span>
+                  </div>
+                  <div className="mt-2 font-black">{order.customer_name || "Client"}</div>
+                  <div className="mt-1 flex items-start gap-1 text-sm text-muted-foreground">
+                    <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand" />
+                    <span className="line-clamp-1 break-words">
+                      {order.address ?? "Adresse non renseignée"}
+                    </span>
+                  </div>
+                </button>
+                {/* Marquage direct depuis la liste (même action que le modal). */}
+                <button
+                  type="button"
+                  onClick={() => markDelivered(order.id)}
+                  className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand font-bold text-brand-foreground"
+                >
+                  <CheckCircle2 className="h-5 w-5" /> Marquer comme livrée
+                </button>
+              </div>
             ))}
           </>
         )}
@@ -502,14 +511,12 @@ export function DriverOrders() {
               </button>
             )}
 
-            {/* Live tracking + chat : uniquement pendant la livraison active.
-                Le broadcaster diffuse la position GPS du livreur ; le chat permet
-                d'échanger avec le client. Démontés dès que le statut change ou
-                que le détail est fermé. */}
-            {selectedOrder.status === "delivering" && userId && (
-              <div className="mt-4 space-y-3 border-t pt-4">
+            {/* Position partagée en direct pendant la livraison. Le chat n'est
+                plus ici : il vit désormais dans l'onglet "Conversations" de la
+                navbar. Le broadcaster est démonté dès la fermeture du détail. */}
+            {selectedOrder.status === "delivering" && (
+              <div className="mt-4 border-t pt-4">
                 <DriverLocationBroadcaster orderId={selectedOrder.id} active />
-                <OrderChat orderId={selectedOrder.id} currentUserId={userId} />
               </div>
             )}
           </div>

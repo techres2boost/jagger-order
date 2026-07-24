@@ -918,10 +918,17 @@ function FinalCta() {
   return (
     <section ref={ref} className="bx-final relative overflow-hidden bg-[#0A0A0A] py-28 sm:py-36">
       <div
-        className="bx-hero-bg absolute inset-0"
-        style={{ transform: `translate3d(0, ${offset}px, 0) scale(1.15)`, opacity: 0.85 }}
+        className="absolute inset-0"
+        style={{
+          transform: `translate3d(0, ${offset}px, 0) scale(1.15)`,
+          backgroundImage: `url(${vitrineCta})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.85,
+        }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/50 to-[#0A0A0A]/80" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/60 to-[#0A0A0A]/85" />
+
       <div data-reveal className="bx-reveal relative mx-auto max-w-3xl px-5 text-center sm:px-6">
         <h2 className="bx-hero-title text-5xl leading-[0.95] text-white sm:text-7xl">
           Assez lu. On passe à table ?

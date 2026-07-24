@@ -1,11 +1,11 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 // useLayoutEffect côté client, useEffect en SSR (évite l'avertissement React).
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 import { fmt } from "@/lib/format";
-import { useCart } from "@/lib/cart-context";
+import { useCart, WELCOME_PROMO_CODE, normalizePromoCode } from "@/lib/cart-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import {
@@ -74,9 +74,19 @@ export function MenuPage() {
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<string | null>(null);
   const [selected, setSelected] = useState<Dish | null>(null);
-  const { count, add, lines } = useCart();
+  const { count, add, lines, applyPromo } = useCart();
   const { user, isAdmin, isLivreur, rolesResolved } = useAuth();
   const navigate = useNavigate();
+
+  // Code promo reçu via l'URL (ex. clic sur la bannière « Offre de bienvenue »
+  // → /?promo=WELCOME10). On le mémorise dans l'état du panier ; l'éligibilité
+  // et la réduction sont ensuite gérées au checkout (page panier).
+  const { promo } = useSearch({ from: "/" });
+  useEffect(() => {
+    if (normalizePromoCode(promo) === WELCOME_PROMO_CODE) {
+      applyPromo(WELCOME_PROMO_CODE);
+    }
+  }, [promo, applyPromo]);
   const [bounceKey, setBounceKey] = useState(0);
   const [search, setSearch] = useState("");
   const [priceSort, setPriceSort] = useState<"none" | "asc" | "desc">("none");
@@ -362,29 +372,39 @@ export function MenuPage() {
             >
               {PROMO_CARDS.map((p, i) => (
                 <div key={i} className="w-full shrink-0 snap-center pr-3 last:pr-0">
-                  <div className="relative overflow-hidden rounded-3xl bg-[color:var(--brand)] px-5 py-4 shadow-xl">
-                    <div className="absolute inset-0 opacity-30 halftone-red pointer-events-none" />
-                    <div className="relative flex items-center gap-3">
-                      <div className="flex-1">
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">
-                          Offre de bienvenue
+                  {/* Bannière « Offre de bienvenue » : clic → page menu avec le
+                      code promo dans l'URL (?promo=WELCOME10), qui l'active dans
+                      le panier. La réduction réelle est appliquée au checkout. */}
+                  <Link
+                    to="/"
+                    search={{ promo: WELCOME_PROMO_CODE }}
+                    aria-label="Offre de bienvenue -10 % sur votre première commande"
+                    className="press block cursor-pointer"
+                  >
+                    <div className="relative overflow-hidden rounded-3xl bg-[color:var(--brand)] px-5 py-4 shadow-xl">
+                      <div className="absolute inset-0 opacity-30 halftone-red pointer-events-none" />
+                      <div className="relative flex items-center gap-3">
+                        <div className="flex-1">
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">
+                            Offre de bienvenue
+                          </div>
+                          <div className="mt-1 text-2xl font-black leading-tight text-white">
+                            -10 % sur votre
+                            <br />
+                            première commande
+                          </div>
                         </div>
-                        <div className="mt-1 text-2xl font-black leading-tight text-white">
-                          -10 % sur votre
-                          <br />
-                          première commande
-                        </div>
+                        <img
+                          src={p.img}
+                          alt={p.alt}
+                          width={120}
+                          height={120}
+                          loading="lazy"
+                          className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.35)] rotate-[-6deg]"
+                        />
                       </div>
-                      <img
-                        src={p.img}
-                        alt={p.alt}
-                        width={120}
-                        height={120}
-                        loading="lazy"
-                        className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.35)] rotate-[-6deg]"
-                      />
                     </div>
-                  </div>
+                  </Link>
                 </div>
               ))}
             </div>

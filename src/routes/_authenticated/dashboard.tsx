@@ -1038,7 +1038,7 @@ function DashboardPage() {
         ratingByOrder.set(r.order_id, arr);
       }
       const ratedOrderIds = Array.from(ratingByOrder.keys());
-      let topDishes: Array<{ name: string; avg: number; count: number }> = [];
+      let topDishesRated: Array<{ name: string; avg: number; count: number }> = [];
       if (ratedOrderIds.length > 0) {
         const { data: ratedItemsData, error: ratedItemsError } = await supabase
           .from("order_items")
@@ -1056,7 +1056,7 @@ function DashboardPage() {
             dishMap.set(it.name, cur);
           }
         }
-        topDishes = Array.from(dishMap.entries())
+        topDishesRated = Array.from(dishMap.entries())
           .map(([name, v]) => ({ name, avg: v.sum / v.count, count: v.count }))
           .sort((a, b) => b.avg - a.avg || b.count - a.count)
           .slice(0, 5);

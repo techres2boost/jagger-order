@@ -293,3 +293,13 @@
   scrollbar-color: #e11d2e transparent;
   scrollbar-width: thin;
 }
+
+/* Live tracking (BOX) — marqueur scooter du livreur.
+   Transition douce du déplacement : Leaflet applique le positionnement via
+   `transform` sur l'icône ; on anime donc cette propriété. */
+.box-scooter-marker {
+  transition: transform 0.9s linear;
+}
+.box-scooter-marker svg {
+  display: block;
+}

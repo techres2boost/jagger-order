@@ -24,6 +24,8 @@ import { Route as AuthenticatedCommandesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCommandeIdRouteImport } from './routes/_authenticated/commande.$id'
 import { Route as AuthenticatedOrdersOrderIdTrackingRouteImport } from './routes/_authenticated/orders.$orderId.tracking'
+import { Route as AuthenticatedDriverOrdersRouteImport } from './routes/_authenticated/driver.orders'
+import { Route as AuthenticatedDriverConversationsRouteImport } from './routes/_authenticated/driver.conversations'
 import { Route as AuthenticatedAdminOptionsRouteImport } from './routes/_authenticated/admin/options'
 import { Route as AuthenticatedAdminMenuRouteImport } from './routes/_authenticated/admin/menu'
 import { Route as AuthenticatedAdminLivreursRouteImport } from './routes/_authenticated/admin/livreurs'
@@ -105,6 +107,17 @@ const AuthenticatedOrdersOrderIdTrackingRoute =
     path: '/orders/$orderId/tracking',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDriverOrdersRoute = AuthenticatedDriverOrdersRouteImport.update({
+  id: '/driver/orders',
+  path: '/driver/orders',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDriverConversationsRoute =
+  AuthenticatedDriverConversationsRouteImport.update({
+    id: '/driver/conversations',
+    path: '/driver/conversations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminOptionsRoute =
   AuthenticatedAdminOptionsRouteImport.update({
     id: '/options',
@@ -148,6 +161,8 @@ export interface FileRoutesByFullPath {
   '/admin/options': typeof AuthenticatedAdminOptionsRoute
   '/commande/$id': typeof AuthenticatedCommandeIdRoute
   '/orders/$orderId/tracking': typeof AuthenticatedOrdersOrderIdTrackingRoute
+  '/driver/orders': typeof AuthenticatedDriverOrdersRoute
+  '/driver/conversations': typeof AuthenticatedDriverConversationsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -168,6 +183,8 @@ export interface FileRoutesByTo {
   '/admin/options': typeof AuthenticatedAdminOptionsRoute
   '/commande/$id': typeof AuthenticatedCommandeIdRoute
   '/orders/$orderId/tracking': typeof AuthenticatedOrdersOrderIdTrackingRoute
+  '/driver/orders': typeof AuthenticatedDriverOrdersRoute
+  '/driver/conversations': typeof AuthenticatedDriverConversationsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -190,6 +207,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/options': typeof AuthenticatedAdminOptionsRoute
   '/_authenticated/commande/$id': typeof AuthenticatedCommandeIdRoute
   '/_authenticated/orders/$orderId/tracking': typeof AuthenticatedOrdersOrderIdTrackingRoute
+  '/_authenticated/driver/orders': typeof AuthenticatedDriverOrdersRoute
+  '/_authenticated/driver/conversations': typeof AuthenticatedDriverConversationsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -212,6 +231,8 @@ export interface FileRouteTypes {
     | '/admin/options'
     | '/commande/$id'
     | '/orders/$orderId/tracking'
+    | '/driver/orders'
+    | '/driver/conversations'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -232,6 +253,8 @@ export interface FileRouteTypes {
     | '/admin/options'
     | '/commande/$id'
     | '/orders/$orderId/tracking'
+    | '/driver/orders'
+    | '/driver/conversations'
   id:
     | '__root__'
     | '/'
@@ -253,6 +276,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/options'
     | '/_authenticated/commande/$id'
     | '/_authenticated/orders/$orderId/tracking'
+    | '/_authenticated/driver/orders'
+    | '/_authenticated/driver/conversations'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -372,6 +397,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrdersOrderIdTrackingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/driver/orders': {
+      id: '/_authenticated/driver/orders'
+      path: '/driver/orders'
+      fullPath: '/driver/orders'
+      preLoaderRoute: typeof AuthenticatedDriverOrdersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/driver/conversations': {
+      id: '/_authenticated/driver/conversations'
+      path: '/driver/conversations'
+      fullPath: '/driver/conversations'
+      preLoaderRoute: typeof AuthenticatedDriverConversationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/options': {
       id: '/_authenticated/admin/options'
       path: '/options'
@@ -429,6 +468,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPanierRoute: typeof AuthenticatedPanierRoute
   AuthenticatedCommandeIdRoute: typeof AuthenticatedCommandeIdRoute
   AuthenticatedOrdersOrderIdTrackingRoute: typeof AuthenticatedOrdersOrderIdTrackingRoute
+  AuthenticatedDriverOrdersRoute: typeof AuthenticatedDriverOrdersRoute
+  AuthenticatedDriverConversationsRoute: typeof AuthenticatedDriverConversationsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -440,6 +481,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPanierRoute: AuthenticatedPanierRoute,
   AuthenticatedCommandeIdRoute: AuthenticatedCommandeIdRoute,
   AuthenticatedOrdersOrderIdTrackingRoute: AuthenticatedOrdersOrderIdTrackingRoute,
+  AuthenticatedDriverOrdersRoute: AuthenticatedDriverOrdersRoute,
+  AuthenticatedDriverConversationsRoute: AuthenticatedDriverConversationsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

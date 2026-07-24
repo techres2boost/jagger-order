@@ -1075,7 +1075,7 @@ function DashboardPage() {
           totalCount,
           distribution,
           dailyAvg,
-          topDishes,
+          topDishes: topDishesRated,
           detailed,
         }),
         "Avis",

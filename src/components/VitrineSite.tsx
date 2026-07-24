@@ -333,12 +333,18 @@ function Hero({ productCount, categoryCount }: { productCount: number; categoryC
       id="top"
       className="relative flex min-h-[100svh] items-center overflow-hidden bg-[#0A0A0A]"
     >
-      {/* Fond cinématique généré en CSS (palette noir/rouge), léger parallax */}
+      {/* Fond hero : composition IA cinématique noir/rouge, léger parallax */}
       <div
-        className="bx-hero-bg absolute inset-0"
-        style={{ transform: `translate3d(0, ${offset * 0.25}px, 0) scale(1.1)` }}
+        className="absolute inset-0"
+        style={{
+          transform: `translate3d(0, ${offset * 0.25}px, 0) scale(1.1)`,
+          backgroundImage: `url(${vitrineHero})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/60 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/70 to-[#0A0A0A]/40" />
+
 
       <div className="relative mx-auto w-full max-w-6xl px-5 pb-24 pt-28 sm:px-6">
         <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white/80">

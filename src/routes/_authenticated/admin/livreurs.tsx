@@ -149,30 +149,84 @@ function AdminLivreursPage() {
               Aucun livreur enregistré.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Livraisons</TableHead>
-                  <TableHead>En cours</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Vue desktop : tableau */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nom</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Livraisons</TableHead>
+                      <TableHead>En cours</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedLivreurs.map((livreur) => {
+                      const stats = statsByLivreurId[livreur.id];
+                      return (
+                        <TableRow key={livreur.id}>
+                          <TableCell>
+                            <div className="font-semibold">{livreur.nom}</div>
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${
+                                livreur.is_active
+                                  ? "bg-success/20 text-success"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {livreur.is_active ? "Actif" : "Inactif"}
+                            </span>
+                          </TableCell>
+                          <TableCell>{stats?.total_livraisons ?? 0}</TableCell>
+                          <TableCell>{stats?.livraisons_en_cours ?? 0}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditor(livreur)}
+                                className="rounded-full border p-2 hover:bg-muted"
+                                aria-label="Éditer"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleActive(livreur)}
+                                className={`rounded-full border p-2 hover:bg-muted ${
+                                  livreur.is_active ? "text-destructive" : "text-success"
+                                }`}
+                                aria-label={livreur.is_active ? "Désactiver" : "Activer"}
+                              >
+                                <Power className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Vue mobile : cartes empilées */}
+              <div className="grid gap-3 md:hidden">
                 {sortedLivreurs.map((livreur) => {
                   const stats = statsByLivreurId[livreur.id];
                   return (
-                    <TableRow key={livreur.id}>
-                      <TableCell>
-                        <div className="font-semibold">{livreur.nom}</div>
-                        <div className="text-xs text-muted-foreground">{livreur.email}</div>
-                      </TableCell>
-                      <TableCell>{livreur.telephone}</TableCell>
-                      <TableCell>
+                    <div
+                      key={livreur.id}
+                      className="rounded-2xl border bg-card p-4 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold">{livreur.nom}</div>
+                        </div>
                         <span
-                          className={`inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${
+                          className={`shrink-0 inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${
                             livreur.is_active
                               ? "bg-success/20 text-success"
                               : "bg-muted text-muted-foreground"
@@ -180,36 +234,44 @@ function AdminLivreursPage() {
                         >
                           {livreur.is_active ? "Actif" : "Inactif"}
                         </span>
-                      </TableCell>
-                      <TableCell>{stats?.total_livraisons ?? 0}</TableCell>
-                      <TableCell>{stats?.livraisons_en_cours ?? 0}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openEditor(livreur)}
-                            className="rounded-full border p-2 hover:bg-muted"
-                            aria-label="Éditer"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleActive(livreur)}
-                            className={`rounded-full border p-2 hover:bg-muted ${
-                              livreur.is_active ? "text-destructive" : "text-success"
-                            }`}
-                            aria-label={livreur.is_active ? "Désactiver" : "Activer"}
-                          >
-                            <Power className="h-4 w-4" />
-                          </button>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                        <div className="rounded-xl bg-muted/50 p-2">
+                          <div className="text-xs text-muted-foreground">Livraisons</div>
+                          <div className="font-black">{stats?.total_livraisons ?? 0}</div>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                        <div className="rounded-xl bg-muted/50 p-2">
+                          <div className="text-xs text-muted-foreground">En cours</div>
+                          <div className="font-black">{stats?.livraisons_en_cours ?? 0}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditor(livreur)}
+                          className="rounded-full border p-2 hover:bg-muted"
+                          aria-label="Éditer"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleActive(livreur)}
+                          className={`rounded-full border p-2 hover:bg-muted ${
+                            livreur.is_active ? "text-destructive" : "text-success"
+                          }`}
+                          aria-label={livreur.is_active ? "Désactiver" : "Activer"}
+                        >
+                          <Power className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </section>
 

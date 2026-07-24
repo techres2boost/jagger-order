@@ -14,11 +14,23 @@ import {
   Hourglass,
   Layers,
   LogOut,
+  Star,
   Sun,
   Timer,
   Trophy,
   XCircle,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { toast } from "sonner";
 import { MENU } from "@/data/menu";
 import { LivreurStatsSection } from "@/components/LivreurStatsSection";
@@ -57,6 +69,14 @@ interface ItemRow {
   qty: number;
 }
 
+interface RatingRow {
+  order_id: string;
+  rating: number | null;
+  comment: string | null;
+  created_at: string;
+  dismissed: boolean | null;
+}
+
 const NAME_TO_CATEGORY: Record<string, string> = MENU.reduce((acc, item) => {
   acc[item.name] = item.category;
   return acc;
@@ -82,6 +102,7 @@ function serviceFromHour(hour: number): "Matin" | "Midi" | "Soir" {
 function DashboardPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [items, setItems] = useState<ItemRow[]>([]);
+  const [ratings, setRatings] = useState<RatingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -120,8 +141,19 @@ function DashboardPage() {
         toast.error(e2.message);
       }
 
+      // Avis clients : on récupère toutes les colonnes utiles au calcul des
+      // statistiques. Le filtrage (dismissed / rating NULL / période) est
+      // appliqué côté client dans le useMemo `ratingStats`.
+      const { data: rts, error: e3 } = await supabase
+        .from("order_ratings")
+        .select("order_id, rating, comment, created_at, dismissed");
+      if (e3) {
+        toast.error(e3.message);
+      }
+
       setOrders((os as OrderRow[]) ?? []);
       setItems((its as ItemRow[]) ?? []);
+      setRatings((rts as RatingRow[]) ?? []);
       setLoading(false);
     })();
   }, []);
@@ -195,8 +227,88 @@ function DashboardPage() {
     };
   }, [orders, items]);
 
+  // Statistiques des avis clients (table order_ratings).
+  // Règle transverse : on exclut TOUJOURS les lignes dismissed = true ou dont
+  // rating est NULL. Les calculs respectent la période sélectionnée (start/end)
+  // lorsqu'elle est valide ; sinon ils portent sur l'ensemble des avis.
+  const ratingStats = useMemo(() => {
+    const from = startDate ? new Date(startDate) : null;
+    if (from) from.setHours(0, 0, 0, 0);
+    const to = endDate ? new Date(endDate) : null;
+    if (to) to.setHours(23, 59, 59, 999);
+
+    const valid = ratings.filter((r) => {
+      if (r.dismissed === true) return false;
+      if (r.rating == null) return false;
+      if (periodValid && from && to) {
+        const t = new Date(r.created_at).getTime();
+        if (t < from.getTime() || t > to.getTime()) return false;
+      }
+      return true;
+    });
+
+    const count = valid.length;
+    const avg = count ? valid.reduce((sum, r) => sum + (r.rating as number), 0) / count : 0;
+
+    // Répartition 1→5.
+    const distribution = [1, 2, 3, 4, 5].map((value) => ({
+      rating: value,
+      label: `${value}★`,
+      count: valid.filter((r) => Math.round(r.rating as number) === value).length,
+    }));
+
+    // Évolution de la moyenne par jour (ordre chronologique).
+    const perDay = new Map<string, { sum: number; n: number }>();
+    for (const r of valid) {
+      const day = format(new Date(r.created_at), "yyyy-MM-dd");
+      const entry = perDay.get(day) ?? { sum: 0, n: 0 };
+      entry.sum += r.rating as number;
+      entry.n += 1;
+      perDay.set(day, entry);
+    }
+    const trend = [...perDay.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([day, { sum, n }]) => ({
+        day,
+        label: format(new Date(day), "dd/MM"),
+        avg: Number((sum / n).toFixed(2)),
+      }));
+
+    // Plats les mieux notés : on rattache la note de chaque commande à chacun
+    // des plats distincts qu'elle contient (jointure order_ratings.order_id →
+    // order_items.order_id, regroupée par order_items.name). Le "nombre d'avis"
+    // est le nombre de commandes notées ayant contenu ce plat. Aucun seuil
+    // minimum d'avis n'est appliqué pour l'instant.
+    const namesByOrder = new Map<string, Set<string>>();
+    for (const item of items) {
+      const set = namesByOrder.get(item.order_id) ?? new Set<string>();
+      set.add(item.name);
+      namesByOrder.set(item.order_id, set);
+    }
+    const dishAgg = new Map<string, { sum: number; n: number }>();
+    for (const r of valid) {
+      const names = namesByOrder.get(r.order_id);
+      if (!names) continue;
+      for (const name of names) {
+        const entry = dishAgg.get(name) ?? { sum: 0, n: 0 };
+        entry.sum += r.rating as number;
+        entry.n += 1;
+        dishAgg.set(name, entry);
+      }
+    }
+    const topRatedDishes = [...dishAgg.entries()]
+      .map(([name, { sum, n }]) => ({ name, avg: sum / n, count: n }))
+      .sort((a, b) => b.avg - a.avg || b.count - a.count)
+      .slice(0, 5);
+
+    return { count, avg, distribution, trend, topRatedDishes };
+  }, [ratings, items, startDate, endDate, periodValid]);
+
   const maxDish = stats.topDishes[0]?.[1] ?? 1;
   const maxService = Math.max(1, ...Object.values(stats.serviceMap));
+
+  // Note française avec 1 décimale (ex. 4,3). Utilisé pour l'affichage des notes.
+  const fmtRating1 = (value: number) => value.toFixed(1).replace(".", ",");
 
   const fmtSec = (seconds: number) =>
     seconds < 60
@@ -934,6 +1046,149 @@ function DashboardPage() {
                 <span className="text-3xl font-black text-brand">{stats.expired}</span>
                 <span className="text-sm text-muted-foreground">non répondues sous 2 min</span>
               </div>
+            </Card>
+
+            <Card icon={<Star className="h-5 w-5" />} title="Statistiques des avis">
+              {ratingStats.count === 0 ? (
+                <Empty label="Aucun avis pour l'instant." />
+              ) : (
+                <div className="space-y-6">
+                  {/* 1. Note moyenne globale — même style que les cartes métriques */}
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                    <KpiCard
+                      label="Note moyenne"
+                      value={`${fmtRating1(ratingStats.avg)} ★`}
+                      tone="brand"
+                    />
+                    <KpiCard label="Avis" value={String(ratingStats.count)} />
+                  </div>
+
+                  {/* 2. Répartition des notes */}
+                  <div>
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      Répartition des notes
+                    </h3>
+                    <div className="h-[220px] w-full text-muted-foreground">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={ratingStats.distribution}
+                          margin={{ top: 8, right: 8, bottom: 0, left: -20 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="currentColor"
+                            strokeOpacity={0.15}
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="label"
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 12, fill: "currentColor" }}
+                          />
+                          <YAxis
+                            allowDecimals={false}
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 12, fill: "currentColor" }}
+                          />
+                          <RechartsTooltip
+                            cursor={{ fill: "#B22222", fillOpacity: 0.08 }}
+                            formatter={(value: number) => [value, "Avis"]}
+                            labelFormatter={(label: string) => `Note ${label}`}
+                          />
+                          <Bar
+                            dataKey="count"
+                            fill="#B22222"
+                            radius={[4, 4, 0, 0]}
+                            maxBarSize={48}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* 3. Évolution de la note moyenne dans le temps */}
+                  <div>
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      Évolution de la note moyenne
+                    </h3>
+                    <div className="h-[220px] w-full text-muted-foreground">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={ratingStats.trend}
+                          margin={{ top: 8, right: 12, bottom: 0, left: -20 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="currentColor"
+                            strokeOpacity={0.15}
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="label"
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 12, fill: "currentColor" }}
+                          />
+                          <YAxis
+                            domain={[0, 5]}
+                            ticks={[0, 1, 2, 3, 4, 5]}
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 12, fill: "currentColor" }}
+                          />
+                          <RechartsTooltip
+                            formatter={(value: number) => [fmtRating1(value), "Note moyenne"]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="avg"
+                            stroke="#B22222"
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: "#B22222" }}
+                            activeDot={{ r: 5 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* 4. Plats les mieux notés (top 5) */}
+                  <div>
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      Plats les mieux notés
+                    </h3>
+                    {ratingStats.topRatedDishes.length === 0 ? (
+                      <Empty label="Aucun plat noté pour l'instant." />
+                    ) : (
+                      <ul className="space-y-2">
+                        {ratingStats.topRatedDishes.map((dish, index) => (
+                          <li key={dish.name}>
+                            <div className="mb-1 flex justify-between gap-2 text-sm">
+                              <span className="font-semibold">
+                                {index + 1}. {dish.name}
+                              </span>
+                              <span className="whitespace-nowrap font-black text-brand">
+                                {fmtRating1(dish.avg)}★{" "}
+                                <span className="font-semibold text-muted-foreground">
+                                  · {dish.count} avis
+                                </span>
+                              </span>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                              <div
+                                className="h-full bg-[#B22222]"
+                                style={{ width: `${(dish.avg / 5) * 100}%` }}
+                              />
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
             </Card>
 
             <LivreurStatsSection />

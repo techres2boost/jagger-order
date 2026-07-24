@@ -609,6 +609,167 @@ function DashboardPage() {
     return sheet;
   };
 
+  const makeAvisSheet = (
+    startDate: Date,
+    endDate: Date,
+    data: {
+      avgOverall: number | null;
+      totalCount: number;
+      distribution: Array<{ rating: number; count: number }>;
+      dailyAvg: Array<{ date: string; avg: number; count: number }>;
+      topDishes: Array<{ name: string; avg: number; count: number }>;
+      detailed: Array<{ date: string; rating: number; comment: string }>;
+    },
+  ) => {
+    const title = `Statistiques des avis (${format(startDate, "yyyy-MM-dd")} au ${format(endDate, "yyyy-MM-dd")})`;
+    const rows: unknown[][] = [];
+    const sectionRows: number[] = [];
+    const headerRows: number[] = [];
+    const emptyPlaceholder = "Aucune donnée sur cette période";
+
+    rows.push([title, null, null]); // 0
+    rows.push([null, null, null]); // 1
+
+    // Note moyenne globale
+    sectionRows.push(rows.length);
+    rows.push(["NOTE MOYENNE GLOBALE", null, null]);
+    rows.push([
+      data.avgOverall != null ? Number(data.avgOverall.toFixed(1)) : "—",
+      `${data.totalCount} avis`,
+      null,
+    ]);
+    rows.push([null, null, null]);
+
+    // Répartition
+    sectionRows.push(rows.length);
+    rows.push(["RÉPARTITION DES NOTES", null, null]);
+    headerRows.push(rows.length);
+    rows.push(["Note", "Nombre d'avis", null]);
+    for (const entry of data.distribution) {
+      rows.push([`${entry.rating}★`, entry.count, null]);
+    }
+    rows.push([null, null, null]);
+
+    // Évolution par jour
+    sectionRows.push(rows.length);
+    rows.push(["ÉVOLUTION DE LA NOTE MOYENNE PAR JOUR", null, null]);
+    headerRows.push(rows.length);
+    rows.push(["Date", "Note moyenne", "Nombre d'avis"]);
+    if (data.dailyAvg.length === 0) {
+      rows.push([emptyPlaceholder, "", ""]);
+    } else {
+      for (const entry of data.dailyAvg) {
+        rows.push([entry.date, Number(entry.avg.toFixed(1)), entry.count]);
+      }
+    }
+    rows.push([null, null, null]);
+
+    // Top plats
+    sectionRows.push(rows.length);
+    rows.push(["TOP 5 PLATS LES MIEUX NOTÉS", null, null]);
+    headerRows.push(rows.length);
+    rows.push(["Plat", "Note moyenne", "Nombre d'avis"]);
+    if (data.topDishes.length === 0) {
+      rows.push([emptyPlaceholder, "", ""]);
+    } else {
+      for (const entry of data.topDishes) {
+        rows.push([entry.name, Number(entry.avg.toFixed(1)), entry.count]);
+      }
+    }
+    rows.push([null, null, null]);
+
+    // Liste détaillée
+    sectionRows.push(rows.length);
+    rows.push(["LISTE DÉTAILLÉE DES AVIS", null, null]);
+    headerRows.push(rows.length);
+    rows.push(["Date", "Note", "Commentaire"]);
+    if (data.detailed.length === 0) {
+      rows.push([emptyPlaceholder, "", ""]);
+    } else {
+      for (const entry of data.detailed) {
+        rows.push([entry.date, entry.rating, entry.comment || ""]);
+      }
+    }
+
+    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    sheet["!cols"] = [{ wch: 32 }, { wch: 20 }, { wch: 60 }];
+    sheet["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+      ...sectionRows.map((r) => ({ s: { r, c: 0 }, e: { r, c: 2 } })),
+    ];
+
+    const styleCell = (address: string, style: Record<string, unknown>) => {
+      const cell = sheet[address] as any;
+      if (!cell) return;
+      cell.s = { ...(cell.s ?? {}), ...style };
+    };
+
+    // Title
+    styleCell("A1", {
+      font: { bold: true, color: { rgb: "FFFFFFFF" }, sz: 16 },
+      fill: { fgColor: { rgb: "FF1F2937" } },
+      alignment: { horizontal: "center", vertical: "center", wrapText: true },
+      border: EXCEL_BORDER,
+    });
+    for (let col = 1; col < 3; col += 1) {
+      styleCell(XLSX.utils.encode_cell({ r: 0, c: col }), {
+        fill: { fgColor: { rgb: "FF1F2937" } },
+        border: EXCEL_BORDER,
+      });
+    }
+
+    // Section rows
+    for (const r of sectionRows) {
+      for (let col = 0; col < 3; col += 1) {
+        styleCell(XLSX.utils.encode_cell({ r, c: col }), {
+          font: { bold: true, color: { rgb: "FF1F2937" }, sz: 12 },
+          fill: { fgColor: { rgb: "FFFDE68A" } },
+          alignment: { horizontal: "center", vertical: "center" },
+          border: EXCEL_BORDER,
+        });
+      }
+    }
+
+    // Header rows (column labels within sections)
+    for (const r of headerRows) {
+      for (let col = 0; col < 3; col += 1) {
+        styleCell(XLSX.utils.encode_cell({ r, c: col }), {
+          font: { bold: true, color: { rgb: "FFFFFFFF" }, sz: 11 },
+          fill: { fgColor: { rgb: "FF334155" } },
+          alignment: { horizontal: "center", vertical: "center" },
+          border: EXCEL_BORDER,
+        });
+      }
+    }
+
+    // Body rows: apply borders + alternating fills, skipping section/header/empty rows
+    const skip = new Set<number>([0, ...sectionRows, ...headerRows]);
+    for (let r = 1; r < rows.length; r += 1) {
+      if (skip.has(r)) continue;
+      const isBlank = rows[r].every((v) => v === null);
+      if (isBlank) continue;
+      const fill = r % 2 === 0 ? EXCEL_EVEN_ROW_FILL : EXCEL_ODD_ROW_FILL;
+      for (let col = 0; col < 3; col += 1) {
+        const cell = sheet[XLSX.utils.encode_cell({ r, c: col })] as any;
+        if (!cell) continue;
+        cell.s = {
+          ...(cell.s ?? {}),
+          border: EXCEL_BORDER,
+          fill,
+          alignment: {
+            vertical: "center",
+            horizontal: cell.t === "n" ? "right" : "left",
+            wrapText: true,
+          },
+          font: { color: { rgb: "FF0F172A" }, sz: 11 },
+        };
+      }
+    }
+
+    return sheet;
+  };
+
+
   const exportExcel = async () => {
     if (!startDate || !endDate) return;
     setExporting(true);

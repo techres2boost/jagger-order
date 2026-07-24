@@ -29,9 +29,9 @@ import { useVitrineMenu, type VitrineItem } from "@/lib/vitrine-data";
 import { VitrineMap } from "@/components/VitrineMap";
 
 // ─────────────────────────────────────────────────────────────────────────
-// Site vitrine BOX — route publique autonome (/vitrine).
+// Site vitrine BOX — route publique racine ("/").
 // Ne modifie AUCUNE logique de l'app : lit les mêmes données Supabase et
-// renvoie vers l'app de commande (route "/") par navigation interne.
+// renvoie vers l'app de commande (route "/app") par navigation interne.
 // Palette stricte : blanc #FFFFFF, rouge #D40000, noir #0A0A0A.
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -68,7 +68,7 @@ function OrderButton({
       : "text-white border border-white/25 bg-white/5 hover:bg-white/10";
   return (
     <Link
-      to="/"
+      to="/app"
       className={`bx-btn group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl font-extrabold uppercase tracking-wide ${h} ${base} ${className}`}
     >
       <span className="relative z-10 inline-flex items-center gap-2">
@@ -215,7 +215,7 @@ function FloatingOrder() {
         </div>
       )}
       <Link
-        to="/"
+        to="/app"
         className="bx-float bx-btn bx-btn-solid group relative inline-flex h-14 items-center justify-center gap-2 overflow-hidden rounded-full px-6 font-extrabold uppercase tracking-wide text-white shadow-2xl"
       >
         <span className="relative z-10 inline-flex items-center gap-2">
@@ -862,7 +862,7 @@ function Footer() {
             Itinéraire Google Maps
           </a>
           <Link
-            to="/"
+            to="/app"
             className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white"
           >
             <ShoppingBag className="h-4 w-4" />

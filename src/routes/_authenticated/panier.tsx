@@ -280,7 +280,7 @@ function PanierPage() {
       <header className="sticky top-0 z-20 border-b border-black/10 bg-black text-white">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link
-            to="/"
+            to="/app"
             className="press flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -297,7 +297,7 @@ function PanierPage() {
               <p className="text-sm text-black/60">Votre panier est vide.</p>
             </div>
             <Link
-              to="/"
+              to="/app"
               className="press flex h-14 w-full items-center justify-center rounded-full bg-[#E11D2E] text-base font-black text-white shadow-lg transition-colors hover:bg-[#B22222]"
             >
               Voir le menu

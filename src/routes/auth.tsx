@@ -65,14 +65,14 @@ function AuthPage() {
       if (roleValues.includes("admin")) return navigate({ to: "/admin" });
       if (roleValues.includes("livreur")) return navigate({ to: "/livreur" });
     }
-    navigate({ to: search.redirect ?? "/" });
+    navigate({ to: search.redirect ?? "/app" });
   }
 
   async function handleGoogle() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}${search.redirect ?? "/"}` },
+      options: { redirectTo: `${window.location.origin}${search.redirect ?? "/app"}` },
     });
     if (error) {
       setLoading(false);
@@ -116,7 +116,7 @@ function AuthPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
-      <Link to="/" className="mb-6">
+      <Link to="/app" className="mb-6">
         <BoxLogo size={80} />
       </Link>
 
@@ -219,7 +219,7 @@ function AuthPage() {
         )}
       </div>
 
-      <Link to="/" className="mt-6 text-sm font-semibold text-muted-foreground">
+      <Link to="/app" className="mt-6 text-sm font-semibold text-muted-foreground">
         ← Continuer sans compte
       </Link>
     </div>

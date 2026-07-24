@@ -81,7 +81,7 @@ export function MenuPage() {
   // Code promo reçu via l'URL (ex. clic sur la bannière « Offre de bienvenue »
   // → /?promo=WELCOME10). On le mémorise dans l'état du panier ; l'éligibilité
   // et la réduction sont ensuite gérées au checkout (page panier).
-  const { promo } = useSearch({ from: "/" });
+  const { promo } = useSearch({ from: "/app" });
   useEffect(() => {
     if (normalizePromoCode(promo) === WELCOME_PROMO_CODE) {
       applyPromo(WELCOME_PROMO_CODE);
@@ -376,7 +376,7 @@ export function MenuPage() {
                       code promo dans l'URL (?promo=WELCOME10), qui l'active dans
                       le panier. La réduction réelle est appliquée au checkout. */}
                   <Link
-                    to="/"
+                    to="/app"
                     search={{ promo: WELCOME_PROMO_CODE }}
                     aria-label="Offre de bienvenue -10 % sur votre première commande"
                     className="press block cursor-pointer"

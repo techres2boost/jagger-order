@@ -299,7 +299,7 @@ function CommandesPage() {
             </div>
           </div>
           <Link
-            to="/"
+            to="/app"
             className="press inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold"
           >
             <ArrowRight className="h-4 w-4" /> Menu

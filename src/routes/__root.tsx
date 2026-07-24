@@ -3,6 +3,7 @@ import {
   Outlet,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -27,7 +28,7 @@ function NotFoundComponent() {
         </p>
         <div className="mt-6">
           <a
-            href="/"
+            href="/app"
             className="inline-flex h-11 items-center justify-center rounded-full bg-brand px-6 text-sm font-semibold text-brand-foreground hover:opacity-90"
           >
             Retour au menu
@@ -60,7 +61,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             Réessayer
           </button>
           <a
-            href="/"
+            href="/app"
             className="h-11 inline-flex items-center rounded-full border px-6 text-sm font-semibold"
           >
             Menu
@@ -218,6 +219,11 @@ function RootComponent() {
   const [showSplash, setShowSplash] = useState(true);
   const [showBottomNav, setShowBottomNav] = useState(false);
 
+  // La bottom nav appartient à l'app de commande : on la masque sur le site
+  // vitrine (route racine "/"), quel que soit le rôle de l'utilisateur.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isVitrine = pathname === "/";
+
   useEffect(() => {
     const t = setTimeout(() => setShowSplash(false), 1600);
     return () => clearTimeout(t);
@@ -273,7 +279,7 @@ function RootComponent() {
       <CartProvider>
         {showSplash && <Splash />}
         <Outlet />
-        {showBottomNav && <BottomNavBar />}
+        {showBottomNav && !isVitrine && <BottomNavBar />}
         <Toaster position="top-center" richColors />
       </CartProvider>
     </QueryClientProvider>

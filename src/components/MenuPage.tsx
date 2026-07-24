@@ -1028,3 +1028,22 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
     </div>
   );
 }
+
+// Petit avatar utilisateur dans le header : photo si dispo, sinon icône générique.
+function HeaderAvatar({ userId }: { userId: string }) {
+  const { avatarUrl } = useAvatar(userId);
+  return (
+    <Link
+      to="/compte"
+      className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
+      title="Mon compte"
+      aria-label="Mon compte"
+    >
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <UserIcon className="h-5 w-5" />
+      )}
+    </Link>
+  );
+}

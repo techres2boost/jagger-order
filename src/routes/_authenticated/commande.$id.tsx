@@ -124,7 +124,7 @@ function OrderStatusPage() {
 
   function recommander() {
     if (items.length === 0) {
-      navigate({ to: "/" });
+      navigate({ to: "/app" });
       return;
     }
     items.forEach((item) => {
@@ -241,7 +241,7 @@ function OrderStatusPage() {
           </button>
         ) : order.status === "delivered" ? (
           <Link
-            to="/"
+            to="/app"
             className="mt-6 inline-block h-11 rounded-full bg-brand px-6 pt-3 font-bold text-brand-foreground"
           >
             Retour au menu
@@ -297,7 +297,7 @@ function OrderStatusPage() {
                   }
                   setConfirmCancel(false);
                   toast.success("Commande annulée");
-                  navigate({ to: "/" });
+                  navigate({ to: "/app" });
                 }}
                 className="flex-1 rounded-full bg-destructive px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
               >

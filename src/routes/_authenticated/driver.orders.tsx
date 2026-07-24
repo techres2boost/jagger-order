@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/driver/orders")({
       .eq("user_id", u.user.id)
       .eq("role", "livreur")
       .maybeSingle();
-    if (!data) throw redirect({ to: "/" });
+    if (!data) throw redirect({ to: "/app" });
   },
   component: DriverOrdersPage,
 });

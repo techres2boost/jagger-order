@@ -17,11 +17,11 @@ function VerifyEmailPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) navigate({ to: "/auth" });
-      else if (data.user.email_confirmed_at || data.user.confirmed_at) navigate({ to: "/" });
+      else if (data.user.email_confirmed_at || data.user.confirmed_at) navigate({ to: "/app" });
       else setEmail(data.user.email ?? null);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      if (s?.user?.email_confirmed_at || s?.user?.confirmed_at) navigate({ to: "/" });
+      if (s?.user?.email_confirmed_at || s?.user?.confirmed_at) navigate({ to: "/app" });
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
@@ -69,7 +69,7 @@ function VerifyEmailPage() {
         <p className="mt-4 text-xs text-muted-foreground">
           Lien expiré ou déjà utilisé ? Utilisez le bouton ci-dessus pour recevoir un nouveau lien.
         </p>
-        <Link to="/" className="mt-4 inline-block text-sm font-semibold text-muted-foreground">
+        <Link to="/app" className="mt-4 inline-block text-sm font-semibold text-muted-foreground">
           ← Consulter le menu
         </Link>
       </div>

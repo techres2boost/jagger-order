@@ -20,7 +20,7 @@ function ResetPasswordPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Mot de passe mis à jour");
-    navigate({ to: "/" });
+    navigate({ to: "/app" });
   }
 
   return (

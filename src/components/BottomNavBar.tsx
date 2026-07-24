@@ -19,7 +19,7 @@ const TABS: Array<{
   to: string;
   Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }> = [
-  { label: "Accueil", to: "/", Icon: Home },
+  { label: "Accueil", to: "/app", Icon: Home },
   { label: "Commandes", to: "/commandes", Icon: ShoppingBag },
   { label: "Compte", to: "/compte", Icon: User },
 ];

@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
       .eq("user_id", u.user.id)
       .eq("role", "admin")
       .maybeSingle();
-    if (!data) throw redirect({ to: "/" });
+    if (!data) throw redirect({ to: "/app" });
   },
   component: AdminPage,
 });
@@ -466,7 +466,7 @@ function AdminPage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <Link
-              to="/"
+              to="/app"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary"
             >
               <ArrowLeft className="h-5 w-5" />

@@ -161,24 +161,40 @@ function CountUp({ value, duration = 1200 }: { value: number; duration?: number 
 }
 
 // ── Écran de chargement (joué une fois par session) ─────────────────────
-function VitrineIntro() {
-  const [gone, setGone] = useState(false);
-  const [skip, setSkip] = useState(true);
+// ── Transition « Commander » : overlay animé + navigation vers /app ─────
+type OrderTransitionCtx = { trigger: () => void; playing: boolean };
+const OrderTransitionContext = createContext<OrderTransitionCtx>({
+  trigger: () => {},
+  playing: false,
+});
+function useOrderTransition() {
+  return useContext(OrderTransitionContext);
+}
 
-  useEffect(() => {
-    const already = sessionStorage.getItem("box_vitrine_intro");
-    if (already || prefersReducedMotion()) {
-      setGone(true);
+function OrderTransitionProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+  const [playing, setPlaying] = useState(false);
+  const trigger = useCallback(() => {
+    if (prefersReducedMotion()) {
+      navigate({ to: "/app" });
       return;
     }
-    setSkip(false);
-    sessionStorage.setItem("box_vitrine_intro", "1");
-    const t = setTimeout(() => setGone(true), 1900);
-    return () => clearTimeout(t);
-  }, []);
+    setPlaying((prev) => {
+      if (prev) return prev;
+      window.setTimeout(() => navigate({ to: "/app" }), 1800);
+      return true;
+    });
+  }, [navigate]);
+  return (
+    <OrderTransitionContext.Provider value={{ trigger, playing }}>
+      {children}
+      {playing && <VitrineIntroOverlay />}
+    </OrderTransitionContext.Provider>
+  );
+}
 
-  if (skip || gone) return null;
-
+// Overlay plein écran : animation « BOX » lettre par lettre + flash-wipe rouge.
+function VitrineIntroOverlay() {
   return (
     <div className="bx-intro" aria-hidden="true">
       <div className="bx-intro-word">

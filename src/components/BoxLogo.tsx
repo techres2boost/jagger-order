@@ -1,7 +1,7 @@
-import logoUrl from "@/assets/box-logo-transparent.png";
+import logoAsset from "@/assets/box-logo-transparent.png.asset.json";
 
-// Logo BOX officiel — fond transparent pour s'intégrer au fond.
-const LOGO_URL = logoUrl;
+// Logo Box Pizza El Manar — fond transparent pour s'intégrer au fond.
+const LOGO_URL = logoAsset.url;
 
 export function BoxLogo({
   size = 88,
@@ -16,14 +16,14 @@ export function BoxLogo({
     <div className={`flex flex-col items-center gap-3 ${className}`}>
       <img
         src={LOGO_URL}
-        alt="Logo BOX"
+        alt="Logo Box Pizza El Manar"
         width={size}
         height={size}
         style={{ width: size, height: size, objectFit: "contain" }}
         draggable={false}
       />
       {showWordmark && (
-        <span className="text-3xl font-black tracking-widest text-brand-dark">BOX</span>
+        <span className="text-3xl font-black tracking-widest text-brand-dark">BOX PIZZA</span>
       )}
     </div>
   );

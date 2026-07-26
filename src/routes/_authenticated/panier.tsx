@@ -19,9 +19,7 @@ function formatCartName(_itemId: string, name: string, _categoryName: string | u
 
 function formatCartOptions(options: CartOptionSelection[] | undefined) {
   if (!options || options.length === 0) return "";
-  return options
-    .map((o) => (o.type === "supplement" ? `Supplément ${o.name} +${fmt(o.price)}` : o.name))
-    .join(", ");
+  return options.map((o) => (o.type === "supplement" ? `Supplément ${o.name} +${fmt(o.price)}` : o.name)).join(", ");
 }
 
 function PanierPage() {
@@ -64,13 +62,14 @@ function PanierPage() {
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from("menu_items")
-        .select("id, image_url, categories(name)")
-        .in("id", ids);
+      const { data } = await supabase.from("menu_items").select("id, image_url, categories(name)").in("id", ids);
       if (!data) return;
       const map: Record<string, { image?: string; categoryName?: string }> = {};
-      for (const row of data as Array<{ id: string; image_url: string | null; categories: { name: string } | { name: string }[] | null }>) {
+      for (const row of data as Array<{
+        id: string;
+        image_url: string | null;
+        categories: { name: string } | { name: string }[] | null;
+      }>) {
         const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
         map[row.id] = { image: row.image_url ?? undefined, categoryName: cat?.name };
       }
@@ -158,12 +157,11 @@ function PanierPage() {
     return () => {
       cancelled = true;
     };
-  }, [hasWelcomePromo]);
+  }, []);
 
   // Réduction effectivement appliquée : uniquement si le code est WELCOME10 ET
   // que l'utilisateur y est éligible (première commande). Sinon 0.
-  const discount =
-    hasWelcomePromo && welcomeEligible === true ? promoDiscountAmount(subtotal, promoCode) : 0;
+  const discount = welcomeEligible === true ? promoDiscountAmount(subtotal, promoCode) : 0;
   const finalTotal = Math.round((subtotal - discount) * 1000) / 1000;
   // Message discret quand l'offre est présente mais déjà consommée.
   const welcomeAlreadyUsed = hasWelcomePromo && welcomeEligible === false;
@@ -229,10 +227,7 @@ function PanierPage() {
       unit_price: l.unitPrice + (l.options ?? []).reduce((s, o) => s + o.price, 0),
       note: l.note ?? null,
     }));
-    const { data: createdItems, error: e2 } = await supabase
-      .from("order_items")
-      .insert(items)
-      .select("id");
+    const { data: createdItems, error: e2 } = await supabase.from("order_items").insert(items).select("id");
     if (e2 || !createdItems) {
       setSubmitting(false);
       return toast.error(e2?.message ?? "Erreur");
@@ -366,9 +361,7 @@ function PanierPage() {
                               +
                             </button>
                           </div>
-                          <div className="text-base font-black text-[#E11D2E]">
-                            {fmt(unit * l.qty)}
-                          </div>
+                          <div className="text-base font-black text-[#E11D2E]">{fmt(unit * l.qty)}</div>
                         </div>
                       </div>
                     </div>
@@ -423,16 +416,14 @@ function PanierPage() {
                       Livraison
                     </div>
                     <div className="mt-2 font-black">{profile?.full_name || "—"}</div>
-                    {profile?.phone && (
-                      <div className="text-xs text-white/70">{profile.phone}</div>
-                    )}
+                    {profile?.phone && <div className="text-xs text-white/70">{profile.phone}</div>}
                     <div className="mt-1 text-sm text-white/90">
                       {deliveryAddress?.full_address || "Adresse manquante"}
                     </div>
                     {outOfZone && (
                       <p className="mt-2 rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
-                        Adresse hors de notre zone de livraison (rayon {DELIVERY_RADIUS_KM} km).
-                        Choisissez une adresse plus proche du restaurant.
+                        Adresse hors de notre zone de livraison (rayon {DELIVERY_RADIUS_KM} km). Choisissez une adresse
+                        plus proche du restaurant.
                       </p>
                     )}
                   </div>
@@ -466,9 +457,7 @@ function PanierPage() {
                 </div>
               )}
               {/* Message discret quand l'offre est présente mais non applicable. */}
-              {welcomeAlreadyUsed && (
-                <div className="text-xs font-semibold text-black/40">Offre déjà utilisée</div>
-              )}
+              {welcomeAlreadyUsed && <div className="text-xs font-semibold text-black/40">Offre déjà utilisée</div>}
 
               <div className="flex items-end justify-between pt-1">
                 <div>

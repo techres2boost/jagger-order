@@ -291,8 +291,10 @@ function Navbar() {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <a href="#top" className="inline-flex items-center rounded-xl bg-transparent p-2">
-          <BoxLogo height={60} showWordmark={false} />
+        <a href="#top" className="mr-6 inline-flex items-center rounded-xl bg-transparent p-2">
+          <div style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.25))' }}>
+            <BoxLogo height={60} showWordmark={false} />
+          </div>
         </a>
 
         <nav className="hidden items-center gap-7 md:flex">

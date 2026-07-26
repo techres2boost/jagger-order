@@ -73,6 +73,7 @@ function OrderButton({
   className?: string;
   withIcon?: boolean;
 }) {
+  const { trigger } = useOrderTransition();
   const h =
     size === "lg"
       ? "h-14 px-8 text-base"
@@ -84,15 +85,16 @@ function OrderButton({
       ? "text-white bx-btn-solid"
       : "text-white border border-white/25 bg-white/5 hover:bg-white/10";
   return (
-    <Link
-      to="/app"
+    <button
+      type="button"
+      onClick={trigger}
       className={`bx-btn group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl font-extrabold uppercase tracking-wide ${h} ${base} ${className}`}
     >
       <span className="relative z-10 inline-flex items-center gap-2">
         {children}
         {withIcon && <ShoppingCart className="h-4 w-4" strokeWidth={2.5} />}
       </span>
-    </Link>
+    </button>
   );
 }
 

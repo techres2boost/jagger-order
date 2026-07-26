@@ -211,6 +211,7 @@ function VitrineIntroOverlay() {
 
 // ── Bouton d'action flottant persistant + bulle dismissible ─────────────
 function FloatingOrder() {
+  const { trigger } = useOrderTransition();
   const [showBubble, setShowBubble] = useState(false);
   const dismissed = useRef(false);
 

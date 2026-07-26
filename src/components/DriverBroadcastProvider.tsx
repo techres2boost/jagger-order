@@ -61,28 +61,46 @@ export function DriverBroadcastProvider({ children }: { children: ReactNode }) {
 
   // 1) Résolution du livreur + suivi Realtime de ses commandes "delivering".
   useEffect(() => {
+    // [DIAG] 1. Montage du provider.
+    console.log("[driver-broadcast] 1. provider monté");
     let mounted = true;
     let ordersChannel: ReturnType<typeof supabase.channel> | null = null;
 
     (async () => {
       const { data: u } = await supabase.auth.getUser();
+      console.log("[driver-broadcast] auth.uid =", u.user?.id ?? null);
       if (!mounted || !u.user) return;
-      const { data: livreur } = await supabase
+      const { data: livreur, error: livreurError } = await supabase
         .from("livreurs")
         .select("id")
         .eq("user_id", u.user.id)
         .maybeSingle();
+      // [DIAG] 2. Résolution de la fiche livreur.
+      console.log(
+        "[driver-broadcast] 2. fiche livreur =",
+        livreur ?? null,
+        "| error =",
+        livreurError?.message ?? null,
+      );
       // Compte non-livreur (ou accès refusé) : provider inerte.
       if (!mounted || !livreur) return;
       setLivreurId(livreur.id);
 
       const load = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("orders")
           .select("id")
           .eq("assigned_livreur_id", livreur.id)
           .eq("status", "delivering");
-        if (mounted) setActiveOrderIds(((data as Array<{ id: string }>) ?? []).map((o) => o.id));
+        const ids = ((data as Array<{ id: string }>) ?? []).map((o) => o.id);
+        // [DIAG] 3. Résultat de la requête "commandes delivering assignées".
+        console.log(
+          "[driver-broadcast] 3. commandes delivering =",
+          ids,
+          "| error =",
+          error?.message ?? null,
+        );
+        if (mounted) setActiveOrderIds(ids);
       };
       await load();
 
@@ -96,9 +114,14 @@ export function DriverBroadcastProvider({ children }: { children: ReactNode }) {
             table: "orders",
             filter: `assigned_livreur_id=eq.${livreur.id}`,
           },
-          () => load(),
+          () => {
+            console.log("[driver-broadcast] 3bis. changement orders (Realtime) → rechargement");
+            load();
+          },
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log("[driver-broadcast] souscription orders Realtime :", status);
+        });
     })();
 
     return () => {
@@ -112,14 +135,23 @@ export function DriverBroadcastProvider({ children }: { children: ReactNode }) {
 
   // 2) Surveillance GPS + diffusion, tant qu'au moins une commande est en cours.
   useEffect(() => {
-    if (!livreurId) return;
     const ids = activeKey ? activeKey.split(",") : [];
+    // [DIAG] Entrée de l'effet GPS/diffusion.
+    console.log(
+      "[driver-broadcast] effet GPS — livreurId =",
+      livreurId,
+      "| commandes actives =",
+      ids,
+    );
+    if (!livreurId) return;
     if (ids.length === 0) {
+      console.log("[driver-broadcast] aucune commande delivering → pas de surveillance GPS");
       setBroadcasting(false);
       setGpsLost(false);
       return;
     }
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      console.warn("[driver-broadcast] geolocation indisponible dans cet environnement");
       setGpsLost(true);
       return;
     }
@@ -128,7 +160,16 @@ export function DriverBroadcastProvider({ children }: { children: ReactNode }) {
 
     const broadcastAll = (payload: PositionPayload) => {
       lastPayloadRef.current = payload;
-      channels.forEach((ch) => ch.send({ type: "broadcast", event: "position", payload }));
+      channels.forEach((ch) => {
+        // [DIAG] 5. Position diffusée + channel utilisé.
+        console.log(
+          "[driver-broadcast] 5. diffusion position sur",
+          ch.topic,
+          "=",
+          `${payload.lat.toFixed(5)},${payload.lng.toFixed(5)}`,
+        );
+        ch.send({ type: "broadcast", event: "position", payload });
+      });
     };
     const emitPosition = (lat: number, lng: number, heading: number | null) => {
       broadcastAll({
@@ -140,13 +181,21 @@ export function DriverBroadcastProvider({ children }: { children: ReactNode }) {
     };
     // Premier point rapide : précision standard + cache court accepté.
     const emitQuickFix = () => {
+      console.log("[driver-broadcast] 4a. getCurrentPosition (fix rapide) demandé");
       navigator.geolocation.getCurrentPosition(
         (pos) => {
+          console.log("[driver-broadcast] 4a. fix rapide obtenu");
           setGpsLost(false);
           emitPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.heading);
         },
-        () => {
-          /* silencieux : watchPosition prendra le relais */
+        (err) => {
+          // [DIAG] Erreur géoloc (souvent la cause : permission refusée / iframe /
+          // contexte non sécurisé / timeout).
+          console.warn(
+            "[driver-broadcast] 4a. getCurrentPosition ÉCHEC — code",
+            err.code,
+            err.message,
+          );
         },
         { enableHighAccuracy: false, maximumAge: 30000, timeout: 8000 },
       );
@@ -165,6 +214,7 @@ export function DriverBroadcastProvider({ children }: { children: ReactNode }) {
         }
       });
       ch.subscribe((status) => {
+        console.log("[driver-broadcast] souscription", ch.topic, ":", status);
         if (status === "SUBSCRIBED") {
           setBroadcasting(true);
           if (lastPayloadRef.current) {
@@ -180,6 +230,8 @@ export function DriverBroadcastProvider({ children }: { children: ReactNode }) {
     // Premier point immédiat, avant le fix haute précision de watchPosition.
     emitQuickFix();
 
+    // [DIAG] 4. Démarrage de watchPosition.
+    console.log("[driver-broadcast] 4. watchPosition démarré");
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         setGpsLost(false);
@@ -194,7 +246,10 @@ export function DriverBroadcastProvider({ children }: { children: ReactNode }) {
         lastPosRef.current = { lat, lng };
         emitPosition(lat, lng, heading);
       },
-      () => setGpsLost(true),
+      (err) => {
+        console.warn("[driver-broadcast] 4. watchPosition ÉCHEC — code", err.code, err.message);
+        setGpsLost(true);
+      },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     );
 

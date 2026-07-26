@@ -832,21 +832,7 @@ function LocationSection() {
           </h2>
           <VitrineMap />
 
-          {/* Itinéraire principal */}
-          <a
-            href={DIRECTIONS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-white/20"
-          >
-            <Navigation className="mt-0.5 h-5 w-5 shrink-0" style={{ color: RED }} />
-            <div>
-              <div className="text-sm font-extrabold text-white">Itinéraire</div>
-              <div className="text-[13px] text-white/55">Ouvrir dans Google Maps</div>
-            </div>
-          </a>
-
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <a
               href={`tel:${PHONE_TEL}`}
               className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-white/20"

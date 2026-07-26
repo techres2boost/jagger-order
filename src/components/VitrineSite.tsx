@@ -292,7 +292,7 @@ function Navbar() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <a href="#top" className="inline-flex items-center">
-          <BoxLogo height={52} showWordmark={false} />
+          <BoxLogo height={52} showWordmark={false} className="drop-shadow-[0_0_12px_rgba(255,255,255,0.55)]" />
         </a>
 
         <nav className="hidden items-center gap-7 md:flex">
@@ -964,7 +964,7 @@ function Footer() {
   return (
     <footer className="border-t border-white/10 bg-[#0A0A0A] py-12">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 text-center sm:px-6">
-        <BoxLogo height={56} showWordmark={false} />
+        <BoxLogo height={56} showWordmark={false} className="drop-shadow-[0_0_16px_rgba(255,255,255,0.6)]" />
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
           <a
             href={DIRECTIONS_URL}

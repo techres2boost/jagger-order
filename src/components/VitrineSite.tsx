@@ -292,7 +292,7 @@ function Navbar() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <a href="#top" className="inline-flex items-center">
-          <BoxLogo size={44} showWordmark={false} />
+          <BoxLogo size={64} showWordmark={false} />
         </a>
 
         <nav className="hidden items-center gap-7 md:flex">

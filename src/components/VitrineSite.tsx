@@ -31,7 +31,7 @@ import { RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { useVitrineMenu, type VitrineItem } from "@/lib/vitrine-data";
 import { VitrineMap } from "@/components/VitrineMap";
 import { BoxLogo } from "@/components/BoxLogo";
-import vitrineHero from "@/assets/vitrine-hero.jpg";
+import vitrineHero from "@/assets/vitrine-hero.png.asset.json";
 import vitrineAbout from "@/assets/vitrine-about.jpg";
 import vitrineCta from "@/assets/vitrine-cta.jpg";
 
@@ -363,7 +363,7 @@ function Hero({ productCount, categoryCount }: { productCount: number; categoryC
         className="absolute inset-0"
         style={{
           transform: `translate3d(0, ${offset * 0.25}px, 0) scale(1.1)`,
-          backgroundImage: `url(${vitrineHero})`,
+          backgroundImage: `url(${vitrineHero.url})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}

@@ -363,7 +363,7 @@ function Hero({ productCount, categoryCount }: { productCount: number; categoryC
         className="absolute inset-0"
         style={{
           transform: `translate3d(0, ${offset * 0.25}px, 0) scale(1.1)`,
-          backgroundImage: `url(${vitrineHero})`,
+          backgroundImage: `url(${vitrineHero.url})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}

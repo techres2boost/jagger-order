@@ -1,7 +1,7 @@
-import logoAsset from "@/assets/box-logo-transparent.png.asset.json";
+import logoUrl from "@/assets/box-logo-transparent.png";
 
 // Logo Box Pizza El Manar — fond transparent pour s'intégrer au fond.
-const LOGO_URL = logoAsset.url;
+const LOGO_URL = logoUrl;
 
 export function BoxLogo({
   size = 88,

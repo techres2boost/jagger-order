@@ -190,70 +190,46 @@ function PanierPage() {
         `Cette adresse est hors de notre zone de livraison (rayon ${DELIVERY_RADIUS_KM} km). Choisissez une adresse plus proche du restaurant.`,
       );
     }
-    setSubmitting(true);
-    const { data: userRes } = await supabase.auth.getUser();
-    const uid = userRes.user!.id;
-    const expires = new Date(Date.now() + 2 * 60 * 1000).toISOString();
-    const insertPayload = {
-      user_id: uid,
-      customer_name: profile.full_name,
-      phone: profile.phone,
-      // Total réellement facturé = sous-total moins la réduction promo éventuelle.
-      total: finalTotal,
-      expires_at: expires,
-      address: deliveryAddress.full_address,
-      address_id: deliveryAddress.id,
-      city: deliveryAddress.city,
-      lat: coords.lat,
-      lng: coords.lng,
-      special_instructions: specialInstructions.trim() || null,
-      distance_km: distanceKm,
-    };
-    const { data: order, error } = await supabase
-      .from("orders")
-      .insert(insertPayload as never)
-      .select()
-      .single();
-    if (error || !order) {
-      setSubmitting(false);
-      return toast.error(error?.message ?? "Erreur");
+    if (!deliveryAddress.id) {
+      return toast.error(
+        "Adresse de livraison non enregistrée. Modifiez l'adresse et enregistrez-la avant de commander.",
+      );
     }
-
-    const items = lines.map((l) => ({
-      order_id: order.id,
-      name: l.name,
+    setSubmitting(true);
+    // Création serveur (RPC SECURITY DEFINER) : le total et tous les prix sont
+    // RECALCULÉS en base à partir du menu (jamais la valeur du client). On
+    // envoie uniquement les références (article, format, options), la quantité,
+    // la note, l'adresse choisie et le code promo. La RPC insère commande +
+    // articles + options de façon atomique et renvoie l'id de la commande.
+    const payloadItems = lines.map((l) => ({
+      item_id: l.itemId,
       size: l.size ?? null,
       qty: l.qty,
-      unit_price: l.unitPrice + (l.options ?? []).reduce((s, o) => s + o.price, 0),
       note: l.note ?? null,
+      options: (l.options ?? []).map((o) => o.optionItemId),
     }));
-    const { data: createdItems, error: e2 } = await supabase.from("order_items").insert(items).select("id");
-    if (e2 || !createdItems) {
-      setSubmitting(false);
-      return toast.error(e2?.message ?? "Erreur");
-    }
-
-    const optionRows = lines.flatMap((l, index) => {
-      const orderItemId = createdItems[index]?.id;
-      if (!orderItemId) return [];
-      return (l.options ?? []).map((o) => ({
-        order_item_id: orderItemId,
-        option_item_id: o.optionItemId,
-        option_name: o.name,
-        option_price: o.price,
-      }));
-    });
-
-    if (optionRows.length > 0) {
-      const { error: e3 } = await supabase.from("order_item_options").insert(optionRows);
-      if (e3) {
-        setSubmitting(false);
-        return toast.error(e3.message);
+    // Cast `as any` : la RPC n'est pas encore dans les types générés (stale),
+    // même motif que `admin_process_assignments` ailleurs dans le projet.
+    const { data: newOrderId, error } = await (
+      supabase as unknown as {
+        rpc: (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: string | null; error: { message: string } | null }>;
       }
+    ).rpc("create_order_secure", {
+      p_address_id: deliveryAddress.id,
+      p_special_instructions: specialInstructions.trim() || null,
+      p_promo_code: promoCode,
+      p_items: payloadItems,
+    });
+    if (error || !newOrderId) {
+      setSubmitting(false);
+      return toast.error(error?.message ?? "Erreur lors de la création de la commande");
     }
 
     clear();
-    navigate({ to: "/commande/$id", params: { id: order.id } });
+    navigate({ to: "/commande/$id", params: { id: newOrderId as string } });
   }
 
   // Contrôle de zone pour l'affichage (bouton désactivé + message). Recalculé

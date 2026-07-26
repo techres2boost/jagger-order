@@ -41,6 +41,10 @@ interface OrderItemRow {
   size: string | null;
   unit_price: number;
   note: string | null;
+  // Lien vers l'article du menu (null pour les commandes antérieures au correctif) :
+  // requis pour « Recommander », car la création de commande recalcule les prix
+  // côté serveur à partir de l'id menu.
+  menu_item_id: string | null;
 }
 
 const STATUS_TEXT: Record<ProgressStatus, string> = {
@@ -81,7 +85,7 @@ function OrderStatusPage() {
       });
     supabase
       .from("order_items")
-      .select("id, name, qty, size, unit_price, note")
+      .select("id, name, qty, size, unit_price, note, menu_item_id")
       .eq("order_id", id)
       .then(({ data }) => {
         if (mounted && data) setItems(data as OrderItemRow[]);
@@ -127,9 +131,18 @@ function OrderStatusPage() {
       navigate({ to: "/app" });
       return;
     }
-    items.forEach((item) => {
+    // La création de commande recalcule les prix serveur à partir de l'id menu :
+    // on ne peut réajouter que les articles encore reliés au menu (menu_item_id).
+    // Les éventuels suppléments sont à re-sélectionner (repartir du prix de base).
+    const reorderable = items.filter((it) => it.menu_item_id);
+    if (reorderable.length === 0) {
+      toast.error("Ces articles ne sont plus disponibles au rachat.");
+      navigate({ to: "/app" });
+      return;
+    }
+    reorderable.forEach((item) => {
       add({
-        itemId: `order-${order!.id}-${item.id}`,
+        itemId: item.menu_item_id as string,
         name: item.name,
         size: item.size ?? undefined,
         unitPrice: Number(item.unit_price),
@@ -137,7 +150,11 @@ function OrderStatusPage() {
         note: item.note ?? undefined,
       });
     });
-    toast.success("Commande ajoutée au panier.");
+    if (reorderable.length < items.length) {
+      toast.warning("Certains articles indisponibles ont été retirés du panier.");
+    } else {
+      toast.success("Commande ajoutée au panier.");
+    }
     navigate({ to: "/panier" });
   }
 

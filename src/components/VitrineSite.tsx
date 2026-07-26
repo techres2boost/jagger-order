@@ -964,7 +964,9 @@ function Footer() {
   return (
     <footer className="border-t border-white/10 bg-[#0A0A0A] py-12">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 text-center sm:px-6">
-        <BoxLogo height={56} showWordmark={false} className="drop-shadow-[0_0_16px_rgba(255,255,255,0.6)]" />
+        <div className="rounded-2xl bg-[#E11D2E] p-3 shadow-lg shadow-black/30">
+          <BoxLogo height={52} showWordmark={false} />
+        </div>
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
           <a
             href={DIRECTIONS_URL}

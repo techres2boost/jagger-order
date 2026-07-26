@@ -250,15 +250,16 @@ function FloatingOrder() {
           </button>
         </div>
       )}
-      <Link
-        to="/app"
+      <button
+        type="button"
+        onClick={trigger}
         className="bx-float bx-btn bx-btn-solid group relative inline-flex h-14 items-center justify-center gap-2 overflow-hidden rounded-full px-6 font-extrabold uppercase tracking-wide text-white shadow-2xl"
       >
         <span className="relative z-10 inline-flex items-center gap-2">
           On a faim
           <ShoppingCart className="h-5 w-5" strokeWidth={2.5} />
         </span>
-      </Link>
+      </button>
     </div>
   );
 }

@@ -1066,26 +1066,27 @@ export function VitrineSite() {
   const marqueeWords = categories.map((c) => c.name.toUpperCase());
 
   return (
-    <div ref={rootRef} className="vitrine-root min-h-screen scroll-smooth">
-      <style>{VITRINE_CSS}</style>
-      <VitrineIntro />
-      <Navbar />
-      <FloatingOrder />
+    <OrderTransitionProvider>
+      <div ref={rootRef} className="vitrine-root min-h-screen scroll-smooth">
+        <style>{VITRINE_CSS}</style>
+        <Navbar />
+        <FloatingOrder />
 
-      <main>
-        <Hero productCount={productCount} categoryCount={categoryCount} />
-        <WaveDivider />
-        <BestSellers />
-        <MenuSection categories={categories} items={items} />
-        <Marquee words={marqueeWords} />
-        <About />
-        <Faq categoryNames={categories.map((c) => c.name)} />
-        <LocationSection />
-        <FinalCta />
-      </main>
+        <main>
+          <Hero productCount={productCount} categoryCount={categoryCount} />
+          <WaveDivider />
+          <BestSellers />
+          <MenuSection categories={categories} items={items} />
+          <Marquee words={marqueeWords} />
+          <About />
+          <Faq categoryNames={categories.map((c) => c.name)} />
+          <LocationSection />
+          <FinalCta />
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </OrderTransitionProvider>
   );
 }
 

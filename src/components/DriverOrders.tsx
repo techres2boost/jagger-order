@@ -211,20 +211,24 @@ export function DriverOrders() {
   // Le livreur accepte une proposition (ready -> delivering) dans les 2 minutes.
   // Garde-fou serveur : si la proposition a expiré / été réassignée, l'UPDATE ne
   // matche aucune ligne et on informe le livreur.
+  // Les transitions de statut passent par une RPC SECURITY DEFINER qui vérifie
+  // l'assignation et n'autorise QUE ready→delivering / delivering→delivered
+  // (le livreur ne peut plus modifier une commande en écriture directe).
+  const rpc = supabase as unknown as {
+    rpc: (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ error: { message: string } | null }>;
+  };
+
   async function acceptProposal(orderId: string) {
     if (!livreurId) return;
-    const { data, error } = await supabase
-      .from("orders")
-      .update({ status: "delivering", delivering_at: new Date().toISOString() } as never)
-      .eq("id", orderId)
-      .eq("assigned_livreur_id", livreurId)
-      .eq("status", "ready")
-      .select("id");
+    const { error } = await rpc.rpc("livreur_update_order_status", {
+      p_order_id: orderId,
+      p_new_status: "delivering",
+    });
     if (error) {
-      toast.error(error.message);
-      return;
-    }
-    if (!data || (data as { id: string }[]).length === 0) {
+      // Proposition expirée / réattribuée → transition refusée côté serveur.
       toast.error("Trop tard : la commande a été réattribuée.");
       return;
     }
@@ -233,12 +237,10 @@ export function DriverOrders() {
 
   async function markDelivered(orderId: string) {
     if (!livreurId) return;
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: "delivered", delivered_at: new Date().toISOString() } as never)
-      .eq("id", orderId)
-      .eq("assigned_livreur_id", livreurId)
-      .eq("status", "delivering");
+    const { error } = await rpc.rpc("livreur_update_order_status", {
+      p_order_id: orderId,
+      p_new_status: "delivered",
+    });
     if (error) {
       toast.error(error.message);
       return;

@@ -1,6 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -71,6 +73,7 @@ function OrderButton({
   className?: string;
   withIcon?: boolean;
 }) {
+  const { trigger } = useOrderTransition();
   const h =
     size === "lg"
       ? "h-14 px-8 text-base"
@@ -82,15 +85,16 @@ function OrderButton({
       ? "text-white bx-btn-solid"
       : "text-white border border-white/25 bg-white/5 hover:bg-white/10";
   return (
-    <Link
-      to="/app"
+    <button
+      type="button"
+      onClick={trigger}
       className={`bx-btn group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl font-extrabold uppercase tracking-wide ${h} ${base} ${className}`}
     >
       <span className="relative z-10 inline-flex items-center gap-2">
         {children}
         {withIcon && <ShoppingCart className="h-4 w-4" strokeWidth={2.5} />}
       </span>
-    </Link>
+    </button>
   );
 }
 
@@ -157,24 +161,40 @@ function CountUp({ value, duration = 1200 }: { value: number; duration?: number 
 }
 
 // ── Écran de chargement (joué une fois par session) ─────────────────────
-function VitrineIntro() {
-  const [gone, setGone] = useState(false);
-  const [skip, setSkip] = useState(true);
+// ── Transition « Commander » : overlay animé + navigation vers /app ─────
+type OrderTransitionCtx = { trigger: () => void; playing: boolean };
+const OrderTransitionContext = createContext<OrderTransitionCtx>({
+  trigger: () => {},
+  playing: false,
+});
+function useOrderTransition() {
+  return useContext(OrderTransitionContext);
+}
 
-  useEffect(() => {
-    const already = sessionStorage.getItem("box_vitrine_intro");
-    if (already || prefersReducedMotion()) {
-      setGone(true);
+function OrderTransitionProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+  const [playing, setPlaying] = useState(false);
+  const trigger = useCallback(() => {
+    if (prefersReducedMotion()) {
+      navigate({ to: "/app" });
       return;
     }
-    setSkip(false);
-    sessionStorage.setItem("box_vitrine_intro", "1");
-    const t = setTimeout(() => setGone(true), 1900);
-    return () => clearTimeout(t);
-  }, []);
+    setPlaying((prev) => {
+      if (prev) return prev;
+      window.setTimeout(() => navigate({ to: "/app" }), 1800);
+      return true;
+    });
+  }, [navigate]);
+  return (
+    <OrderTransitionContext.Provider value={{ trigger, playing }}>
+      {children}
+      {playing && <VitrineIntroOverlay />}
+    </OrderTransitionContext.Provider>
+  );
+}
 
-  if (skip || gone) return null;
-
+// Overlay plein écran : animation « BOX » lettre par lettre + flash-wipe rouge.
+function VitrineIntroOverlay() {
   return (
     <div className="bx-intro" aria-hidden="true">
       <div className="bx-intro-word">
@@ -191,6 +211,7 @@ function VitrineIntro() {
 
 // ── Bouton d'action flottant persistant + bulle dismissible ─────────────
 function FloatingOrder() {
+  const { trigger } = useOrderTransition();
   const [showBubble, setShowBubble] = useState(false);
   const dismissed = useRef(false);
 
@@ -229,15 +250,16 @@ function FloatingOrder() {
           </button>
         </div>
       )}
-      <Link
-        to="/app"
+      <button
+        type="button"
+        onClick={trigger}
         className="bx-float bx-btn bx-btn-solid group relative inline-flex h-14 items-center justify-center gap-2 overflow-hidden rounded-full px-6 font-extrabold uppercase tracking-wide text-white shadow-2xl"
       >
         <span className="relative z-10 inline-flex items-center gap-2">
           On a faim
           <ShoppingCart className="h-5 w-5" strokeWidth={2.5} />
         </span>
-      </Link>
+      </button>
     </div>
   );
 }
@@ -937,6 +959,7 @@ function FinalCta() {
 
 // ── Footer ───────────────────────────────────────────────────────────────
 function Footer() {
+  const { trigger } = useOrderTransition();
   return (
     <footer className="border-t border-white/10 bg-[#0A0A0A] py-12">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 text-center sm:px-6">
@@ -951,13 +974,14 @@ function Footer() {
             <MapPin className="h-4 w-4" />
             Itinéraire Google Maps
           </a>
-          <Link
-            to="/app"
+          <button
+            type="button"
+            onClick={trigger}
             className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white"
           >
             <ShoppingBag className="h-4 w-4" />
             Commander en ligne
-          </Link>
+          </button>
         </div>
         <p className="text-xs text-white/40">© 2026 Box, tous droits réservés.</p>
       </div>
@@ -1042,26 +1066,27 @@ export function VitrineSite() {
   const marqueeWords = categories.map((c) => c.name.toUpperCase());
 
   return (
-    <div ref={rootRef} className="vitrine-root min-h-screen scroll-smooth">
-      <style>{VITRINE_CSS}</style>
-      <VitrineIntro />
-      <Navbar />
-      <FloatingOrder />
+    <OrderTransitionProvider>
+      <div ref={rootRef} className="vitrine-root min-h-screen scroll-smooth">
+        <style>{VITRINE_CSS}</style>
+        <Navbar />
+        <FloatingOrder />
 
-      <main>
-        <Hero productCount={productCount} categoryCount={categoryCount} />
-        <WaveDivider />
-        <BestSellers />
-        <MenuSection categories={categories} items={items} />
-        <Marquee words={marqueeWords} />
-        <About />
-        <Faq categoryNames={categories.map((c) => c.name)} />
-        <LocationSection />
-        <FinalCta />
-      </main>
+        <main>
+          <Hero productCount={productCount} categoryCount={categoryCount} />
+          <WaveDivider />
+          <BestSellers />
+          <MenuSection categories={categories} items={items} />
+          <Marquee words={marqueeWords} />
+          <About />
+          <Faq categoryNames={categories.map((c) => c.name)} />
+          <LocationSection />
+          <FinalCta />
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </OrderTransitionProvider>
   );
 }
 

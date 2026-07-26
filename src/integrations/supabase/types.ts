@@ -188,6 +188,54 @@ export type Database = {
           },
         ];
       };
+      livreur_ratings: {
+        Row: {
+          comment: string | null;
+          created_at: string;
+          dismissed: boolean;
+          id: string;
+          livreur_id: string | null;
+          order_id: string;
+          rating: number | null;
+          user_id: string;
+        };
+        Insert: {
+          comment?: string | null;
+          created_at?: string;
+          dismissed?: boolean;
+          id?: string;
+          livreur_id?: string | null;
+          order_id: string;
+          rating?: number | null;
+          user_id: string;
+        };
+        Update: {
+          comment?: string | null;
+          created_at?: string;
+          dismissed?: boolean;
+          id?: string;
+          livreur_id?: string | null;
+          order_id?: string;
+          rating?: number | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "livreur_ratings_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "livreur_ratings_livreur_id_fkey";
+            columns: ["livreur_id"];
+            isOneToOne: false;
+            referencedRelation: "livreurs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           created_at: string;

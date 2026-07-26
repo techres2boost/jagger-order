@@ -8,6 +8,7 @@ import { fmt } from "@/lib/format";
 import { useCart, WELCOME_PROMO_CODE, normalizePromoCode } from "@/lib/cart-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
+import { LastOrderReviewPopup } from "@/components/LastOrderReviewPopup";
 import {
   ShoppingCart,
   Plus,
@@ -537,6 +538,9 @@ export function MenuPage() {
       )}
 
       {selected && <DishDetail item={selected} onClose={() => setSelected(null)} />}
+
+      {/* Fonctionnalité 2 : évaluation de la dernière commande livrée. */}
+      <LastOrderReviewPopup />
     </div>
   );
 }

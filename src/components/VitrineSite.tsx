@@ -30,6 +30,7 @@ import { fmt } from "@/lib/format";
 import { RESTAURANT_LOCATION, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { useVitrineMenu, type VitrineItem } from "@/lib/vitrine-data";
 import { VitrineMap } from "@/components/VitrineMap";
+import { BoxLogo } from "@/components/BoxLogo";
 import vitrineHero from "@/assets/vitrine-hero.jpg";
 import vitrineAbout from "@/assets/vitrine-about.jpg";
 import vitrineCta from "@/assets/vitrine-cta.jpg";
@@ -290,8 +291,8 @@ function Navbar() {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <a href="#top" className="bx-wordmark text-2xl text-white sm:text-[26px]">
-          BOX
+        <a href="#top" className="inline-flex items-center rounded-xl bg-[#E11D2E] p-2 shadow-lg shadow-black/30">
+          <BoxLogo height={48} showWordmark={false} />
         </a>
 
         <nav className="hidden items-center gap-7 md:flex">
@@ -963,7 +964,9 @@ function Footer() {
   return (
     <footer className="border-t border-white/10 bg-[#0A0A0A] py-12">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 text-center sm:px-6">
-        <span className="bx-wordmark text-3xl text-white">BOX</span>
+        <div className="rounded-2xl bg-[#E11D2E] p-3 shadow-lg shadow-black/30">
+          <BoxLogo height={52} showWordmark={false} />
+        </div>
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
           <a
             href={DIRECTIONS_URL}

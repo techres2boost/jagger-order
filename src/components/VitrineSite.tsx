@@ -291,7 +291,7 @@ function Navbar() {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <a href="#top" className="inline-flex items-center rounded-xl bg-white/10 p-2 backdrop-blur-md ring-1 ring-white/20 shadow-lg shadow-black/20">
+        <a href="#top" className="inline-flex items-center rounded-xl bg-[#E11D2E] p-2 shadow-lg shadow-black/30">
           <BoxLogo height={48} showWordmark={false} />
         </a>
 
@@ -964,7 +964,7 @@ function Footer() {
   return (
     <footer className="border-t border-white/10 bg-[#0A0A0A] py-12">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 text-center sm:px-6">
-        <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-md ring-1 ring-white/20 shadow-lg shadow-black/20">
+        <div className="rounded-2xl bg-[#E11D2E] p-3 shadow-lg shadow-black/30">
           <BoxLogo height={52} showWordmark={false} />
         </div>
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">

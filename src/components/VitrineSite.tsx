@@ -959,6 +959,7 @@ function FinalCta() {
 
 // ── Footer ───────────────────────────────────────────────────────────────
 function Footer() {
+  const { trigger } = useOrderTransition();
   return (
     <footer className="border-t border-white/10 bg-[#0A0A0A] py-12">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 text-center sm:px-6">
@@ -973,13 +974,14 @@ function Footer() {
             <MapPin className="h-4 w-4" />
             Itinéraire Google Maps
           </a>
-          <Link
-            to="/app"
+          <button
+            type="button"
+            onClick={trigger}
             className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white"
           >
             <ShoppingBag className="h-4 w-4" />
             Commander en ligne
-          </Link>
+          </button>
         </div>
         <p className="text-xs text-white/40">© 2026 Box, tous droits réservés.</p>
       </div>

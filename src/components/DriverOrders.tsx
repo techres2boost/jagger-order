@@ -8,7 +8,7 @@ import { fmt } from "@/lib/format";
 import { toast } from "sonner";
 import { MapPin, Phone, CheckCircle2, Navigation, X } from "lucide-react";
 import { signAddressPhoto } from "@/lib/address-photo";
-import { DriverLocationBroadcaster } from "@/components/DriverLocationBroadcaster";
+import { DeliveryBroadcastStatus } from "@/components/DeliveryBroadcastStatus";
 
 // Statuts d'une commande "active/en cours" pour un livreur : proposition à
 // accepter (ready) + livraison en cours (delivering). Le chat n'existe lui que
@@ -511,12 +511,12 @@ export function DriverOrders() {
               </button>
             )}
 
-            {/* Position partagée en direct pendant la livraison. Le chat n'est
-                plus ici : il vit désormais dans l'onglet "Conversations" de la
-                navbar. Le broadcaster est démonté dès la fermeture du détail. */}
+            {/* Vue de consultation en lecture seule : le partage de position est
+                géré globalement (DriverBroadcastProvider), pas déclenché ici. Le
+                chat, lui, vit dans l'onglet "Conversations" de la navbar. */}
             {selectedOrder.status === "delivering" && (
               <div className="mt-4 border-t pt-4">
-                <DriverLocationBroadcaster orderId={selectedOrder.id} active />
+                <DeliveryBroadcastStatus orderId={selectedOrder.id} />
               </div>
             )}
           </div>

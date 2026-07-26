@@ -69,29 +69,45 @@ export function DeliveryTrackingMap({
   const [driver, setDriver] = useState<DriverPos | null>(null);
   const [lastPositionAt, setLastPositionAt] = useState<number | null>(null);
   const [stale, setStale] = useState(true);
+  // Phase de connexion initiale : on affiche un état de chargement explicite les
+  // premières secondes plutôt qu'une attente silencieuse.
+  const [connecting, setConnecting] = useState(true);
   const dest = useRef<DriverPos>({ lat: destLat, lng: destLng }).current;
+  const mountedAtRef = useRef(Date.now());
 
-  // Abonnement au broadcast de position du livreur.
+  // Abonnement immédiat au broadcast de position du livreur, dès l'arrivée sur
+  // la page. À l'abonnement, on demande sa dernière position connue au livreur
+  // (event "request-position") pour ne pas attendre le prochain cycle GPS.
   useEffect(() => {
-    const channel = supabase
-      .channel(`order-tracking-${orderId}`, { config: { broadcast: { self: false } } })
+    const channel = supabase.channel(`order-tracking-${orderId}`, {
+      config: { broadcast: { self: false } },
+    });
+    channel
       .on("broadcast", { event: "position" }, ({ payload }) => {
         const p = payload as { lat?: number; lng?: number };
         if (typeof p.lat !== "number" || typeof p.lng !== "number") return;
         setDriver({ lat: p.lat, lng: p.lng });
         setLastPositionAt(Date.now());
         setStale(false);
+        setConnecting(false);
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          channel.send({ type: "broadcast", event: "request-position", payload: {} });
+        }
+      });
     return () => {
       supabase.removeChannel(channel);
     };
   }, [orderId]);
 
-  // Sans position reçue depuis 30 s → état d'attente.
+  // États dérivés : "connexion" les ~5 premières secondes sans position, puis
+  // "en attente" (aucune position, ou plus rien reçu depuis 30 s).
   useEffect(() => {
     const t = setInterval(() => {
-      setStale(lastPositionAt == null || Date.now() - lastPositionAt > 30000);
+      const hasPosition = lastPositionAt != null;
+      setStale(!hasPosition || Date.now() - (lastPositionAt as number) > 30000);
+      setConnecting(!hasPosition && Date.now() - mountedAtRef.current < 5000);
     }, 1000);
     return () => clearInterval(t);
   }, [lastPositionAt]);
@@ -114,12 +130,17 @@ export function DeliveryTrackingMap({
           <AutoView dest={dest} driver={driver} />
         </MapContainer>
       </div>
-      {stale && (
+      {connecting ? (
+        <div className="flex items-center justify-center gap-2 border-t bg-secondary px-3 py-2 text-center text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Connexion au suivi en direct…
+        </div>
+      ) : stale ? (
         <div className="flex items-center justify-center gap-2 border-t bg-secondary px-3 py-2 text-center text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           En attente de la position du livreur…
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -6,15 +6,22 @@ import { haversineDistanceKm } from "@/lib/geo";
 import { Navigation, WifiOff } from "lucide-react";
 
 // Monté uniquement sur l'écran de livraison active du livreur (statut 'delivering').
-// - navigator.geolocation.watchPosition (foreground), throttle ~5s ou déplacement
+// - Premier point rapide (getCurrentPosition, précision standard) émis dès
+//   l'abonnement, AVANT de lancer watchPosition en haute précision → 1er affichage
+//   quasi immédiat côté client.
+// - watchPosition (foreground, maximumAge 5s), throttle ~5s ou déplacement
 //   significatif (> ~15 m).
 // - Broadcast Supabase Realtime (pas de stockage) sur le channel
 //   `order-tracking-${orderId}`, event "position" : { lat, lng, heading, timestamp }.
+// - Répond à l'event "request-position" (client qui rejoint) avec la dernière
+//   position connue → pas d'attente du prochain cycle watchPosition.
 // - Perte de signal / onglet masqué → badge "Signal GPS perdu" (ne bloque rien).
 // - Cleanup complet (stop watchPosition + unsubscribe) au démontage / statut changé.
 
 const THROTTLE_MS = 5000;
 const SIGNIFICANT_MOVE_KM = 0.015; // ~15 mètres
+
+type PositionPayload = { lat: number; lng: number; heading: number | null; timestamp: number };
 
 export function DriverLocationBroadcaster({
   orderId,
@@ -28,6 +35,8 @@ export function DriverLocationBroadcaster({
 
   const lastSentAtRef = useRef(0);
   const lastPosRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastPayloadRef = useRef<PositionPayload | null>(null);
+  const subscribedRef = useRef(false);
 
   useEffect(() => {
     if (!active) return;
@@ -39,17 +48,55 @@ export function DriverLocationBroadcaster({
     const channel = supabase.channel(`order-tracking-${orderId}`, {
       config: { broadcast: { self: false } },
     });
-    channel.subscribe((status) => {
-      if (status === "SUBSCRIBED") setBroadcasting(true);
+
+    // Envoi bas niveau (uniquement une fois le channel abonné).
+    const sendPayload = (payload: PositionPayload) => {
+      if (!subscribedRef.current) return;
+      channel.send({ type: "broadcast", event: "position", payload });
+    };
+
+    // Mémorise + diffuse une position.
+    const emitPosition = (lat: number, lng: number, heading: number | null) => {
+      const payload: PositionPayload = {
+        lat,
+        lng,
+        heading: Number.isFinite(heading) ? (heading as number) : null,
+        timestamp: Date.now(),
+      };
+      lastPayloadRef.current = payload;
+      sendPayload(payload);
+    };
+
+    // Premier point rapide : précision standard + cache court accepté.
+    const emitQuickFix = () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setGpsLost(false);
+          emitPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.heading);
+        },
+        () => {
+          /* silencieux : watchPosition prendra le relais */
+        },
+        { enableHighAccuracy: false, maximumAge: 30000, timeout: 8000 },
+      );
+    };
+
+    // Un client rejoint le suivi et demande la dernière position connue.
+    channel.on("broadcast", { event: "request-position" }, () => {
+      if (lastPayloadRef.current) sendPayload(lastPayloadRef.current);
+      else emitQuickFix();
     });
 
-    function broadcast(lat: number, lng: number, heading: number | null) {
-      channel.send({
-        type: "broadcast",
-        event: "position",
-        payload: { lat, lng, heading, timestamp: Date.now() },
-      });
-    }
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        subscribedRef.current = true;
+        setBroadcasting(true);
+        // Émet immédiatement un premier point (cache si dispo, sinon fix rapide),
+        // avant même le premier fix haute précision de watchPosition.
+        if (lastPayloadRef.current) sendPayload(lastPayloadRef.current);
+        else emitQuickFix();
+      }
+    });
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -63,7 +110,7 @@ export function DriverLocationBroadcaster({
         if (now - lastSentAtRef.current < THROTTLE_MS && moved < SIGNIFICANT_MOVE_KM) return;
         lastSentAtRef.current = now;
         lastPosRef.current = { lat, lng };
-        broadcast(lat, lng, Number.isFinite(heading) ? heading : null);
+        emitPosition(lat, lng, heading);
       },
       () => setGpsLost(true),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
@@ -81,6 +128,8 @@ export function DriverLocationBroadcaster({
       supabase.removeChannel(channel);
       lastSentAtRef.current = 0;
       lastPosRef.current = null;
+      lastPayloadRef.current = null;
+      subscribedRef.current = false;
       setBroadcasting(false);
     };
   }, [orderId, active]);

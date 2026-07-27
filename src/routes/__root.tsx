@@ -12,6 +12,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CartProvider } from "../lib/cart-context";
+import { ThemeProvider } from "../lib/theme-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
 import { BoxLogo } from "@/components/BoxLogo";
@@ -125,7 +126,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap",
       },
     ],
   }),
@@ -276,12 +277,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        {showSplash && <Splash />}
-        <Outlet />
-        {showBottomNav && !isVitrine && <BottomNavBar />}
-        <Toaster position="top-center" richColors />
-      </CartProvider>
+      <ThemeProvider>
+        <CartProvider>
+          {showSplash && <Splash />}
+          <Outlet />
+          {showBottomNav && !isVitrine && <BottomNavBar />}
+          <Toaster position="top-center" richColors />
+        </CartProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

@@ -29,9 +29,17 @@ export function OrderProgressRing({ stepIndex, variant = "full" }: OrderProgress
   const dashArray = `${segLen} ${circumference - segLen}`;
   const current = STEPS[Math.max(0, stepIndex)];
 
+  const gradientId = `box-progress-ring-${compact ? "compact" : "full"}`;
+
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" style={{ stopColor: "var(--primary)" }} />
+            <stop offset="1" style={{ stopColor: "var(--accent-warm)" }} />
+          </linearGradient>
+        </defs>
         {STEPS.map((step, i) => {
           const filled = i <= stepIndex;
           const startAngle = i * 72 - 90 + gapDeg / 2;
@@ -46,7 +54,8 @@ export function OrderProgressRing({ stepIndex, variant = "full" }: OrderProgress
               strokeLinecap="round"
               strokeDasharray={dashArray}
               transform={`rotate(${startAngle} ${center} ${center})`}
-              style={{ stroke: filled ? "var(--brand)" : "var(--muted)" }}
+              className={filled && !compact && i === stepIndex ? "animate-pulse" : undefined}
+              style={{ stroke: filled ? `url(#${gradientId})` : "var(--border)" }}
             />
           );
         })}
@@ -54,7 +63,7 @@ export function OrderProgressRing({ stepIndex, variant = "full" }: OrderProgress
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
         <current.Icon
           className={compact ? "h-5 w-5" : "h-9 w-9"}
-          style={{ color: "var(--brand)" }}
+          style={{ color: "var(--primary)" }}
         />
         {!compact && <span className="text-sm font-bold">{current.label}</span>}
       </div>

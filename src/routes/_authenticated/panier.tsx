@@ -19,7 +19,9 @@ function formatCartName(_itemId: string, name: string, _categoryName: string | u
 
 function formatCartOptions(options: CartOptionSelection[] | undefined) {
   if (!options || options.length === 0) return "";
-  return options.map((o) => (o.type === "supplement" ? `Supplément ${o.name} +${fmt(o.price)}` : o.name)).join(", ");
+  return options
+    .map((o) => (o.type === "supplement" ? `Supplément ${o.name} +${fmt(o.price)}` : o.name))
+    .join(", ");
 }
 
 function PanierPage() {
@@ -53,7 +55,9 @@ function PanierPage() {
   } | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [menuInfo, setMenuInfo] = useState<Record<string, { image?: string; categoryName?: string }>>({});
+  const [menuInfo, setMenuInfo] = useState<
+    Record<string, { image?: string; categoryName?: string }>
+  >({});
 
   useEffect(() => {
     const ids = Array.from(new Set(lines.map((l) => l.itemId))).filter(Boolean);
@@ -62,7 +66,10 @@ function PanierPage() {
       return;
     }
     (async () => {
-      const { data } = await supabase.from("menu_items").select("id, image_url, categories(name)").in("id", ids);
+      const { data } = await supabase
+        .from("menu_items")
+        .select("id, image_url, categories(name)")
+        .in("id", ids);
       if (!data) return;
       const map: Record<string, { image?: string; categoryName?: string }> = {};
       for (const row of data as Array<{
@@ -247,29 +254,34 @@ function PanierPage() {
       : null;
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-20 border-b border-black/10 bg-black text-white">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-20 bg-secondary-warm text-brand-foreground">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link
             to="/app"
-            className="press flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+            className="press flex h-10 w-10 items-center justify-center rounded-full bg-brand-foreground/10 hover:bg-brand-foreground/20"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <ShoppingBag className="h-5 w-5 text-[#F5B800]" />
+          <ShoppingBag className="h-5 w-5 text-accent-warm" />
           <h1 className="text-lg font-black tracking-tight">Mon panier</h1>
+          {lines.length > 0 && (
+            <span className="ml-auto text-xs font-medium text-brand-foreground/60">
+              {lines.length} article{lines.length > 1 ? "s" : ""}
+            </span>
+          )}
         </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-5 pb-28">
         {lines.length === 0 ? (
           <div className="space-y-5">
-            <div className="rounded-[28px] border border-black/5 bg-[#F1F2F4] p-10 text-center">
-              <p className="text-sm text-black/60">Votre panier est vide.</p>
+            <div className="rounded-[28px] border border-border bg-surface-2 p-10 text-center">
+              <p className="text-sm text-muted-foreground">Votre panier est vide.</p>
             </div>
             <Link
               to="/app"
-              className="press flex h-14 w-full items-center justify-center rounded-full bg-[#E11D2E] text-base font-black text-white shadow-lg transition-colors hover:bg-[#B22222]"
+              className="press flex h-14 w-full items-center justify-center rounded-full bg-brand text-base font-black text-brand-foreground shadow-lg transition-[filter] hover:brightness-95"
             >
               Voir le menu
             </Link>
@@ -285,59 +297,67 @@ function PanierPage() {
                 return (
                   <div
                     key={l.key}
-                    className="group relative overflow-hidden rounded-[22px] border border-black/5 bg-white p-3 shadow-[0_1px_6px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(225,29,46,0.15)] hover:border-[#E11D2E]/30"
+                    className="group relative overflow-hidden rounded-[22px] border border-border bg-card p-3 shadow-[0_1px_6px_rgba(46,30,23,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(181,36,0,0.15)] hover:border-[color:var(--primary)]/30"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-[#F1F2F4]">
+                      <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-surface-2">
                         {img ? (
                           <img
                             src={img}
                             alt={l.name}
                             className="h-full w-full object-contain p-1 transition-transform duration-500 group-hover:scale-110"
-                            style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.15)) saturate(1.15)" }}
+                            style={{
+                              filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.15)) saturate(1.15)",
+                            }}
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-2xl">🍽️</div>
+                          <div className="flex h-full w-full items-center justify-center text-2xl">
+                            🍽️
+                          </div>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="truncate font-black text-black">
+                            <div className="truncate font-black text-foreground">
                               {formatCartName(l.itemId, l.name, info?.categoryName)}
                             </div>
-                            {l.size && <div className="text-xs text-black/50">{l.size}</div>}
+                            {l.size && (
+                              <div className="text-xs text-muted-foreground">{l.size}</div>
+                            )}
                             {l.options && l.options.length > 0 && (
-                              <div className="mt-0.5 line-clamp-2 text-[11px] text-black/50">
+                              <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
                                 {formatCartOptions(l.options)}
                               </div>
                             )}
                           </div>
                           <button
                             onClick={() => remove(l.key)}
-                            className="press flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-black/5 text-black/60 transition-colors hover:bg-[#E11D2E] hover:text-white"
+                            className="press flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted-foreground transition-colors hover:bg-brand hover:text-brand-foreground"
                             aria-label="Supprimer"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                         <div className="mt-2 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1 rounded-full bg-black p-1">
+                          <div className="flex items-center gap-1 rounded-full bg-secondary-warm p-1">
                             <button
                               onClick={() => setQty(l.key, l.qty - 1)}
-                              className="press flex h-7 w-7 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                              className="press flex h-7 w-7 items-center justify-center rounded-full text-brand-foreground transition-colors hover:bg-brand-foreground/10"
                             >
                               −
                             </button>
-                            <span className="w-6 text-center text-sm font-black text-white">{l.qty}</span>
+                            <span className="w-6 text-center text-sm font-black text-brand-foreground">
+                              {l.qty}
+                            </span>
                             <button
                               onClick={() => setQty(l.key, l.qty + 1)}
-                              className="press flex h-7 w-7 items-center justify-center rounded-full bg-[#E11D2E] font-black text-white ring-2 ring-white transition-colors hover:bg-[#B22222]"
+                              className="press flex h-7 w-7 items-center justify-center rounded-full bg-brand font-black text-brand-foreground ring-2 ring-[color:var(--card)] transition-[filter] hover:brightness-95"
                             >
                               +
                             </button>
                           </div>
-                          <div className="text-base font-black text-[#E11D2E]">{fmt(unit * l.qty)}</div>
+                          <div className="text-base font-black text-brand">{fmt(unit * l.qty)}</div>
                         </div>
                       </div>
                     </div>
@@ -346,7 +366,7 @@ function PanierPage() {
                         defaultValue={l.note ?? ""}
                         onBlur={(e) => setNote(l.key, e.target.value)}
                         placeholder="Note pour cet article (optionnel)"
-                        className="h-9 w-full rounded-full border border-black/10 bg-[#F1F2F4] px-4 text-xs focus:border-[#E11D2E] focus:outline-none"
+                        className="h-9 w-full rounded-full border border-border bg-surface-2 px-4 text-xs focus:border-[color:var(--primary)] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -355,9 +375,9 @@ function PanierPage() {
             </div>
 
             {/* Special instructions */}
-            <div className="rounded-[22px] border border-black/5 bg-white p-4 shadow-[0_1px_6px_rgba(0,0,0,0.06)] transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
-              <label className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-black">
-                <span className="inline-block h-2 w-2 rounded-full bg-[#F5B800]" />
+            <div className="rounded-[22px] border border-border bg-card p-4 shadow-[0_1px_6px_rgba(46,30,23,0.06)] transition-all duration-300 hover:shadow-[0_8px_24px_rgba(46,30,23,0.08)]">
+              <label className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-foreground">
+                <span className="inline-block h-2 w-2 rounded-full bg-accent-warm" />
                 Instructions spéciales
               </label>
               <textarea
@@ -366,47 +386,55 @@ function PanierPage() {
                 placeholder="Ex : sans oignons, sonnez à l'interphone 3B…"
                 rows={3}
                 maxLength={500}
-                className="mt-2 w-full rounded-2xl border border-black/10 bg-[#F1F2F4] p-3 text-sm focus:border-[#E11D2E] focus:outline-none"
+                className="mt-2 w-full rounded-2xl border border-border bg-surface-2 p-3 text-sm focus:border-[color:var(--primary)] focus:outline-none"
               />
             </div>
 
             {/* Delivery address with map background */}
-            <div className="group relative overflow-hidden rounded-[22px] border border-black/5 bg-black text-white shadow-[0_1px_6px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.2)]">
+            <div className="warm-dots group relative overflow-hidden rounded-[22px] border border-border bg-secondary-warm text-brand-foreground shadow-[0_1px_6px_rgba(46,30,23,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(46,30,23,0.25)]">
               {/* Map / grid background */}
+              {mapBg && (
+                <div
+                  className="absolute inset-0 opacity-60 transition-opacity duration-500 group-hover:opacity-75"
+                  style={{
+                    backgroundImage: `url(${mapBg})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                />
+              )}
               <div
-                className="absolute inset-0 opacity-60 transition-opacity duration-500 group-hover:opacity-75"
+                className="absolute inset-0"
                 style={{
-                  backgroundImage: mapBg
-                    ? `url(${mapBg})`
-                    : "linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)",
-                  backgroundSize: mapBg ? "cover" : "24px 24px",
-                  backgroundPosition: "center",
+                  background:
+                    "linear-gradient(135deg, color-mix(in srgb, var(--secondary-warm) 75%, transparent), color-mix(in srgb, var(--primary) 30%, transparent))",
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-black/55 via-black/35 to-[#E11D2E]/30" />
               <div className="relative p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#F5B800]">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-accent-warm">
                       <MapPin className="h-3.5 w-3.5" />
                       Livraison
                     </div>
                     <div className="mt-2 font-black">{profile?.full_name || "—"}</div>
-                    {profile?.phone && <div className="text-xs text-white/70">{profile.phone}</div>}
-                    <div className="mt-1 text-sm text-white/90">
+                    {profile?.phone && (
+                      <div className="text-xs text-brand-foreground/70">{profile.phone}</div>
+                    )}
+                    <div className="mt-1 text-sm text-brand-foreground/90">
                       {deliveryAddress?.full_address || "Adresse manquante"}
                     </div>
                     {outOfZone && (
                       <p className="mt-2 rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
-                        Adresse hors de notre zone de livraison (rayon {DELIVERY_RADIUS_KM} km). Choisissez une adresse
-                        plus proche du restaurant.
+                        Adresse hors de notre zone de livraison (rayon {DELIVERY_RADIUS_KM} km).
+                        Choisissez une adresse plus proche du restaurant.
                       </p>
                     )}
                   </div>
                   <Link
                     to="/complete-profile"
                     search={{ redirect: "/panier" }}
-                    className="press flex h-9 flex-shrink-0 items-center rounded-full bg-white px-4 text-xs font-black text-black hover:bg-[#F5B800]"
+                    className="press flex h-9 flex-shrink-0 items-center rounded-full bg-card px-4 text-xs font-black text-secondary-warm hover:bg-accent-warm"
                   >
                     Modifier
                   </Link>
@@ -418,13 +446,13 @@ function PanierPage() {
             <div className="space-y-1 px-2 pt-2">
               {/* On n'affiche le sous-total que s'il y a une réduction à montrer. */}
               {discount > 0 && (
-                <div className="flex items-center justify-between text-sm font-bold text-black/60">
+                <div className="flex items-center justify-between text-sm font-bold text-muted-foreground">
                   <span>Sous-total</span>
                   <span>{fmt(subtotal)} TND</span>
                 </div>
               )}
               {discount > 0 && (
-                <div className="flex items-center justify-between text-sm font-black text-[#E11D2E]">
+                <div className="flex items-center justify-between text-sm font-black text-brand">
                   <span className="flex items-center gap-1.5">
                     <BadgePercent className="h-4 w-4" />
                     Réduction bienvenue -10 %
@@ -433,17 +461,23 @@ function PanierPage() {
                 </div>
               )}
               {/* Message discret quand l'offre est présente mais non applicable. */}
-              {welcomeAlreadyUsed && <div className="text-xs font-semibold text-black/40">Offre déjà utilisée</div>}
+              {welcomeAlreadyUsed && (
+                <div className="text-xs font-semibold text-muted-foreground/70">
+                  Offre déjà utilisée
+                </div>
+              )}
 
               <div className="flex items-end justify-between pt-1">
                 <div>
-                  <div className="text-[11px] font-black uppercase tracking-wider text-black/50">Total</div>
-                  <div className="mt-1 flex items-baseline gap-1.5 text-3xl font-black text-black">
+                  <div className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">
+                    Total
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-1.5 text-3xl font-black text-foreground">
                     {fmt(finalTotal)}
-                    <span className="text-sm font-black text-black/60">TND</span>
+                    <span className="text-sm font-black text-muted-foreground">TND</span>
                   </div>
                 </div>
-                <div className="rounded-full bg-[#F5B800] px-3 py-1 text-[11px] font-black text-black">
+                <div className="rounded-full bg-accent-warm px-3 py-1 text-[11px] font-black text-secondary-warm">
                   Paiement sur place
                 </div>
               </div>
@@ -453,7 +487,7 @@ function PanierPage() {
             <button
               disabled={!canSubmit}
               onClick={confirm}
-              className="press h-14 w-full rounded-full bg-[#E11D2E] text-base font-black text-white shadow-lg transition-colors hover:bg-[#B22222] disabled:opacity-50"
+              className="press h-14 w-full rounded-full bg-brand text-base font-black text-brand-foreground shadow-lg transition-[filter] hover:brightness-95 disabled:opacity-50"
             >
               {submitting
                 ? "Envoi…"

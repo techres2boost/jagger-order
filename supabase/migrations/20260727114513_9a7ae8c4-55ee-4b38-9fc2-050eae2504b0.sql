@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_push_subscription_role() FROM PUBLIC, anon, authenticated;

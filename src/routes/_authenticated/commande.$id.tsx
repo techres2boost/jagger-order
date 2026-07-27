@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-context";
 import { BoxLogo } from "@/components/BoxLogo";
 import { OrderProgressRing, STEPS, type ProgressStatus } from "@/components/OrderProgressRing";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { useOrderCountdown } from "@/hooks/use-order-countdown";
 import { fmt } from "@/lib/format";
 import { XCircle, Ban, MapPin } from "lucide-react";
@@ -233,15 +234,19 @@ function OrderStatusPage() {
 
         {order.status !== "delivered" && minutesRemaining != null && arrivalTime && (
           <div className="mt-4 flex items-center justify-center gap-4">
-            <div className="text-3xl font-black text-brand tabular-nums">{label}</div>
+            <AnimatedNumber
+              value={label ?? ""}
+              className="text-3xl font-black text-brand tabular-nums"
+            />
             <div className="text-sm text-muted-foreground">Arrivée prévue à {arrivalTime}</div>
           </div>
         )}
 
         {order.status === "pending" && (
-          <div className="mt-4 text-4xl font-black text-brand tabular-nums">
-            {mm}:{ss}
-          </div>
+          <AnimatedNumber
+            value={`${mm}:${ss}`}
+            className="mt-4 text-4xl font-black text-brand tabular-nums"
+          />
         )}
 
         <div className="mt-6 border-t pt-4">

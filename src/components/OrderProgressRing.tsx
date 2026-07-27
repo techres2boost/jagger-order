@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { CheckCircle2, Clock, PackageCheck, Truck, PartyPopper } from "lucide-react";
 
 export type ProgressStatus = "pending" | "accepted" | "ready" | "delivering" | "delivered";
@@ -26,10 +27,14 @@ export function OrderProgressRing({ stepIndex, variant = "full" }: OrderProgress
   const gapDeg = 6;
   const segDeg = 72 - gapDeg;
   const segLen = (segDeg / 360) * circumference;
-  const dashArray = `${segLen} ${circumference - segLen}`;
+  // Gap = circonférence complète : garantit un seul arc visible par segment (pas
+  // de répétition du motif), ce qui rend l'animation de tracé (stroke-dashoffset)
+  // prévisible sur le segment actif.
+  const dashArray = `${segLen} ${circumference}`;
   const current = STEPS[Math.max(0, stepIndex)];
 
   const gradientId = `box-progress-ring-${compact ? "compact" : "full"}`;
+  const segmentTransform = (i: number) => `rotate(${i * 72 - 90 + gapDeg / 2} ${center} ${center})`;
 
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }}>
@@ -41,8 +46,10 @@ export function OrderProgressRing({ stepIndex, variant = "full" }: OrderProgress
           </linearGradient>
         </defs>
         {STEPS.map((step, i) => {
-          const filled = i <= stepIndex;
-          const startAngle = i * 72 - 90 + gapDeg / 2;
+          // En "full", le segment actif est peint par l'overlay animé ci-dessous
+          // (tracé + pulsation) ; ici on ne remplit en plein que les étapes déjà
+          // franchies. En "compact", pas d'overlay : on remplit jusqu'à l'étape active.
+          const filled = compact ? i <= stepIndex : i < stepIndex;
           return (
             <circle
               key={step.key}
@@ -53,19 +60,41 @@ export function OrderProgressRing({ stepIndex, variant = "full" }: OrderProgress
               strokeWidth={strokeWidth}
               strokeLinecap="round"
               strokeDasharray={dashArray}
-              transform={`rotate(${startAngle} ${center} ${center})`}
-              className={filled && !compact && i === stepIndex ? "animate-pulse" : undefined}
+              transform={segmentTransform(i)}
               style={{ stroke: filled ? `url(#${gradientId})` : "var(--border)" }}
             />
           );
         })}
+        {/* Segment actif animé : la key = stepIndex le re-monte à chaque changement
+            de statut, ce qui rejoue le tracé (stroke-dashoffset, 600ms) puis
+            enchaîne la pulsation d'opacité (0,75 → 1, cycle 2s). Vaut pour tous les
+            statuts (Reçue → Livrée). Uniquement en "full" ; le compact reste statique. */}
+        {!compact && stepIndex >= 0 && (
+          <circle
+            key={stepIndex}
+            cx={center}
+            cy={center}
+            r={r}
+            fill="none"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={dashArray}
+            transform={segmentTransform(stepIndex)}
+            className="ring-active"
+            style={{ stroke: `url(#${gradientId})`, "--seg-len": segLen } as CSSProperties}
+          />
+        )}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-        <current.Icon
-          className={compact ? "h-5 w-5" : "h-9 w-9"}
-          style={{ color: "var(--primary)" }}
-        />
-        {!compact && <span className="text-sm font-bold">{current.label}</span>}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {/* Icône + libellé centraux : fondu-échelle à chaque changement de statut
+            (key = current.key), sans coupure brutale. */}
+        <span key={current.key} className="icon-swap flex flex-col items-center gap-2">
+          <current.Icon
+            className={compact ? "h-5 w-5" : "h-9 w-9"}
+            style={{ color: "var(--primary)" }}
+          />
+          {!compact && <span className="text-sm font-bold">{current.label}</span>}
+        </span>
       </div>
     </div>
   );

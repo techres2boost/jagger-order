@@ -8,19 +8,14 @@ function isNewSupabaseApiKey(value: string): boolean {
 
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
   return (input, init) => {
-    const headers = new Headers(
-      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
-    );
+    const headers = new Headers(typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined);
 
     if (init?.headers) {
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
 
     // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (
-      isNewSupabaseApiKey(supabaseKey) &&
-      headers.get("Authorization") === `Bearer ${supabaseKey}`
-    ) {
+    if (isNewSupabaseApiKey(supabaseKey) && headers.get("Authorization") === `Bearer ${supabaseKey}`) {
       headers.delete("Authorization");
     }
 
@@ -30,11 +25,17 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  // Repli sur les valeurs historiques si l'env n'est pas fournie au build
+  // (ex: Lovable Cloud sans connecteur Supabase configuré). Ce ne sont PAS
+  // des secrets : l'URL et la clé anon sont publiques par design (RLS reste
+  // la seule protection réelle des données). Ne jamais faire ça pour
+  // SUPABASE_SERVICE_ROLE_KEY (client.server.ts) qui, lui, est un vrai secret.
+  const SUPABASE_URL =
+    import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://ssmmstetcmgsjnjbjkat.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY =
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbW1zdGV0Y21nc2puamJqa2F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NTUyMDgsImV4cCI6MjA5OTQzMTIwOH0.W7GFHmrowlCwxuMf9GAuqO1L0iLDf4sz3IUD9eHj86g";
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [

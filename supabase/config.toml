@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.notify-order-message]
 verify_jwt = false
+
+# Appelée par le trigger on_late_delivery_notification via pg_net (sans JWT) :
+# la vérification JWT doit être désactivée, comme les autres fonctions déclenchées
+# côté base.
+[functions.notify-admin-late-delivery]
+verify_jwt = false

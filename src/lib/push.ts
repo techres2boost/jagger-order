@@ -4,6 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 // valeur historique pour ne rien casser si l'env n'est pas fournie au build.
 // IMPORTANT : cette clé publique DOIT correspondre à la clé privée VAPID
 // configurée côté serveur (secrets Supabase), sinon FCM rejette les push.
+const SUPABASE_URL =
+  (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() || "https://ssmmstetcmgsjnjbjkat.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY =
+  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined)?.trim() ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbW1zdGV0Y21nc2puamJqa2F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NTUyMDgsImV4cCI6MjA5OTQzMTIwOH0.W7GFHmrowlCwxuMf9GAuqO1L0iLDf4sz3IUD9eHj86g";
 const VAPID_PUBLIC_KEY =
   (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim() ||
   "BKJVi0v15ZIYrtfEJgyJ-DPTAq2hu7pSGLhCmjYrTQ4znq7fjLyLOtxn3D925HE0Nbci8qvNrfgfG13IlgjXm4E";
@@ -27,10 +33,7 @@ function abToBase64(buf: ArrayBuffer | null): string {
 
 export function isPushSupported(): boolean {
   return (
-    typeof window !== "undefined" &&
-    "serviceWorker" in navigator &&
-    "PushManager" in window &&
-    "Notification" in window
+    typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window
   );
 }
 
@@ -57,9 +60,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     return null; // don't register inside the editor iframe
   }
   if (isPreviewHost()) {
-    console.warn(
-      "[push] SW non enregistré : host de prévisualisation (déployez sur le vrai domaine).",
-    );
+    console.warn("[push] SW non enregistré : host de prévisualisation (déployez sur le vrai domaine).");
     return null;
   }
   try {
@@ -92,8 +93,7 @@ export async function enablePushNotifications(role: "client" | "admin" | "livreu
   ok: boolean;
   error?: string;
 }> {
-  if (!isPushSupported())
-    return { ok: false, error: "Notifications non supportées sur cet appareil." };
+  if (!isPushSupported()) return { ok: false, error: "Notifications non supportées sur cet appareil." };
   if (window.top !== window.self)
     return { ok: false, error: "Les notifications ne sont pas disponibles dans l'aperçu." };
   if (!VAPID_PUBLIC_KEY) {
@@ -135,10 +135,7 @@ export async function enablePushNotifications(role: "client" | "admin" | "livreu
   // abonnements d'autrui.
   const { error } = await (
     supabase as unknown as {
-      rpc: (
-        fn: string,
-        args: Record<string, unknown>,
-      ) => Promise<{ error: { message: string } | null }>;
+      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
     }
   ).rpc("save_push_subscription", {
     p_endpoint: endpoint,

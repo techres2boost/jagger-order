@@ -72,7 +72,7 @@ function OrderStatusPage() {
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [livreur, setLivreur] = useState<{ nom: string; telephone: string } | null>(null);
+  const [livreur, setLivreur] = useState<{ nom: string } | null>(null);
   const expirationEnvoyee = useRef(false);
 
   // Décompte temps réel mutualisé (interval + cleanup + repli + "Bientôt là").
@@ -126,6 +126,10 @@ function OrderStatusPage() {
   // Récupération (lecture seule) du livreur assigné pour la carte livreur. Effet
   // additif, indépendant du canal realtime : quand `assigned_livreur_id` change
   // (assignation reçue via l'UPDATE realtime ci-dessus), on recharge la fiche.
+  // Passe par la RPC `get_order_livreur` (SECURITY DEFINER) : les policies RLS de
+  // `livreurs` n'autorisent en lecture que l'admin et le livreur lui-même, donc un
+  // client ne peut PAS lire la table directement — la RPC renvoie juste le nom au
+  // propriétaire de la commande. (rpc non typée dans les types générés → cast.)
   useEffect(() => {
     const livreurId = order?.assigned_livreur_id ?? null;
     if (!livreurId) {
@@ -133,18 +137,16 @@ function OrderStatusPage() {
       return;
     }
     let active = true;
-    supabase
-      .from("livreurs")
-      .select("nom, telephone")
-      .eq("id", livreurId)
-      .maybeSingle()
+    (supabase as unknown as { rpc: (fn: string, args: object) => Promise<{ data: unknown }> })
+      .rpc("get_order_livreur", { p_order_id: id })
       .then(({ data }) => {
-        if (active) setLivreur((data as { nom: string; telephone: string } | null) ?? null);
+        const row = (data as { id: string; nom: string }[] | null)?.[0] ?? null;
+        if (active) setLivreur(row ? { nom: row.nom } : null);
       });
     return () => {
       active = false;
     };
-  }, [order?.assigned_livreur_id]);
+  }, [order?.assigned_livreur_id, id]);
 
   if (!order) {
     return (
@@ -249,7 +251,7 @@ function OrderStatusPage() {
       <BoxLogo size={56} showWordmark={false} />
 
       <div className="mt-6 w-full max-w-md rounded-[28px] border border-border bg-card p-6 text-center shadow-[0_20px_40px_-24px_rgba(46,30,23,0.35)]">
-        {itemsLabel && (
+        {itemsLabel && !livreur && (
           <p className="mb-4 text-sm font-semibold text-muted-foreground">{itemsLabel}</p>
         )}
 
@@ -287,15 +289,35 @@ function OrderStatusPage() {
                 ? "En route vers vous"
                 : order.status === "ready"
                   ? "Prise en charge en cours"
-                  : "Livreur assigné"
+                  : order.status === "delivered"
+                    ? "Commande livrée"
+                    : "Livreur assigné"
             }
+            itemsLabel={itemsLabel}
+            total={Number(order.total)}
           />
         )}
 
-        <div className="mt-6 border-t pt-4">
-          <div className="text-xs text-muted-foreground">Total</div>
-          <div className="text-lg font-black text-brand">{fmt(Number(order.total))}</div>
-        </div>
+        {/* "Suivre sur la carte" : dès qu'un livreur est assigné (hors commande
+            déjà livrée), renvoie vers l'écran carte OSM + chat. */}
+        {livreur && order.status !== "delivered" && (
+          <Link
+            to="/orders/$orderId/tracking"
+            params={{ orderId: order.id }}
+            className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-brand px-6 font-bold text-brand-foreground"
+          >
+            <MapPin className="h-4 w-4" /> Suivre sur la carte
+          </Link>
+        )}
+
+        {/* Total autonome uniquement sans carte livreur (sinon le prix est déjà
+            affiché dans la carte). */}
+        {!livreur && (
+          <div className="mt-6 border-t pt-4">
+            <div className="text-xs text-muted-foreground">Total</div>
+            <div className="text-lg font-black text-brand">{fmt(Number(order.total))}</div>
+          </div>
+        )}
 
         {order.status === "pending" && remaining > 0 ? (
           <button
@@ -312,17 +334,6 @@ function OrderStatusPage() {
             Retour au menu
           </Link>
         ) : null}
-
-        {/* Live tracking + chat sur une page dédiée, uniquement en livraison. */}
-        {order.status === "delivering" && (
-          <Link
-            to="/orders/$orderId/tracking"
-            params={{ orderId: order.id }}
-            className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-brand px-6 font-bold text-brand-foreground"
-          >
-            <MapPin className="h-4 w-4" /> Suivre ma commande
-          </Link>
-        )}
       </div>
 
       {confirmCancel && (

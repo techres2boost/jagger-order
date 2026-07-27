@@ -22,9 +22,24 @@ interface TrackingOrderRow {
   id: string;
   status: string;
   user_id: string;
+  assigned_livreur_id: string | null;
+  delivered_at: string | null;
   // Colonnes présentes en base mais absentes des types générés (stale).
   lat?: number | null;
   lng?: number | null;
+}
+
+// Suivi accessible dès qu'un livreur est assigné, tant que la commande n'est ni
+// annulée/expirée/refusée, ni livrée depuis longtemps (> 24 h). Miroir de la
+// fenêtre d'accès du chat (can_access_order_chat) côté base.
+function canTrack(order: TrackingOrderRow): boolean {
+  if (!order.assigned_livreur_id) return false;
+  if (["cancelled", "expired", "refused"].includes(order.status)) return false;
+  if (order.status === "delivered") {
+    if (!order.delivered_at) return false;
+    return Date.now() - new Date(order.delivered_at).getTime() < 24 * 3600 * 1000;
+  }
+  return true;
 }
 
 function TrackingPage() {
@@ -55,7 +70,7 @@ function TrackingPage() {
 
     supabase
       .from("orders")
-      .select("id, status, user_id, lat, lng")
+      .select("id, status, user_id, assigned_livreur_id, delivered_at, lat, lng")
       .eq("id", orderId)
       .maybeSingle()
       .then(({ data }) => {
@@ -91,9 +106,10 @@ function TrackingPage() {
     );
   }
 
-  // Commande absente (accès non autorisé / inexistante) ou hors livraison :
-  // on n'affiche jamais une carte/chat vides.
-  if (!order || order.status !== "delivering") {
+  // Commande absente (accès non autorisé / inexistante) ou hors fenêtre de suivi
+  // (pas de livreur assigné, ou annulée/expirée/refusée, ou livrée depuis
+  // longtemps) : on n'affiche jamais une carte/chat vides.
+  if (!order || !canTrack(order)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
         <BoxLogo size={56} showWordmark={false} />
@@ -103,7 +119,7 @@ function TrackingPage() {
           </div>
           <h1 className="mt-4 text-2xl font-black">Suivi indisponible</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Cette commande n'est plus en cours de livraison.
+            Le suivi n'est pas disponible pour cette commande.
           </p>
           <Link
             to="/commande/$id"

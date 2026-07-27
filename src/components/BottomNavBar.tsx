@@ -56,13 +56,13 @@ export function BottomNavBar() {
     <nav
       ref={navRef}
       aria-label="Navigation principale"
-      className="fixed left-0 right-0 bottom-0 z-[var(--z-bottom-nav)] box-border w-full bg-white/95 backdrop-blur-md"
+      className="fixed left-0 right-0 bottom-0 z-[var(--z-bottom-nav)] box-border w-full border-t border-border bg-card/95 backdrop-blur-md"
       style={{ height: 64, paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="mx-auto flex h-full max-w-xl items-center justify-between px-4">
         {TABS.map((t) => {
           const active = pathname === t.to;
-          const colorClass = active ? "text-[#B22222]" : "text-neutral-500";
+          const colorClass = active ? "text-brand" : "text-muted-foreground";
           const Icon = t.Icon;
           return (
             <a

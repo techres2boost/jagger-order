@@ -3,14 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  ArrowRight,
-  Clock,
-  RotateCcw,
-  ShoppingBag,
-  Star,
-  StarOff,
-} from "lucide-react";
+import { ArrowRight, Clock, RotateCcw, ShoppingBag, Star, StarOff } from "lucide-react";
 import { fmt } from "@/lib/format";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -90,8 +83,8 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 const STATUS_CLASS: Record<OrderStatus, string> = {
   pending: "bg-warning/20 text-warning",
   accepted: "bg-success/20 text-success",
-  ready: "bg-blue-500/20 text-blue-600",
-  delivering: "bg-blue-500/20 text-blue-600",
+  ready: "bg-accent-warm/20 text-accent-warm",
+  delivering: "bg-accent-warm/20 text-accent-warm",
   delivered: "bg-success/20 text-success",
   refused: "bg-destructive/20 text-destructive",
   expired: "bg-muted text-muted-foreground",
@@ -403,7 +396,10 @@ function CommandesPage() {
               const orderItems = items[order.id] ?? [];
               const rating = ratings[order.id];
               return (
-                <div key={order.id} className="rounded-3xl border bg-card p-4 shadow-sm">
+                <div
+                  key={order.id}
+                  className="rounded-[26px] border border-border bg-card p-4 shadow-[0_12px_28px_-20px_rgba(46,30,23,0.4)] transition-transform duration-200 hover:-translate-y-0.5"
+                >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">

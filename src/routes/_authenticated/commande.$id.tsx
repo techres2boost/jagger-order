@@ -165,7 +165,7 @@ function OrderStatusPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
         <BoxLogo size={56} showWordmark={false} />
-        <div className="mt-6 w-full max-w-md rounded-3xl border bg-card p-6 text-center shadow-sm">
+        <div className="mt-6 w-full max-w-md rounded-[28px] border border-border bg-card p-6 text-center shadow-[0_20px_40px_-24px_rgba(46,30,23,0.35)]">
           <div
             className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${
               order.status === "cancelled" ? "bg-muted" : "bg-destructive/20"
@@ -220,7 +220,7 @@ function OrderStatusPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
       <BoxLogo size={56} showWordmark={false} />
 
-      <div className="mt-6 w-full max-w-md rounded-3xl border bg-card p-6 text-center shadow-sm">
+      <div className="mt-6 w-full max-w-md rounded-[28px] border border-border bg-card p-6 text-center shadow-[0_20px_40px_-24px_rgba(46,30,23,0.35)]">
         {itemsLabel && (
           <p className="mb-4 text-sm font-semibold text-muted-foreground">{itemsLabel}</p>
         )}

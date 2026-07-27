@@ -93,7 +93,7 @@ export function ProfileAvatar({ userId }: Props) {
         ) : (
           <UserIcon className="h-10 w-10" />
         )}
-        <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-[#B22222] text-white shadow">
+        <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-brand text-brand-foreground shadow">
           <Camera className="h-3.5 w-3.5" />
         </span>
       </button>
@@ -111,7 +111,7 @@ export function ProfileAvatar({ userId }: Props) {
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className="h-9 rounded-full bg-[#B22222] px-4 text-xs font-semibold text-white disabled:opacity-50"
+          className="h-9 rounded-full bg-brand px-4 text-xs font-semibold text-brand-foreground disabled:opacity-50"
         >
           {busy ? "…" : avatarUrl ? "Changer la photo" : "Ajouter une photo"}
         </button>

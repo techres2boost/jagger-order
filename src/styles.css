@@ -35,35 +35,44 @@
   --color-warning: var(--warning);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
-  --font-display: "Poppins", "Inter", system-ui, sans-serif;
-  --font-body: "Inter", system-ui, sans-serif;
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-dark: var(--brand-dark);
+  --color-secondary-warm: var(--secondary-warm);
+  --color-accent-warm: var(--accent-warm);
+  --color-surface-2: var(--surface-2);
+  --font-display: "Bricolage Grotesque", "Poppins", system-ui, sans-serif;
+  --font-body: "DM Sans", "Inter", system-ui, sans-serif;
 }
 
 :root {
-  --radius: 0.875rem;
+  --radius: 1.25rem;
 
-  /* BOX identity : rouge accent, blanc dominant, noir support */
-  --brand: oklch(0.58 0.22 27); /* rouge BOX */
-  --brand-foreground: oklch(1 0 0);
-  --brand-dark: oklch(0.22 0.05 27); /* rouge très sombre / noir chaleureux */
+  /* BOX identity — palette "white-label" : ces valeurs (et --secondary-warm /
+     --accent-warm / --surface-2 plus bas) sont l'unique point de variation
+     entre restaurants clients. Voir src/lib/theme-context.tsx : le
+     ThemeProvider réécrit ces mêmes variables au runtime, rien d'autre. */
+  --brand: #b52400; /* terracotta / brique cuite */
+  --brand-foreground: #fff8f1;
+  --brand-dark: #2e1e17; /* brun chaud, support des surfaces sombres */
 
-  --background: oklch(0.985 0.003 60); /* off-white #FAFAFA */
-  --foreground: oklch(0.18 0.01 20); /* charcoal #1A1A1A */
+  --background: #fbf3e8; /* crème */
+  --foreground: #241812; /* texte, brun très sombre */
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.01 20);
+  --card: #fffdf9;
+  --card-foreground: #241812;
 
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.01 20);
+  --popover: #fffdf9;
+  --popover-foreground: #241812;
 
-  --primary: oklch(0.58 0.22 27);
-  --primary-foreground: oklch(1 0 0);
+  --primary: #b52400;
+  --primary-foreground: #fff8f1;
 
   --secondary: oklch(0.96 0.005 20);
   --secondary-foreground: oklch(0.2 0.02 20);
 
   --muted: oklch(0.96 0.005 20);
-  --muted-foreground: oklch(0.5 0.02 20);
+  --muted-foreground: #8b7365;
 
   --accent: oklch(0.95 0.02 27);
   --accent-foreground: oklch(0.58 0.22 27);
@@ -71,16 +80,25 @@
   --destructive: oklch(0.55 0.24 27);
   --destructive-foreground: oklch(1 0 0);
 
-  --success: oklch(0.65 0.16 145);
+  --success: #4e7b4a;
   --warning: oklch(0.75 0.16 75);
 
   /* Warm gold accent — #F5B800 */
   --gold: oklch(0.82 0.16 85);
   --gold-foreground: oklch(0.18 0.01 20);
 
-  --border: oklch(0.92 0.005 20);
-  --input: oklch(0.94 0.005 20);
-  --ring: oklch(0.58 0.22 27);
+  --border: #e6d5c1;
+  --input: #f4e7d6;
+  --ring: #b52400;
+
+  /* Jetons additionnels du design "Comptoir" (mockups BOX Refonte), sans
+     équivalent shadcn direct : brun sombre pour les surfaces "plein" (header,
+     nav pills actives, stepper panier), ambre pour les badges/accents chauds,
+     et une variante de surface plus soutenue que --card pour les fonds de
+     section / pills inactives. Repris tels quels par les 3 thèmes. */
+  --secondary-warm: #2e1e17;
+  --accent-warm: #e39a2b;
+  --surface-2: #f4e7d6;
 
   /* Empilement (z-index) — jetons partagés.
      La bottom nav reste AU-DESSUS de l'overlay de la modale produit : elle
@@ -281,17 +299,28 @@
   animation: cart-bounce 500ms ease-out;
 }
 
-/* Red-tinted scrollbar for horizontal category strip */
+/* Scrollbar teintée (primaire) pour la bande de catégories */
 .hide-scrollbar-red::-webkit-scrollbar {
   height: 4px;
 }
 .hide-scrollbar-red::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, #e11d2e, #ff6b35);
+  background: var(--primary);
   border-radius: 999px;
 }
 .hide-scrollbar-red {
-  scrollbar-color: #e11d2e transparent;
+  scrollbar-color: var(--primary) transparent;
   scrollbar-width: thin;
+}
+
+/* Voile pointillé chaud, utilisé sur les surfaces sombres (bannière, en-tête
+   fiche produit) quel que soit le thème actif — cf. mockup "1a Comptoir". */
+.warm-dots::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1.4px);
+  background-size: 14px 14px;
+  pointer-events: none;
 }
 
 /* Live tracking (BOX) — marqueur scooter du livreur.

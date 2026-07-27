@@ -219,18 +219,20 @@ export function MenuPage() {
   }, []);
 
   const items = useMemo(() => {
-    let list = active === "__all__" ? dishes : active ? dishes.filter((d) => d.category === active) : [];
+    let list =
+      active === "__all__" ? dishes : active ? dishes.filter((d) => d.category === active) : [];
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter(
-        (d) =>
-          d.name.toLowerCase().includes(q) ||
-          (d.description ?? "").toLowerCase().includes(q),
+        (d) => d.name.toLowerCase().includes(q) || (d.description ?? "").toLowerCase().includes(q),
       );
     }
     if (priceSort !== "none") {
       const priceOf = (d: Dish) =>
-        d.price ?? (d.sizes && d.sizes.length ? Math.min(...d.sizes.map((s) => s.price)) : Number.POSITIVE_INFINITY);
+        d.price ??
+        (d.sizes && d.sizes.length
+          ? Math.min(...d.sizes.map((s) => s.price))
+          : Number.POSITIVE_INFINITY);
       list = [...list].sort((a, b) =>
         priceSort === "asc" ? priceOf(a) - priceOf(b) : priceOf(b) - priceOf(a),
       );
@@ -251,26 +253,30 @@ export function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-28">
-      {/* Header intégré sur fond blanc */}
-      <header className="bg-white">
-        <div className="mx-auto max-w-3xl px-4 pt-4 pb-3">
+    <div className="min-h-screen bg-background pb-28">
+      {/* En-tête « Comptoir » : brique pleine, voile pointillé, contenu clair. */}
+      <header className="relative overflow-hidden bg-[color:var(--primary)] pb-9 pt-4 warm-dots">
+        <div className="relative mx-auto max-w-3xl px-4">
           {/* Top row : logo + search + connexion */}
           <div className="flex items-center gap-3">
-            <BoxLogo size={44} showWordmark={false} />
+            <BoxLogo
+              size={40}
+              showWordmark={false}
+              className="text-[color:var(--primary-foreground)] [&_img]:drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)]"
+            />
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-foreground/50" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[color:var(--primary-foreground)]/70" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Rechercher un plat…"
-                className="h-11 w-full rounded-2xl border-0 bg-[#F1F2F4] pl-10 pr-16 text-sm font-medium text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]/30"
+                className="h-11 w-full rounded-full border-0 bg-[color:var(--primary-foreground)]/15 pl-10 pr-16 text-sm font-medium text-[color:var(--primary-foreground)] placeholder:text-[color:var(--primary-foreground)]/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--primary-foreground)]/40"
               />
               {search ? (
                 <button
                   onClick={() => setSearch("")}
-                  className="absolute right-10 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-foreground/50 hover:bg-black/5"
+                  className="absolute right-10 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[color:var(--primary-foreground)]/70 hover:bg-white/10"
                   aria-label="Effacer"
                 >
                   <X className="h-4 w-4" />
@@ -278,10 +284,10 @@ export function MenuPage() {
               ) : null}
               <button
                 onClick={() => setShowFilter((v) => !v)}
-                className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl press ${
+                className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full press ${
                   priceSort !== "none"
-                    ? "bg-[color:var(--brand)] text-white"
-                    : "text-foreground/60 hover:bg-black/5"
+                    ? "bg-[color:var(--primary-foreground)] text-[color:var(--primary)]"
+                    : "text-[color:var(--primary-foreground)]/70 hover:bg-white/10"
                 }`}
                 aria-label="Filtrer par prix"
                 title="Filtrer par prix"
@@ -289,14 +295,22 @@ export function MenuPage() {
                 <SlidersHorizontal className="h-4 w-4" />
               </button>
               {showFilter && (
-                <div className="absolute right-0 top-12 z-40 w-52 rounded-2xl bg-white p-2 text-foreground shadow-xl ring-1 ring-black/5">
-                  <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-foreground/50">
+                <div className="absolute right-0 top-12 z-40 w-52 rounded-2xl bg-card p-2 text-foreground shadow-xl ring-1 ring-black/5">
+                  <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                     Trier par prix
                   </div>
                   {[
                     { key: "none" as const, label: "Par défaut", icon: null },
-                    { key: "asc" as const, label: "Prix croissant", icon: <ArrowDownAZ className="h-4 w-4" /> },
-                    { key: "desc" as const, label: "Prix décroissant", icon: <ArrowUpAZ className="h-4 w-4" /> },
+                    {
+                      key: "asc" as const,
+                      label: "Prix croissant",
+                      icon: <ArrowDownAZ className="h-4 w-4" />,
+                    },
+                    {
+                      key: "desc" as const,
+                      label: "Prix décroissant",
+                      icon: <ArrowUpAZ className="h-4 w-4" />,
+                    },
                   ].map((opt) => (
                     <button
                       key={opt.key}
@@ -305,7 +319,9 @@ export function MenuPage() {
                         setShowFilter(false);
                       }}
                       className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold ${
-                        priceSort === opt.key ? "bg-[color:var(--brand)]/10 text-[color:var(--brand)]" : "hover:bg-black/5"
+                        priceSort === opt.key
+                          ? "bg-[color:var(--primary)]/10 text-[color:var(--primary)]"
+                          : "hover:bg-black/5"
                       }`}
                     >
                       {opt.icon}
@@ -320,7 +336,7 @@ export function MenuPage() {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--primary-foreground)]/15 text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary-foreground)]/25 press"
                   title="Admin"
                   aria-label="Admin"
                 >
@@ -335,7 +351,7 @@ export function MenuPage() {
                       await supabase.auth.signOut();
                       toast.success("Déconnecté");
                     }}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-foreground hover:bg-black/10 press"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--primary-foreground)]/15 text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary-foreground)]/25 press"
                     title="Déconnexion"
                     aria-label="Déconnexion"
                   >
@@ -345,7 +361,7 @@ export function MenuPage() {
               ) : (
                 <Link
                   to="/auth"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--brand)] text-white hover:brightness-110 press shadow-md"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--primary-foreground)] text-[color:var(--primary)] hover:brightness-95 press shadow-md"
                   title="Connexion"
                   aria-label="Connexion"
                 >
@@ -356,107 +372,121 @@ export function MenuPage() {
           </div>
 
           {/* Accroche */}
-          <h1 className="mt-5 text-2xl font-black leading-tight text-foreground sm:text-3xl">
+          <h1 className="mt-5 text-2xl font-black leading-tight tracking-tight text-[color:var(--primary-foreground)] sm:text-3xl">
             Que voulez-vous commander aujourd'hui ?
           </h1>
-
-          {/* Carrousel promo — swipe */}
-          <div className="mt-4 -mx-4">
-            <div
-              ref={promoScrollRef}
-              onScroll={(e) => {
-                const el = e.currentTarget;
-                const idx = Math.round(el.scrollLeft / el.clientWidth);
-                if (idx !== promoIndex) setPromoIndex(idx);
-              }}
-              className="hide-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth px-4"
-            >
-              {PROMO_CARDS.map((p, i) => (
-                <div key={i} className="w-full shrink-0 snap-center pr-3 last:pr-0">
-                  {/* Bannière « Offre de bienvenue » : clic → page menu avec le
-                      code promo dans l'URL (?promo=WELCOME10), qui l'active dans
-                      le panier. La réduction réelle est appliquée au checkout. */}
-                  <Link
-                    to="/app"
-                    search={{ promo: WELCOME_PROMO_CODE }}
-                    aria-label="Offre de bienvenue -10 % sur votre première commande"
-                    className="press block cursor-pointer"
-                  >
-                    <div className="relative overflow-hidden rounded-3xl bg-[color:var(--brand)] px-5 py-4 shadow-xl">
-                      <div className="absolute inset-0 opacity-30 halftone-red pointer-events-none" />
-                      <div className="relative flex items-center gap-3">
-                        <div className="flex-1">
-                          <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">
-                            Offre de bienvenue
-                          </div>
-                          <div className="mt-1 text-2xl font-black leading-tight text-white">
-                            -10 % sur votre
-                            <br />
-                            première commande
-                          </div>
-                        </div>
-                        <img
-                          src={p.img}
-                          alt={p.alt}
-                          width={120}
-                          height={120}
-                          loading="lazy"
-                          className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.35)] rotate-[-6deg]"
-                        />
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 flex items-center justify-center gap-1.5">
-              {PROMO_CARDS.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    const el = promoScrollRef.current;
-                    if (!el) return;
-                    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
-                  }}
-                  aria-label={`Promo ${i + 1}`}
-                  className={`h-1.5 rounded-full transition-all ${
-                    promoIndex === i
-                      ? "w-6 bg-[color:var(--brand)]"
-                      : "w-1.5 bg-black/20"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* Tabs catégories (edges carrés) */}
-        <div className="hide-scrollbar-red overflow-x-auto">
-          <div className="mx-auto flex max-w-3xl gap-2 px-4 pb-4">
-            {[{ id: "__all__", name: "Tout" }, ...categories].map((c) => (
+        {/* Carrousel promo — swipe, chevauche le bas de l'en-tête */}
+        <div className="relative mt-[18px] -mx-0 -mb-[52px]">
+          <div
+            ref={promoScrollRef}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              const idx = Math.round(el.scrollLeft / el.clientWidth);
+              if (idx !== promoIndex) setPromoIndex(idx);
+            }}
+            className="hide-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth px-4"
+          >
+            {PROMO_CARDS.map((p, i) => (
+              <div key={i} className="w-full max-w-3xl shrink-0 snap-center pr-3 last:pr-0">
+                {/* Bannière « Offre de bienvenue » : clic → page menu avec le
+                    code promo dans l'URL (?promo=WELCOME10), qui l'active dans
+                    le panier. La réduction réelle est appliquée au checkout. */}
+                <Link
+                  to="/app"
+                  search={{ promo: WELCOME_PROMO_CODE }}
+                  aria-label="Offre de bienvenue -10 % sur votre première commande"
+                  className="press block cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500"
+                >
+                  <div className="relative overflow-hidden rounded-3xl bg-[color:var(--secondary-warm)] px-5 py-4 shadow-[0_16px_30px_-18px_rgba(46,30,23,0.9)]">
+                    <div className="warm-dots absolute inset-0 opacity-40" />
+                    <div className="relative flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[color:var(--accent-warm)]">
+                          Offre de bienvenue
+                        </div>
+                        <div className="mt-1.5 text-xl font-black leading-tight text-[color:var(--brand-foreground)]">
+                          -10 % sur votre
+                          <br />
+                          première commande
+                        </div>
+                        <div className="mt-2.5 inline-flex h-8 items-center rounded-full bg-[color:var(--accent-warm)] px-3.5 text-xs font-bold text-[color:var(--secondary-warm)]">
+                          J'en profite
+                        </div>
+                      </div>
+                      <img
+                        src={p.img}
+                        alt={p.alt}
+                        width={120}
+                        height={120}
+                        loading="lazy"
+                        className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.35)] rotate-[-6deg]"
+                      />
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+          <div className="relative mt-3 flex items-center justify-center gap-1.5">
+            {PROMO_CARDS.map((_, i) => (
               <button
-                key={c.id}
-                onClick={() => setActive(c.id)}
-                className={`shrink-0 rounded-lg px-4 py-2 text-sm font-bold transition min-h-[42px] press ${
-                  active === c.id
-                    ? "bg-[color:var(--brand)] text-white shadow-[0_6px_16px_rgba(227,6,19,0.5)]"
-                    : "bg-[#F1F2F4] text-foreground/80 hover:text-foreground"
+                key={i}
+                onClick={() => {
+                  const el = promoScrollRef.current;
+                  if (!el) return;
+                  el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+                }}
+                aria-label={`Promo ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all ${
+                  promoIndex === i
+                    ? "w-6 bg-[color:var(--primary)]"
+                    : "w-1.5 bg-[color:var(--foreground)]/20"
                 }`}
-              >
-                {c.name}
-              </button>
+              />
             ))}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl">
-        {/* Populaires — minimal, invisible cards, seamless with white bg */}
-        {populaires.length > 0 && (
-          <section className="px-4 pt-6 pb-2">
-            <h2 className="mb-3 text-xl font-black text-foreground">Plats populaires</h2>
+      {/* Tabs catégories */}
+      <div className="hide-scrollbar-red overflow-x-auto pt-4">
+        <div className="mx-auto flex max-w-3xl gap-2 px-4 pb-4">
+          {[{ id: "__all__", name: "Tout" }, ...categories].map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setActive(c.id)}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition min-h-[42px] press ${
+                active === c.id
+                  ? "bg-[color:var(--secondary-warm)] text-[color:var(--brand-foreground)] shadow-[0_6px_16px_rgba(46,30,23,0.35)]"
+                  : "border border-[color:var(--border)] bg-card text-foreground/80 hover:text-foreground"
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
-            <div className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
+      <main className="mx-auto max-w-3xl">
+        {/* Populaires — minimal, invisible cards, seamless with le fond crème */}
+        {populaires.length > 0 && (
+          <section className="px-4 pt-8 pb-2">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-xl font-black text-foreground">Plats populaires</h2>
+              <button
+                onClick={() => {
+                  setActive("__all__");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="text-sm font-bold text-[color:var(--primary)]"
+              >
+                Tout voir
+              </button>
+            </div>
+
+            <div className="hide-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2">
               {populaires.map((it) => {
                 const qtyInCart = lines
                   .filter((l) => l.itemId === it.id)
@@ -490,10 +520,8 @@ export function MenuPage() {
           </section>
         )}
 
-
-
         {/* Grid catégorie */}
-        <section className="px-4 pt-6">
+        <section className="px-4 pt-8">
           <h2 className="section-title mb-4 text-xl font-black">{activeCategoryName}</h2>
           {loading && (
             <p className="py-8 text-center text-sm text-muted-foreground">Chargement du menu…</p>
@@ -527,11 +555,11 @@ export function MenuPage() {
         <Link
           key={bounceKey}
           to="/panier"
-          className="fixed bottom-16 right-5 z-[60] flex h-14 items-center gap-2 rounded-full brand-gradient px-5 text-white shadow-2xl press cart-bounce"
+          className="fixed bottom-16 right-5 z-[60] flex h-14 items-center gap-2 rounded-full bg-[color:var(--secondary-warm)] px-5 text-[color:var(--brand-foreground)] shadow-[0_14px_26px_-12px_rgba(46,30,23,0.8)] press cart-bounce"
         >
           <ShoppingCart className="h-5 w-5" />
           <span className="font-bold">Panier</span>
-          <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-white px-1.5 text-xs font-black text-[color:var(--brand)]">
+          <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[color:var(--accent-warm)] px-1.5 text-xs font-black text-[color:var(--secondary-warm)]">
             {count}
           </span>
         </Link>
@@ -569,7 +597,6 @@ function DishThumb({ item, className }: { item: Dish; className?: string }) {
   );
 }
 
-
 function PopularCard({
   item,
   onOpen,
@@ -591,8 +618,13 @@ function PopularCard({
         onClick={() => onOpen(item)}
         className="group flex w-full flex-col items-center text-center"
       >
-        <div className="relative h-24 w-24">
-          <div className="absolute inset-x-3 bottom-1 h-3 rounded-full bg-black/30 blur-lg" />
+        <div
+          className="relative flex h-24 w-24 items-center justify-center rounded-full"
+          style={{
+            background:
+              "radial-gradient(60% 60% at 50% 70%, color-mix(in srgb, var(--accent-warm) 30%, transparent), transparent 70%)",
+          }}
+        >
           {item.image ? (
             <img
               src={item.image}
@@ -602,7 +634,7 @@ function PopularCard({
               style={{ filter: "saturate(1.15) contrast(1.05)" }}
             />
           ) : (
-            <div className="relative flex h-full w-full items-center justify-center rounded-full bg-[#F1F2F4]">
+            <div className="relative flex h-full w-full items-center justify-center rounded-full bg-[color:var(--surface-2)]">
               <BoxLogo size={48} showWordmark={false} />
             </div>
           )}
@@ -623,12 +655,12 @@ function PopularCard({
             e.stopPropagation();
             onOpen(item);
           }}
-          className="press absolute right-0 top-16 flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg ring-2 ring-white"
+          className="press absolute right-0 top-16 flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] shadow-lg ring-2 ring-[color:var(--card)]"
           aria-label="Ajouter au panier"
         >
           <Plus className="h-4 w-4" strokeWidth={3} />
           {inCart && (
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-black text-[color:var(--brand)] shadow">
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--card)] px-1 text-[9px] font-black text-[color:var(--primary)] shadow">
               x{qtyInCart}
             </span>
           )}
@@ -655,18 +687,21 @@ function ProductCard({
   const minSizePrice = hasSizes ? Math.min(...item.sizes!.map((s) => s.price)) : null;
   const price = minSizePrice ?? item.price ?? null;
   const inCart = qtyInCart > 0;
-  const radius = featured ? "rounded-[20px]" : "rounded-[18px]";
-  const highlight = inCart
-    ? `ring-2 ring-brand ${radius}`
-    : `${radius}`;
+  const radius = featured ? "rounded-[22px]" : "rounded-[20px]";
+  const highlight = inCart ? `ring-2 ring-[color:var(--primary)] ${radius}` : `${radius}`;
 
   return (
     <div
-      className={`relative flex h-[280px] flex-col overflow-hidden ${radius} bg-[#F1F2F4] card-hover ${highlight}`}
+      className={`relative flex h-[280px] flex-col overflow-hidden border border-[color:var(--border)] bg-card card-hover ${radius} ${highlight}`}
     >
       <button onClick={() => onOpen(item)} className="flex h-full w-full flex-col text-left">
-        <div className="relative h-[160px] w-full shrink-0 p-3">
-          <div className="absolute inset-x-6 bottom-3 h-3 rounded-full bg-black/20 blur-md" />
+        <div
+          className="relative h-[160px] w-full shrink-0 p-3"
+          style={{
+            background:
+              "radial-gradient(60% 60% at 50% 78%, color-mix(in srgb, var(--accent-warm) 26%, transparent), transparent 72%)",
+          }}
+        >
           {item.image ? (
             <img
               src={item.image}
@@ -676,12 +711,12 @@ function ProductCard({
               style={{ filter: "saturate(1.15) contrast(1.05)" }}
             />
           ) : (
-            <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-white/60">
+            <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-[color:var(--surface-2)]/60">
               <BoxLogo size={56} showWordmark={false} />
             </div>
           )}
           {item.populaire && (
-            <div className="pop-badge absolute left-2 top-2 rounded-full bg-[color:var(--gold)] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[color:var(--gold-foreground)] shadow">
+            <div className="pop-badge absolute left-2 top-2 rounded-full bg-[color:var(--accent-warm)] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[color:var(--secondary-warm)] shadow">
               ★ Populaire
             </div>
           )}
@@ -692,14 +727,14 @@ function ProductCard({
           )}
         </div>
         <div className="flex flex-1 flex-col justify-between px-4 pb-4 pt-1 pr-14">
-          <div className="mt-2 line-clamp-2 h-[2.5rem] overflow-hidden text-sm font-bold leading-tight text-black">
+          <div className="mt-2 line-clamp-2 h-[2.5rem] overflow-hidden text-sm font-bold leading-tight text-foreground">
             {displayName(item)}
           </div>
-          <div className="h-6 text-base font-black leading-6 text-black">
+          <div className="h-6 text-base font-black leading-6 text-foreground">
             {price != null ? (
               <>
                 {hasSizes ? `dès ${fmt(price)}` : fmt(price)}
-                <span className="ml-1 text-[10px] font-bold text-black/60">TND</span>
+                <span className="ml-1 text-[10px] font-bold text-foreground/60">TND</span>
               </>
             ) : null}
           </div>
@@ -711,12 +746,12 @@ function ProductCard({
             e.stopPropagation();
             onOpen(item);
           }}
-          className="press absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--brand)] text-white shadow-lg"
+          className="press absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] shadow-lg"
           aria-label="Ajouter au panier"
         >
           <Plus className="h-5 w-5" strokeWidth={3} />
           {inCart && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-black text-[color:var(--brand)] shadow">
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--card)] px-1 text-[10px] font-black text-[color:var(--primary)] shadow">
               x{qtyInCart}
             </span>
           )}
@@ -810,11 +845,11 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
         className="relative flex w-full flex-col rounded-t-3xl bg-background animate-in slide-in-from-bottom duration-300"
       >
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {/* Photo — fond rouge, vague en bas, image non recadrée */}
-          <div className="relative bg-brand pt-8 pb-16">
+          {/* Photo — fond brique texturé, vague en bas, image non recadrée */}
+          <div className="warm-dots relative overflow-hidden bg-brand pt-8 pb-16">
             <button
               onClick={onClose}
-              className="press absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-brand-dark shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
+              className="press absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-card/95 text-brand-dark shadow-[0_4px_20px_rgba(0,0,0,0.25)]"
             >
               ✕
             </button>
@@ -854,7 +889,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
           <div className="mx-auto max-w-2xl px-5 pt-5">
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-2xl font-black">{item.name}</h2>
-              <div className="whitespace-nowrap text-2xl font-black text-[color:var(--gold)]">
+              <div className="whitespace-nowrap text-2xl font-black text-brand">
                 {fmt(base)} <span className="text-sm font-bold text-foreground/50">TND</span>
               </div>
             </div>
@@ -877,7 +912,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                 <span className="w-6 text-center font-bold">{qty}</span>
                 <button
                   onClick={() => setQty((q) => q + 1)}
-                  className="press h-9 w-9 rounded-full bg-[#B22222] font-bold text-white"
+                  className="press h-9 w-9 rounded-full bg-brand font-bold text-brand-foreground"
                 >
                   +
                 </button>
@@ -949,14 +984,14 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                           key={optionItem.id}
                           className={`flex cursor-pointer items-center justify-between rounded-xl border-2 p-3 transition-all duration-200 ${
                             checked
-                              ? "border-[#B22222] bg-[#B22222]/5 shadow-[0_2px_10px_rgba(178,34,34,0.15)]"
-                              : "border-transparent bg-secondary/50 hover:border-[#B22222]/40 hover:bg-[#B22222]/5 hover:-translate-y-0.5"
+                              ? "border-[color:var(--primary)] bg-[color:var(--primary)]/5 shadow-[0_2px_10px_rgba(181,36,0,0.15)]"
+                              : "border-transparent bg-secondary/50 hover:border-[color:var(--primary)]/40 hover:bg-[color:var(--primary)]/5 hover:-translate-y-0.5"
                           } ${disabled ? "cursor-not-allowed opacity-40 hover:translate-y-0" : ""}`}
                         >
                           <span className="text-sm font-medium">{optionItem.name}</span>
                           <span className="flex items-center gap-3">
                             {group.type === "supplement" && (
-                              <span className="text-sm font-bold text-[#B22222]">
+                              <span className="text-sm font-bold text-brand">
                                 +{fmt(optionItem.price)} TND
                               </span>
                             )}
@@ -965,7 +1000,8 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                               checked={checked}
                               disabled={disabled}
                               onChange={() => toggleOption(group, optionItem.id)}
-                              className="h-5 w-5 accent-[#B22222]"
+                              className="h-5 w-5"
+                              style={{ accentColor: "var(--primary)" }}
                             />
                           </span>
                         </label>
@@ -978,13 +1014,12 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
           </div>
         </div>
 
-        <div className="shrink-0 border-t bg-white px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div className="shrink-0 border-t bg-card px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="mx-auto flex max-w-2xl items-center gap-5">
             <div className="shrink-0">
               <div className="text-xs text-muted-foreground">Total</div>
-              <div className="text-lg font-black text-[color:var(--gold)]">
-                {fmt(total)}{" "}
-                <span className="text-xs font-bold text-foreground/50">TND</span>
+              <div className="text-lg font-black text-brand">
+                {fmt(total)} <span className="text-xs font-bold text-foreground/50">TND</span>
               </div>
             </div>
             <button
@@ -1014,7 +1049,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                 toast.success(`${item.name} ajouté au panier`);
                 onClose();
               }}
-              className="press ml-auto flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#B22222] px-4 font-bold text-white disabled:opacity-40"
+              className="press ml-auto flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brand px-4 font-bold text-brand-foreground shadow-[0_10px_20px_-10px_rgba(181,36,0,0.85)] disabled:opacity-40"
             >
               <ShoppingCart className="h-5 w-5" />
               Ajouter au panier
@@ -1022,9 +1057,6 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
           </div>
         </div>
       </div>
-
-
-
 
       {imageOpen && (
         <div

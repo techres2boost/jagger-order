@@ -299,6 +299,84 @@
   animation: cart-bounce 500ms ease-out;
 }
 
+/* ── Suivi de commande : micro-animations de l'anneau de progression ──────────
+   Specs maquette "Claude Design". Purement visuel : aucune incidence sur le
+   realtime Supabase ni sur le calcul du temps restant. Voir OrderProgressRing
+   / AnimatedNumber. */
+
+/* 1) Segment actif : pulsation douce en opacité, cycle de 2 s. */
+@keyframes ring-segment-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 2) Tracé du segment au changement de statut (stroke-dashoffset, 600 ms).
+   --seg-len est fourni en inline-style par le segment actif. */
+@keyframes ring-draw {
+  from {
+    stroke-dashoffset: var(--seg-len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Segment actif : tracé (600 ms) PUIS pulsation continue. Combinés dans une
+   seule règle car deux `@utility` distinctes écraseraient la propriété
+   `animation` l'une de l'autre. */
+@utility ring-active {
+  animation:
+    ring-draw 600ms ease-out both,
+    ring-segment-pulse 2s ease-in-out 600ms infinite;
+}
+
+/* 3) Icône centrale : fondu-échelle au changement de statut (pas de coupure). */
+@keyframes icon-swap {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@utility icon-swap {
+  animation: icon-swap 400ms ease-out both;
+  transform-origin: center;
+}
+
+/* 4) Compte à rebours : seuls les chiffres modifiés rejouent ce léger défilé. */
+@keyframes digit-roll {
+  from {
+    opacity: 0;
+    transform: translateY(-45%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@utility digit-roll {
+  animation: digit-roll 300ms ease-out both;
+}
+
+/* Accessibilité : on neutralise ces micro-animations si l'utilisateur a demandé
+   une réduction des animations. Les éléments retombent sur leur état final
+   (segments tracés, icône visible, chiffres affichés). */
+@media (prefers-reduced-motion: reduce) {
+  .ring-active,
+  .icon-swap,
+  .digit-roll {
+    animation: none;
+  }
+}
+
 /* Scrollbar teintée (primaire) pour la bande de catégories */
 .hide-scrollbar-red::-webkit-scrollbar {
   height: 4px;

@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-context";
 import { BoxLogo } from "@/components/BoxLogo";
 import { OrderProgressRing, STEPS, type ProgressStatus } from "@/components/OrderProgressRing";
+import { OrderStepsRow } from "@/components/OrderStepsRow";
+import { DriverCard } from "@/components/DriverCard";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { useOrderCountdown } from "@/hooks/use-order-countdown";
 import { fmt } from "@/lib/format";
@@ -33,6 +35,7 @@ interface OrderRow {
   refusal_reason?: "unavailable" | "busy" | null;
   estimated_delivery_at: string | null;
   arrival_at: string | null;
+  assigned_livreur_id: string | null;
 }
 
 interface OrderItemRow {
@@ -69,6 +72,7 @@ function OrderStatusPage() {
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [livreur, setLivreur] = useState<{ nom: string; telephone: string } | null>(null);
   const expirationEnvoyee = useRef(false);
 
   // Décompte temps réel mutualisé (interval + cleanup + repli + "Bientôt là").
@@ -118,6 +122,29 @@ function OrderStatusPage() {
       supabase.rpc("expire_stale_orders");
     }
   }, [order?.status, order?.expires_at, now]);
+
+  // Récupération (lecture seule) du livreur assigné pour la carte livreur. Effet
+  // additif, indépendant du canal realtime : quand `assigned_livreur_id` change
+  // (assignation reçue via l'UPDATE realtime ci-dessus), on recharge la fiche.
+  useEffect(() => {
+    const livreurId = order?.assigned_livreur_id ?? null;
+    if (!livreurId) {
+      setLivreur(null);
+      return;
+    }
+    let active = true;
+    supabase
+      .from("livreurs")
+      .select("nom, telephone")
+      .eq("id", livreurId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setLivreur((data as { nom: string; telephone: string } | null) ?? null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [order?.assigned_livreur_id]);
 
   if (!order) {
     return (
@@ -228,6 +255,8 @@ function OrderStatusPage() {
 
         <OrderProgressRing stepIndex={stepIndex} />
 
+        <OrderStepsRow stepIndex={stepIndex} />
+
         <p className="mt-4 text-sm text-muted-foreground">
           {STATUS_TEXT[order.status as ProgressStatus]}
         </p>
@@ -246,6 +275,20 @@ function OrderStatusPage() {
           <AnimatedNumber
             value={`${mm}:${ss}`}
             className="mt-4 text-4xl font-black text-brand tabular-nums"
+          />
+        )}
+
+        {livreur && (
+          <DriverCard
+            orderId={order.id}
+            nom={livreur.nom}
+            subtitle={
+              order.status === "delivering"
+                ? "En route vers vous"
+                : order.status === "ready"
+                  ? "Prise en charge en cours"
+                  : "Livreur assigné"
+            }
           />
         )}
 

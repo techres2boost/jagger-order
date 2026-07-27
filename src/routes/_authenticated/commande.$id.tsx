@@ -88,7 +88,7 @@ function OrderStatusPage() {
       .select("id, name, qty, size, unit_price, note, menu_item_id")
       .eq("order_id", id)
       .then(({ data }) => {
-        if (mounted && data) setItems(data as OrderItemRow[]);
+        if (mounted && data) setItems(data as unknown as OrderItemRow[]);
       });
     const channel = supabase
       .channel(`order-${id}`)

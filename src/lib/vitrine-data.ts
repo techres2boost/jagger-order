@@ -103,7 +103,7 @@ export function useVitrineMenu(): VitrineData {
         const sizeCount = sizeCountByItem.get(it.id) ?? 0;
         return {
           id: it.id,
-          categoryId: it.category_id,
+          categoryId: it.category_id ?? "",
           name: it.name,
           description: it.description ?? undefined,
           image: it.image_url ?? undefined,

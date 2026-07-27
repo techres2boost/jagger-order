@@ -56,6 +56,15 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
     }
 
+    // Sécurité : ces fonctions ne sont appelées que par la base (triggers pg_net)
+    // ou un job interne. Un secret partagé (PUSH_TRIGGER_SECRET) est exigé ;
+    // sans lui, l'endpoint est inexploitable depuis l'extérieur.
+    const expectedSecret = Deno.env.get("PUSH_TRIGGER_SECRET");
+    const providedSecret = req.headers.get("x-push-secret");
+    if (!expectedSecret || providedSecret !== expectedSecret) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
+
     const body = await req.json();
     const orderId = body?.order_id as string | undefined;
     if (!orderId) {

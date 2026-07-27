@@ -79,8 +79,11 @@ export function DeliveryTrackingMap({
   // la page. À l'abonnement, on demande sa dernière position connue au livreur
   // (event "request-position") pour ne pas attendre le prochain cycle GPS.
   useEffect(() => {
+    // Canal privé : l'accès est contrôlé côté serveur (RLS realtime.messages),
+    // seuls le client de la commande et le livreur assigné peuvent s'y abonner.
+    supabase.realtime.setAuth();
     const channel = supabase.channel(`order-tracking-${orderId}`, {
-      config: { broadcast: { self: false } },
+      config: { private: true, broadcast: { self: false } },
     });
     channel
       .on("broadcast", { event: "position" }, ({ payload }) => {

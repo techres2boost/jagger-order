@@ -201,9 +201,13 @@ export function DriverBroadcastProvider({ children }: { children: ReactNode }) {
       );
     };
 
+    // Canaux privés : l'autorisation est vérifiée côté serveur (RLS sur
+    // realtime.messages) — seul le livreur assigné peut diffuser sa position.
+    supabase.realtime.setAuth();
+
     for (const orderId of ids) {
       const ch = supabase.channel(`order-tracking-${orderId}`, {
-        config: { broadcast: { self: false } },
+        config: { private: true, broadcast: { self: false } },
       });
       // Un client rejoint le suivi → on renvoie tout de suite la dernière position.
       ch.on("broadcast", { event: "request-position" }, () => {

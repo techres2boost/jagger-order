@@ -136,6 +136,27 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_config: {
+        Row: {
+          created_at: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       livreur_ratings: {
         Row: {
           comment: string | null
@@ -812,6 +833,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      internal_secret: { Args: { _key: string }; Returns: string }
       livreur_update_order_status: {
         Args: { p_new_status: string; p_order_id: string }
         Returns: undefined

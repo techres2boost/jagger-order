@@ -182,7 +182,7 @@ export function MenuPage() {
         list.push({
           id: group.id,
           name: group.name,
-          type: group.type,
+          type: group.type as "retirable" | "supplement",
           maxSelection: group.max_selection,
           items: optionItemsByGroup.get(group.id) ?? [],
         });
@@ -193,10 +193,11 @@ export function MenuPage() {
         const itemSizes = sizesByItem.get(it.id) ?? [];
         const hasMultipleFormats = itemSizes.length > 1;
         const singleSizePrice = itemSizes.length === 1 ? itemSizes[0].price : null;
-        const fixedPrice = it.price != null ? Number(it.price) : singleSizePrice;
+        const rawPrice = (it as { price?: number | string | null }).price;
+        const fixedPrice = rawPrice != null ? Number(rawPrice) : singleSizePrice;
         return {
           id: it.id,
-          category: it.category_id,
+          category: it.category_id ?? "",
           name: it.name,
           description: it.description ?? undefined,
           image: it.image_url ?? undefined,

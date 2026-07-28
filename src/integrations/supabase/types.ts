@@ -826,6 +826,13 @@ export type Database = {
         Returns: string
       }
       expire_stale_orders: { Args: never; Returns: undefined }
+      get_order_livreur: {
+        Args: { p_order_id: string }
+        Returns: {
+          id: string
+          nom: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

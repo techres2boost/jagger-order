@@ -74,6 +74,7 @@ export function MenuPage() {
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<string | null>(null);
+  const [popExpanded, setPopExpanded] = useState(false);
   const [selected, setSelected] = useState<Dish | null>(null);
   const { count, add, lines, applyPromo } = useCart();
   const { user, isAdmin, isLivreur, rolesResolved } = useAuth();

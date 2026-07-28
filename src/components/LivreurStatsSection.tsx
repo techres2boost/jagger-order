@@ -67,6 +67,15 @@ export function LivreurStatsSection() {
         avgByLivreur[b.livreur_id].count - avgByLivreur[a.livreur_id].count,
     )[0];
 
+  const ranking = [...stats].sort((a, b) => {
+    const ra = avgByLivreur[a.livreur_id];
+    const rb = avgByLivreur[b.livreur_id];
+    if (!ra && !rb) return a.nom.localeCompare(b.nom);
+    if (!ra) return 1;
+    if (!rb) return -1;
+    return rb.avg - ra.avg || rb.count - ra.count;
+  });
+
   return (
     <section className="rounded-2xl border bg-card p-4 shadow-sm">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-wide">

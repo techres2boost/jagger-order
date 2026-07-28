@@ -77,7 +77,40 @@ export function LivreurStatsSection() {
       </h2>
 
       {best && (
-        <div className="mb-4 rounded-3xl border-2 border-[#F5B800] bg-[#F5B800]/10 p-4 shadow-sm">
+      <div className="mb-4 rounded-3xl border-2 border-[#F5B800] bg-[#F5B800]/10 p-4 shadow-sm">
+        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-brand">
+          <Star className="h-4 w-4 fill-[#F5B800] text-[#F5B800]" /> Livreur le mieux noté
+        </div>
+        {ratingsLoading ? (
+          <div className="py-2 text-sm text-muted-foreground">Chargement des notes…</div>
+        ) : !best ? (
+          <div className="py-2 text-sm text-muted-foreground">
+            Aucune note livreur enregistrée pour le moment.
+          </div>
+        ) : (
+          <>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-black">{best.nom}</div>
+                <div className="text-xs text-muted-foreground">{best.telephone}</div>
+              </div>
+              <span
+                className={`inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${
+                  best.is_active ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {best.is_active ? "Actif" : "Inactif"}
+              </span>
+            </div>
+            <div className="mt-4 text-3xl font-black text-brand">
+              {avgByLivreur[best.livreur_id].avg.toFixed(1).replace(".", ",")}★
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Note moyenne · {avgByLivreur[best.livreur_id].count} avis
+            </div>
+          </>
+        )}
+      </div>
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-brand">
             <Star className="h-4 w-4 fill-[#F5B800] text-[#F5B800]" /> Livreur le mieux noté
           </div>

@@ -20,6 +20,7 @@ import { Trash, Edit, MapPinOff, LogOut, Check } from "lucide-react";
 import { deliveryDistanceKm, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { signAddressPhoto } from "@/lib/address-photo";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
+import { useAvatar } from "@/lib/use-avatar";
 import { BoxLogo } from "@/components/BoxLogo";
 import { useTheme, THEME_LIST } from "@/lib/theme-context";
 
@@ -58,6 +59,7 @@ export function CompteClient() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
   const { themeId, theme, setThemeId } = useTheme();
+  const { avatarUrl } = useAvatar(user?.id);
 
   // Addresses
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -288,9 +290,17 @@ export function CompteClient() {
           <BoxLogo size={30} showWordmark={false} className="text-brand-foreground opacity-95" />
         </div>
         <div className="relative mx-auto mt-5 flex max-w-2xl items-center gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-foreground text-xl font-black text-brand">
-            {initials}
-          </div>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Photo de profil"
+              className="h-16 w-16 shrink-0 rounded-full border-2 border-brand-foreground object-cover"
+            />
+          ) : (
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-foreground text-xl font-black text-brand">
+              {initials}
+            </div>
+          )}
           <div className="min-w-0">
             <div className="truncate text-lg font-black text-brand-foreground">
               {profile?.full_name || "—"}

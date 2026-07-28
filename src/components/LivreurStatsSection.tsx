@@ -111,11 +111,6 @@ export function LivreurStatsSection() {
           </>
         )}
       </div>
-          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-brand">
-...
-          </div>
-        </div>
-      )}
 
       {stats.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">

@@ -1313,7 +1313,7 @@ function DashboardPage() {
               </div>
             </Card>
 
-            <Card icon={<Star className="h-5 w-5" />} title="Statistiques des avis">
+            <Card icon={<Star className="h-5 w-5" />} title="Avis des commandes">
               {ratingStats.count === 0 ? (
                 <Empty label="Aucun avis pour l'instant." />
               ) : (
@@ -1419,39 +1419,6 @@ function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* 4. Plats les mieux notés (top 5) */}
-                  <div>
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      Plats les mieux notés
-                    </h3>
-                    {ratingStats.topRatedDishes.length === 0 ? (
-                      <Empty label="Aucun plat noté pour l'instant." />
-                    ) : (
-                      <ul className="space-y-2">
-                        {ratingStats.topRatedDishes.map((dish, index) => (
-                          <li key={dish.name}>
-                            <div className="mb-1 flex justify-between gap-2 text-sm">
-                              <span className="font-semibold">
-                                {index + 1}. {dish.name}
-                              </span>
-                              <span className="whitespace-nowrap font-black text-brand">
-                                {fmtRating1(dish.avg)}★{" "}
-                                <span className="font-semibold text-muted-foreground">
-                                  · {dish.count} avis
-                                </span>
-                              </span>
-                            </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                              <div
-                                className="h-full bg-[#B22222]"
-                                style={{ width: `${(dish.avg / 5) * 100}%` }}
-                              />
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
                 </div>
               )}
             </Card>

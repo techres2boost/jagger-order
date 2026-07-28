@@ -316,28 +316,27 @@ export function CompteClient() {
         )}
 
         <section className="mt-5 rounded-[22px] border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Nom</p>
-              <p className="text-base font-semibold">{profile?.full_name || "—"}</p>
-            </div>
-            <div>
-              <button
-                className="rounded-full border border-border px-3 py-2 text-sm font-semibold"
-                onClick={() => setEditing((s) => !s)}
-              >
-                {editing ? "Annuler" : "Modifier"}
-              </button>
-            </div>
-          </div>
-
           {!editing ? (
-            <div className="mt-4 space-y-2">
-              <div>
-                <p className="text-sm text-muted-foreground">Téléphone</p>
-                <p className="text-base">{profile?.phone || "—"}</p>
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Nom</p>
+                  <p className="text-base font-semibold">{profile?.full_name || "—"}</p>
+                </div>
+                <button
+                  className="rounded-full border border-border px-3 py-2 text-sm font-semibold"
+                  onClick={() => setEditing(true)}
+                >
+                  Modifier
+                </button>
               </div>
-            </div>
+              <div className="mt-4 space-y-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">Téléphone</p>
+                  <p className="text-base">{profile?.phone || "—"}</p>
+                </div>
+              </div>
+            </>
           ) : (
             <form onSubmit={saveProfile} className="mt-4 space-y-3">
               <div>

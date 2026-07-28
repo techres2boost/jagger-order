@@ -16,6 +16,7 @@ interface LivreurStatsRow {
 // Utilisée comme carte dans le Dashboard admin.
 export function LivreurStatsSection() {
   const [stats, setStats] = useState<LivreurStatsRow[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(true);
   const [avgByLivreur, setAvgByLivreur] = useState<Record<string, { avg: number; count: number }>>(
     {},
   );

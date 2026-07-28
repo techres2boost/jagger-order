@@ -43,19 +43,69 @@ function isH3SwallowedErrorBody(body: string): boolean {
     return false;
   }
 }
-const SECURITY_HEADERS: Record<string, string> = {
-  "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: https://*.tile.openstreetmap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org; frame-ancestors 'none';",
+// En-têtes statiques (indépendants de la requête). La CSP est construite
+// séparément car elle embarque un nonce généré par requête (voir buildCsp).
+const STATIC_SECURITY_HEADERS: Record<string, string> = {
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+  "Permissions-Policy": "geolocation=(self), camera=(), microphone=(), payment=()",
 };
 
-function withSecurityHeaders(response: Response): Response {
+// Source de vérité UNIQUE de la CSP (la meta http-equiv de __root.tsx a été
+// retirée). `script-src` n'autorise plus 'unsafe-inline' : les scripts inline du
+// SSR (hydratation TanStack) reçoivent le nonce ci-dessous. `style-src` conserve
+// 'unsafe-inline' (styles Tailwind + <style> du splash). Google Fonts, Supabase,
+// tuiles OSM et Nominatim sont explicitement autorisés ; 'self' couvre les bundles
+// JS (chargés depuis l'origine).
+function buildCsp(nonce: string): string {
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}'`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https: https://*.tile.openstreetmap.org",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ");
+}
+
+// Nonce imprévisible par requête (128 bits), en base64 pour la CSP.
+function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+async function withSecurityHeaders(response: Response): Promise<Response> {
+  const nonce = generateNonce();
   const headers = new Headers(response.headers);
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+  for (const [key, value] of Object.entries(STATIC_SECURITY_HEADERS)) {
     headers.set(key, value);
   }
-  return new Response(response.body, {
+  headers.set("Content-Security-Policy", buildCsp(nonce));
+
+  // Seules les réponses HTML portent des <script> inline à estampiller. Les autres
+  // réponses (assets, JSON) reçoivent juste les en-têtes, sans réécriture du corps.
+  const contentType = headers.get("content-type") ?? "";
+  if (!contentType.includes("text/html")) {
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }
+
+  // Injecte le nonce sur chaque <script> inline dépourvu de nonce, pour qu'il
+  // satisfasse `script-src 'nonce-…'` maintenant que 'unsafe-inline' est retiré.
+  const html = await response.text();
+  const withNonce = html.replace(/<script(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
+  return new Response(withNonce, {
     status: response.status,
     statusText: response.statusText,
     headers,
@@ -67,10 +117,10 @@ export default {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       const normalized = await normalizeCatastrophicSsrResponse(response);
-      return withSecurityHeaders(normalized);
+      return await withSecurityHeaders(normalized);
     } catch (error) {
       console.error(error);
-      return withSecurityHeaders(
+      return await withSecurityHeaders(
         new Response(renderErrorPage(), {
           status: 500,
           headers: { "content-type": "text/html; charset=utf-8" },

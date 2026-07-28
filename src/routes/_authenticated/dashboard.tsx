@@ -1,6 +1,14 @@
 ﻿import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+// [Audit #4] xlsx-js-style (fork de SheetJS) porte des vulnérabilités connues
+// (Prototype Pollution / ReDoS, sans correctif amont). Elles ne concernent QUE le
+// PARSING de fichiers non fiables (XLSX.read). Ici l'usage est strictement limité
+// à la GÉNÉRATION d'exports admin (aoa_to_sheet / writeFile), à partir de données
+// de confiance issues de la base — jamais de parsing d'entrée utilisateur. La
+// surface d'exploitation est donc nulle en pratique. Ne PAS utiliser XLSX.read()
+// sur un fichier fourni par un utilisateur sans réévaluer ce risque (préférer
+// alors une migration vers `exceljs`).
 import * as XLSX from "xlsx-js-style";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";

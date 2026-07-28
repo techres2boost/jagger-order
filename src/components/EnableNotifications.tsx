@@ -15,23 +15,9 @@ export function EnableNotifications({ role }: { role: "client" | "admin" | "livr
 
   useEffect(() => {
     let mounted = true;
-    // Logs de diagnostic temporaires (préfixe [push-button]) — visibles dans la
-    // console mobile via chrome://inspect. Ils listent chaque prérequis d'affichage.
-    if (typeof window !== "undefined") {
-      console.log("[push-button] isSecureContext (HTTPS) =", window.isSecureContext);
-      console.log("[push-button] 'Notification' in window =", "Notification" in window);
-      console.log(
-        "[push-button] 'serviceWorker' in navigator =",
-        typeof navigator !== "undefined" && "serviceWorker" in navigator,
-      );
-      console.log("[push-button] 'PushManager' in window =", "PushManager" in window);
-      console.log("[push-button] isPushSupported() =", isPushSupported());
-      console.log("[push-button] Notification.permission =", currentPermission());
-    }
     setPerm(currentPermission());
     hasActiveSubscription().then((v) => {
       if (mounted) {
-        console.log("[push-button] abonnement réel en base =", v);
         setSubscribed(v);
       }
     });
@@ -42,16 +28,12 @@ export function EnableNotifications({ role }: { role: "client" | "admin" | "livr
 
   // ── Conditions d'affichage (loggées juste avant chacune) ──────────────────
   if (!isPushSupported() || perm === "unsupported") {
-    console.log(
-      "[push-button] masqué : push non supporté (HTTPS / SW / PushManager / Notification).",
-    );
     return null;
   }
 
   // Permission refusée précédemment : au lieu d'un bouton grisé muet, on affiche
   // un indicateur explicite avec la marche à suivre pour débloquer.
   if (perm === "denied") {
-    console.log("[push-button] permission 'denied' → message de déblocage affiché.");
     return (
       <button
         type="button"
@@ -72,17 +54,13 @@ export function EnableNotifications({ role }: { role: "client" | "admin" | "livr
   // Tant que la vérification en base n'a pas répondu, on n'affiche rien pour
   // éviter un flash "Activer" alors qu'un abonnement existe.
   if (subscribed === null) {
-    console.log("[push-button] masqué : vérification de l'abonnement en cours.");
     return null;
   }
   // Un abonnement RÉEL existe en base pour cet appareil → rien à proposer.
   // (On ne se fie pas à perm === "granted", qui peut être vrai sans ligne DB.)
   if (subscribed) {
-    console.log("[push-button] masqué : abonnement déjà actif en base.");
     return null;
   }
-
-  console.log("[push-button] affiché : bouton « Activer les notifications ».");
 
   async function handle() {
     setBusy(true);

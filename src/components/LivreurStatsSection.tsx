@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Bike } from "lucide-react";
+import { Bike, Star } from "lucide-react";
 
 interface LivreurStatsRow {
   livreur_id: string;

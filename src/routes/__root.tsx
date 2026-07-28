@@ -111,11 +111,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f11ad84a-b663-4f6a-badd-e956a9667e71/id-preview-fab04c13--37184afe-87a7-4e82-81b3-32ceffe8a672.lovable.app-1783598327711.png",
       },
       { httpEquiv: "X-Content-Type-Options", content: "nosniff" },
-      {
-        httpEquiv: "Content-Security-Policy",
-        content:
-          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https: https://*.tile.openstreetmap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org; frame-ancestors 'none';",
-      },
+      // CSP : source de vérité UNIQUE dans src/server.ts (en-tête HTTP + nonce par
+      // requête). La meta http-equiv redondante a été retirée (audit #2).
     ],
     links: [
       { rel: "stylesheet", href: appCss },

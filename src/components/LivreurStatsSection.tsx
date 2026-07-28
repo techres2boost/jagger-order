@@ -39,6 +39,7 @@ export function LivreurStatsSection() {
       .not("livreur_id", "is", null)
       .not("rating", "is", null)
       .then(({ data, error }) => {
+        setRatingsLoading(false);
         if (error) {
           toast.error(error.message);
           return;

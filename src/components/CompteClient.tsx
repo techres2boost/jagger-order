@@ -59,6 +59,7 @@ export function CompteClient() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
   const { themeId, theme, setThemeId } = useTheme();
+  const { avatarUrl } = useAvatar(user?.id);
 
   // Addresses
   const [addresses, setAddresses] = useState<Address[]>([]);

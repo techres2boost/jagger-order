@@ -1,6 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowRight, Clock, RotateCcw, ShoppingBag, Star, StarOff } from "lucide-react";
@@ -44,6 +43,8 @@ interface OrderRow {
   special_instructions?: string | null;
   arrival_at: string | null;
   estimated_delivery_at: string | null;
+  // Colonne déjà récupérée via select("*") ; sert au calcul du temps de livraison.
+  delivered_at?: string | null;
 }
 
 interface OrderItemRow {
@@ -96,9 +97,8 @@ const CURRENT_STATUSES: OrderStatus[] = ["pending", "accepted", "ready", "delive
 const HISTORY_STATUSES: OrderStatus[] = ["delivered", "refused", "expired", "cancelled"];
 
 function CommandesPage() {
-  const navigate = useNavigate();
-  const { add } = useCart();
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [items, setItems] = useState<Record<string, OrderItemRow[]>>({});
   const [itemOptions, setItemOptions] = useState<Record<string, OrderItemOptionRow[]>>({});
   const [ratings, setRatings] = useState<Record<string, OrderRatingRow>>({});
@@ -258,28 +258,6 @@ function CommandesPage() {
 
   const selectedOrders = orders;
 
-  function addOrderToCart(order: OrderRow) {
-    const orderItems = items[order.id] ?? [];
-    if (orderItems.length === 0) {
-      toast.error("Impossible de recommander : aucun article trouvé.");
-      return;
-    }
-
-    orderItems.forEach((item) => {
-      add({
-        itemId: `order-${order.id}-${item.id}`,
-        name: item.name,
-        size: item.size ?? undefined,
-        unitPrice: Number(item.unit_price),
-        qty: item.qty,
-        note: item.note ?? undefined,
-      });
-    });
-
-    toast.success("Commande ajoutée au panier.");
-    navigate({ to: "/panier" });
-  }
-
   return (
     <div className="min-h-screen bg-background pb-40">
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
@@ -423,80 +401,102 @@ function CommandesPage() {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Link
-                        to="/commande/$id"
-                        params={{ id: order.id }}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedId((prev) => (prev === order.id ? null : order.id))
+                        }
                         className="press inline-flex h-11 items-center rounded-full border px-4 text-sm font-semibold"
                       >
                         Voir la commande
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => addOrderToCart(order)}
-                        className="press inline-flex h-11 items-center rounded-full bg-brand px-4 text-sm font-semibold text-brand-foreground"
-                      >
-                        Recommander
                       </button>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                    <div className="space-y-3">
-                      {orderItems.map((item) => (
-                        <div key={item.id} className="rounded-2xl border bg-background p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="font-semibold">{item.name}</div>
-                              {item.size ? (
-                                <div className="text-xs text-muted-foreground">{item.size}</div>
-                              ) : null}
-                              {item.note ? (
-                                <div className="mt-1 text-xs italic text-muted-foreground">
-                                  « {item.note} »
+                  {expandedId === order.id && (
+                    <>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                        <div className="space-y-3">
+                          {orderItems.map((item) => (
+                            <div key={item.id} className="rounded-2xl border bg-background p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="font-semibold">{item.name}</div>
+                                  {item.size ? (
+                                    <div className="text-xs text-muted-foreground">{item.size}</div>
+                                  ) : null}
+                                  {item.note ? (
+                                    <div className="mt-1 text-xs italic text-muted-foreground">
+                                      « {item.note} »
+                                    </div>
+                                  ) : null}
+                                  {(itemOptions[item.id] ?? []).length > 0 && (
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                      {(itemOptions[item.id] ?? [])
+                                        .map((o) =>
+                                          o.option_price > 0
+                                            ? `${o.option_name} +${fmt(o.option_price)}`
+                                            : o.option_name,
+                                        )
+                                        .join(", ")}
+                                    </div>
+                                  )}
                                 </div>
-                              ) : null}
-                              {(itemOptions[item.id] ?? []).length > 0 && (
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                  {(itemOptions[item.id] ?? [])
-                                    .map((o) =>
-                                      o.option_price > 0
-                                        ? `${o.option_name} +${fmt(o.option_price)}`
-                                        : o.option_name,
-                                    )
-                                    .join(", ")}
+                                <div className="text-right">
+                                  <div className="text-sm font-black">
+                                    {fmt(Number(item.unit_price) * item.qty)}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">{item.qty}×</div>
                                 </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Avis en lecture seule. La saisie/modification se fait
+                        uniquement via le popup automatique post-livraison. */}
+                        {rating ? (
+                          <div className="rounded-2xl border border-brand/30 bg-brand/5 p-3 text-sm">
+                            <p className="font-semibold">Votre note</p>
+                            <div className="mt-2 flex items-center gap-1 text-yellow-500">
+                              {Array.from({ length: 5 }, (_, index) =>
+                                index < rating.rating ? (
+                                  <Star key={index} className="h-4 w-4" />
+                                ) : (
+                                  <StarOff key={index} className="h-4 w-4" />
+                                ),
                               )}
                             </div>
-                            <div className="text-right">
-                              <div className="text-sm font-black">
-                                {fmt(Number(item.unit_price) * item.qty)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">{item.qty}×</div>
-                            </div>
+                            {rating.comment ? (
+                              <p className="mt-2 text-xs text-muted-foreground">{rating.comment}</p>
+                            ) : null}
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Avis en lecture seule. La saisie/modification se fait
-                        uniquement via le popup automatique post-livraison. */}
-                    {rating ? (
-                      <div className="rounded-2xl border border-brand/30 bg-brand/5 p-3 text-sm">
-                        <p className="font-semibold">Votre note</p>
-                        <div className="mt-2 flex items-center gap-1 text-yellow-500">
-                          {Array.from({ length: 5 }, (_, index) =>
-                            index < rating.rating ? (
-                              <Star key={index} className="h-4 w-4" />
-                            ) : (
-                              <StarOff key={index} className="h-4 w-4" />
-                            ),
-                          )}
-                        </div>
-                        {rating.comment ? (
-                          <p className="mt-2 text-xs text-muted-foreground">{rating.comment}</p>
                         ) : null}
                       </div>
-                    ) : null}
-                  </div>
+                      <div className="mt-3 rounded-2xl border bg-background p-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Statut</span>
+                          <span className="font-semibold">{STATUS_LABEL[order.status]}</span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="text-muted-foreground">Date</span>
+                          <span className="font-semibold">
+                            {new Date(order.created_at).toLocaleString("fr-FR", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="text-muted-foreground">Temps de livraison</span>
+                          <span className="font-semibold">{formatDeliveryTime(order)}</span>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between border-t pt-2">
+                          <span className="text-muted-foreground">Total</span>
+                          <span className="font-black text-brand">{fmt(Number(order.total))}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -522,6 +522,19 @@ function OrderCountdownBadge({ order }: { order: OrderRow }) {
       </div>
     </div>
   );
+}
+
+// Temps de livraison = écart entre la création et la livraison (delivered_at,
+// colonne déjà présente dans orders). Si elle est absente/vide (commande non
+// livrée ou schéma sans la colonne), on l'indique explicitement.
+function formatDeliveryTime(order: OrderRow): string {
+  if (!order.delivered_at) return "Temps de livraison non disponible";
+  const ms = new Date(order.delivered_at).getTime() - new Date(order.created_at).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "Temps de livraison non disponible";
+  const totalMin = Math.round(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h > 0 ? `${h} h ${m} min` : `${m} min`;
 }
 
 function SectionHeader({ count, label }: { count: number; label: string }) {

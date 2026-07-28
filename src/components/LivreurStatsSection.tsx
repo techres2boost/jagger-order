@@ -112,6 +112,43 @@ export function LivreurStatsSection() {
         )}
       </div>
 
+      {stats.length > 0 && (
+        <div className="mb-4 rounded-3xl border bg-card p-4 shadow-sm">
+          <div className="mb-3 text-[11px] font-black uppercase tracking-wide text-brand">
+            Classement des livreurs
+          </div>
+          <div className="space-y-3">
+            {ranking.map((s, i) => {
+              const r = avgByLivreur[s.livreur_id];
+              return (
+                <div key={s.livreur_id} className="flex items-center gap-3">
+                  <span className="w-5 shrink-0 text-sm font-black text-muted-foreground">
+                    {i + 1}.
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-bold">{s.nom}</span>
+                      <span className="shrink-0 text-xs font-bold text-muted-foreground">
+                        {r
+                          ? `${r.avg.toFixed(1).replace(".", ",")}★ · ${r.count} avis`
+                          : "Pas encore noté"}
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-brand transition-all"
+                        style={{ width: `${r ? (r.avg / 5) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+
       {stats.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">
           Aucun livreur enregistré.

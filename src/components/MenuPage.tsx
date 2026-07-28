@@ -74,6 +74,7 @@ export function MenuPage() {
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<string | null>(null);
+  const [popExpanded, setPopExpanded] = useState(false);
   const [selected, setSelected] = useState<Dish | null>(null);
   const { count, add, lines, applyPromo } = useCart();
   const { user, isAdmin, isLivreur, rolesResolved } = useAuth();
@@ -477,47 +478,60 @@ export function MenuPage() {
             <div className="flex items-baseline justify-between">
               <h2 className="text-xl font-black text-foreground">Plats populaires</h2>
               <button
-                onClick={() => {
-                  setActive("__all__");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
+                onClick={() => setPopExpanded((v) => !v)}
                 className="text-sm font-bold text-[color:var(--primary)]"
               >
-                Tout voir
+                {popExpanded ? "Voir moins" : "Tout voir"}
               </button>
             </div>
 
-            <div className="hide-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2">
-              {populaires.map((it) => {
-                const qtyInCart = lines
-                  .filter((l) => l.itemId === it.id)
-                  .reduce((s, l) => s + l.qty, 0);
-                return (
-                  <PopularCard
-                    key={it.id}
-                    item={it}
-                    onOpen={setSelected}
-                    onAdd={add}
-                    qtyInCart={qtyInCart}
-                  />
-                );
-              })}
-              {populaires.length < 4 && (
-                <button
-                  onClick={() => {
-                    setActive("__all__");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="flex w-32 shrink-0 flex-col items-center justify-center gap-2 press"
-                  aria-label="Voir tout le menu"
-                >
-                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#F1F2F4] text-[color:var(--brand)] shadow-inner">
-                    <ArrowRight className="h-8 w-8" />
-                  </div>
-                  <span className="text-xs font-bold text-foreground/70">Voir tout</span>
-                </button>
-              )}
-            </div>
+            {popExpanded ? (
+              <div className="mt-3 grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+                {populaires.map((it) => {
+                  const qtyInCart = lines
+                    .filter((l) => l.itemId === it.id)
+                    .reduce((s, l) => s + l.qty, 0);
+                  return (
+                    <ProductCard
+                      key={it.id}
+                      item={it}
+                      onOpen={setSelected}
+                      onAdd={add}
+                      qtyInCart={qtyInCart}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="hide-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2">
+                {populaires.map((it) => {
+                  const qtyInCart = lines
+                    .filter((l) => l.itemId === it.id)
+                    .reduce((s, l) => s + l.qty, 0);
+                  return (
+                    <PopularCard
+                      key={it.id}
+                      item={it}
+                      onOpen={setSelected}
+                      onAdd={add}
+                      qtyInCart={qtyInCart}
+                    />
+                  );
+                })}
+                {populaires.length < 4 && (
+                  <button
+                    onClick={() => setPopExpanded(true)}
+                    className="flex w-32 shrink-0 flex-col items-center justify-center gap-2 press"
+                    aria-label="Voir tous les plats populaires"
+                  >
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#F1F2F4] text-[color:var(--brand)] shadow-inner">
+                      <ArrowRight className="h-8 w-8" />
+                    </div>
+                    <span className="text-xs font-bold text-foreground/70">Voir tout</span>
+                  </button>
+                )}
+              </div>
+            )}
           </section>
         )}
 

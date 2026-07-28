@@ -1062,14 +1062,21 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
       {imageOpen && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setImageOpen(false)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setImageOpen(false);
+          }}
         >
           <button
-            onClick={() => setImageOpen(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setImageOpen(false);
+            }}
             className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white"
           >
             ✕
           </button>
+
           {item.image ? (
             <img
               src={item.image}

@@ -20,6 +20,7 @@ import { Trash, Edit, MapPinOff, LogOut, Check } from "lucide-react";
 import { deliveryDistanceKm, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { signAddressPhoto } from "@/lib/address-photo";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
+import { useAvatar } from "@/lib/use-avatar";
 import { BoxLogo } from "@/components/BoxLogo";
 import { useTheme, THEME_LIST } from "@/lib/theme-context";
 

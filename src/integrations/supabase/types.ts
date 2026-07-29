@@ -812,6 +812,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_dashboard_stats: {
+        Args: { p_rating_end?: string; p_rating_start?: string }
+        Returns: Json
+      }
       admin_order_filters: { Args: never; Returns: Json }
       admin_process_assignments: { Args: never; Returns: undefined }
       can_access_order_chat: { Args: { _order_id: string }; Returns: boolean }

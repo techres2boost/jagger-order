@@ -1,8 +1,12 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "app.lovable.box_bite_order",
-        "sha256_cert_fingerprints": ["1C:E6:9A:D7:2D:9E:F8:3D:56:AE:21:86:4F:BA:68:03:D0:80:BE:A8:E2:DC:F3:BE:33:2F:BB:A8:10:10:8A:C3"]
-      }
-    }]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.lovable.box_bite_order",
+      "sha256_cert_fingerprints": [
+        "98:84:85:31:AF:7D:DD:9E:C2:C0:1B:39:C5:1A:2B:92:FE:FA:C0:D2:A4:99:A9:3E:94:30:FA:CB:3E:AA:FD:D7"
+      ]
+    }
+  }
+]

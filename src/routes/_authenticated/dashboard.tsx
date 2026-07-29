@@ -77,12 +77,24 @@ interface ItemRow {
   qty: number;
 }
 
-interface RatingRow {
-  order_id: string;
-  rating: number | null;
-  comment: string | null;
-  created_at: string;
-  dismissed: boolean | null;
+// Forme du JSON renvoyé par la RPC admin_dashboard_stats (agrégats côté base).
+interface DashStats {
+  dish_qty: { name: string; qty: number }[];
+  service_map: { Matin: number; Midi: number; Soir: number };
+  accept: { avg_sec: number; min_sec: number; max_sec: number; count: number };
+  refused: number;
+  unavailable: number;
+  busy: number;
+  expired: number;
+  cancelled: number;
+  total_orders: number;
+  rating: {
+    count: number;
+    sum: number;
+    distribution: { rating: number; count: number }[];
+    trend: { day: string; sum: number; n: number }[];
+    dish_agg: { name: string; sum: number; n: number }[];
+  };
 }
 
 const NAME_TO_CATEGORY: Record<string, string> = MENU.reduce((acc, item) => {
@@ -108,9 +120,10 @@ function serviceFromHour(hour: number): "Matin" | "Midi" | "Soir" {
 }
 
 function DashboardPage() {
-  const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [items, setItems] = useState<ItemRow[]>([]);
-  const [ratings, setRatings] = useState<RatingRow[]>([]);
+  // Agrégats d'affichage servis par la RPC (remplace le chargement complet des
+  // tables au montage). L'export Excel, lui, récupère ses propres données à la
+  // demande (au clic), déjà filtrées par période — voir exportExcel.
+  const [dash, setDash] = useState<DashStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -133,184 +146,121 @@ function DashboardPage() {
     setEndDate(end);
   }
 
+  // Un seul appel RPC au lieu de charger orders/order_items/order_ratings en
+  // entier. Les stats hors-avis sont « tout temps » (inchangées par la période) ;
+  // seules les stats d'avis dépendent de [p_rating_start, p_rating_end], calculés
+  // ici EXACTEMENT comme l'ancien filtre client (début/fin de journée locale) pour
+  // préserver les mêmes chiffres. Période invalide → null/null = tous les avis.
   useEffect(() => {
     (async () => {
-      const { data: os, error: e1 } = await supabase.from("orders").select("*");
-      if (e1) {
-        toast.error(e1.message);
+      setLoading(true);
+      let p_rating_start: string | null = null;
+      let p_rating_end: string | null = null;
+      if (periodValid && startDate && endDate) {
+        const from = new Date(startDate);
+        from.setHours(0, 0, 0, 0);
+        const to = new Date(endDate);
+        to.setHours(23, 59, 59, 999);
+        p_rating_start = from.toISOString();
+        p_rating_end = to.toISOString();
+      }
+      // RPC hors types générés → cast typé (évite `any`, cf. commande.$id.tsx).
+      const { data, error } = await (
+        supabase as unknown as {
+          rpc: (
+            fn: string,
+            args: object,
+          ) => Promise<{ data: unknown; error: { message: string } | null }>;
+        }
+      ).rpc("admin_dashboard_stats", { p_rating_start, p_rating_end });
+      if (error) {
+        toast.error(error.message);
         setLoading(false);
         return;
       }
-
-      const { data: its, error: e2 } = await supabase
-        .from("order_items")
-        .select("order_id, name, qty");
-      if (e2) {
-        toast.error(e2.message);
-      }
-
-      // Avis clients : on récupère toutes les colonnes utiles au calcul des
-      // statistiques. Le filtrage (dismissed / rating NULL / période) est
-      // appliqué côté client dans le useMemo `ratingStats`.
-      const { data: rts, error: e3 } = await supabase
-        .from("order_ratings")
-        .select("order_id, rating, comment, created_at, dismissed");
-      if (e3) {
-        toast.error(e3.message);
-      }
-
-      setOrders((os as OrderRow[]) ?? []);
-      setItems((its as ItemRow[]) ?? []);
-      setRatings((rts as RatingRow[]) ?? []);
+      setDash(data as DashStats);
       setLoading(false);
     })();
-  }, []);
+  }, [periodValid, startDate, endDate]);
 
+  // Dérivé des agrégats RPC. Le mapping catégorie (NAME_TO_CATEGORY, côté client),
+  // les tris et slices top-5 restent IDENTIQUES à l'ancienne version — seules les
+  // sources (Map issues des tables brutes) sont remplacées par dish_qty / compteurs
+  // servis par la base. Les quantités par plat sont déjà restreintes aux commandes
+  // "vendues" (hors pending/refused/expired/cancelled) côté RPC.
   const stats = useMemo(() => {
-    const orderById = new Map(orders.map((order) => [order.id, order]));
+    const dishQty: [string, number][] = (dash?.dish_qty ?? []).map((d) => [d.name, Number(d.qty)]);
 
-    const soldItems = items.filter((item) => {
-      const status = orderById.get(item.order_id)?.status;
-      return status !== "pending" && status !== "refused" && status !== "expired" && status !== "cancelled";
-    });
-
-    const dishCounts = new Map<string, number>();
-    for (const item of soldItems) {
-      dishCounts.set(item.name, (dishCounts.get(item.name) ?? 0) + Number(item.qty));
-    }
-    const topDishes = [...dishCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const topDishes = [...dishQty].sort((a, b) => b[1] - a[1]).slice(0, 5);
 
     const categoryCounts = new Map<string, number>();
-    for (const item of soldItems) {
-      const category = NAME_TO_CATEGORY[item.name] ?? "autre";
-      categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + Number(item.qty));
+    for (const [name, qty] of dishQty) {
+      const category = NAME_TO_CATEGORY[name] ?? "autre";
+      categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + qty);
     }
     const topCategories = [...categoryCounts.entries()].sort((a, b) => b[1] - a[1]);
     const totalCategoryItems = topCategories.reduce((sum, [, qty]) => sum + qty, 0);
 
-    // "Temps d'acceptation" / "Délai moyen" : basés sur l'ÉVÉNEMENT d'acceptation
-    // (accepted_at), pas sur le statut courant. Une commande acceptée puis passée
-    // à ready/delivering/delivered n'a plus status = 'accepted' mais garde son
-    // accepted_at, et doit donc compter. Le délai est created_at -> accepted_at.
-    const acceptedOrders = orders.filter((order) => order.accepted_at != null);
-    const refusedOrders = orders.filter((order) => order.status === "refused");
-    const expiredOrders = orders.filter((order) => order.status === "expired");
-    const cancelledOrders = orders.filter((order) => order.status === "cancelled");
-
-    const acceptDurations = acceptedOrders
-      .map((order) => (new Date(order.accepted_at as string).getTime() - new Date(order.created_at).getTime()) / 1000)
-      .filter((duration) => duration >= 0 && duration < 60 * 60);
-
-    const avgSec = acceptDurations.length ? acceptDurations.reduce((sum, value) => sum + value, 0) / acceptDurations.length : 0;
-    const minSec = acceptDurations.length ? Math.min(...acceptDurations) : 0;
-    const maxSec = acceptDurations.length ? Math.max(...acceptDurations) : 0;
-
-    const serviceMap: Record<"Matin" | "Midi" | "Soir", number> = { Matin: 0, Midi: 0, Soir: 0 };
-    for (const item of soldItems) {
-      const order = orderById.get(item.order_id);
-      if (!order) continue;
-      serviceMap[serviceFromHour(new Date(order.created_at).getHours())] += Number(item.qty);
-    }
-
-    const unavailable = refusedOrders.filter((order) => order.refusal_reason === "unavailable").length;
-    const busy = refusedOrders.filter((order) => order.refusal_reason === "busy").length;
-    const noReason = refusedOrders.length - unavailable - busy;
+    const refused = dash?.refused ?? 0;
+    const unavailable = dash?.unavailable ?? 0;
+    const busy = dash?.busy ?? 0;
 
     return {
       topDishes,
       topCategories,
       totalCategoryItems,
-      avgSec,
-      minSec,
-      maxSec,
-      acceptCount: acceptDurations.length,
-      serviceMap,
-      refused: refusedOrders.length,
+      avgSec: dash?.accept.avg_sec ?? 0,
+      minSec: dash?.accept.min_sec ?? 0,
+      maxSec: dash?.accept.max_sec ?? 0,
+      acceptCount: dash?.accept.count ?? 0,
+      serviceMap: dash?.service_map ?? { Matin: 0, Midi: 0, Soir: 0 },
+      refused,
       unavailable,
       busy,
-      noReason,
-      expired: expiredOrders.length,
-      cancelled: cancelledOrders.length,
-      totalOrders: orders.length,
+      noReason: refused - unavailable - busy,
+      expired: dash?.expired ?? 0,
+      cancelled: dash?.cancelled ?? 0,
+      totalOrders: dash?.total_orders ?? 0,
     };
-  }, [orders, items]);
+  }, [dash]);
 
   // Statistiques des avis clients (table order_ratings).
   // Règle transverse : on exclut TOUJOURS les lignes dismissed = true ou dont
   // rating est NULL. Les calculs respectent la période sélectionnée (start/end)
   // lorsqu'elle est valide ; sinon ils portent sur l'ensemble des avis.
+  // Dérivé des agrégats d'avis servis par la RPC (déjà filtrés dismissed/NULL et,
+  // le cas échéant, par période côté base). Les calculs finaux (moyenne, labels,
+  // tris/slices) restent IDENTIQUES à l'ancienne version.
   const ratingStats = useMemo(() => {
-    const from = startDate ? new Date(startDate) : null;
-    if (from) from.setHours(0, 0, 0, 0);
-    const to = endDate ? new Date(endDate) : null;
-    if (to) to.setHours(23, 59, 59, 999);
+    const r = dash?.rating;
+    const count = r?.count ?? 0;
+    const sum = r?.sum ?? 0;
+    const avg = count ? sum / count : 0;
 
-    const valid = ratings.filter((r) => {
-      if (r.dismissed === true) return false;
-      if (r.rating == null) return false;
-      if (periodValid && from && to) {
-        const t = new Date(r.created_at).getTime();
-        if (t < from.getTime() || t > to.getTime()) return false;
-      }
-      return true;
-    });
-
-    const count = valid.length;
-    const avg = count ? valid.reduce((sum, r) => sum + (r.rating as number), 0) / count : 0;
-
-    // Répartition 1→5.
+    // Répartition 1→5 (la RPC renvoie déjà un bucket par note, ordonné).
+    const byRating = new Map((r?.distribution ?? []).map((d) => [d.rating, d.count]));
     const distribution = [1, 2, 3, 4, 5].map((value) => ({
       rating: value,
       label: `${value}★`,
-      count: valid.filter((r) => Math.round(r.rating as number) === value).length,
+      count: byRating.get(value) ?? 0,
     }));
 
-    // Évolution de la moyenne par jour (ordre chronologique).
-    const perDay = new Map<string, { sum: number; n: number }>();
-    for (const r of valid) {
-      const day = format(new Date(r.created_at), "yyyy-MM-dd");
-      const entry = perDay.get(day) ?? { sum: 0, n: 0 };
-      entry.sum += r.rating as number;
-      entry.n += 1;
-      perDay.set(day, entry);
-    }
-    const trend = [...perDay.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([day, { sum, n }]) => ({
-        day,
-        label: format(new Date(day), "dd/MM"),
-        avg: Number((sum / n).toFixed(2)),
-      }));
+    // Évolution de la moyenne par jour (ordre chronologique — déjà trié par la RPC).
+    const trend = (r?.trend ?? []).map((t) => ({
+      day: t.day,
+      label: format(new Date(t.day), "dd/MM"),
+      avg: Number((t.sum / t.n).toFixed(2)),
+    }));
 
-    // Plats les mieux notés : on rattache la note de chaque commande à chacun
-    // des plats distincts qu'elle contient (jointure order_ratings.order_id →
-    // order_items.order_id, regroupée par order_items.name). Le "nombre d'avis"
-    // est le nombre de commandes notées ayant contenu ce plat. Aucun seuil
-    // minimum d'avis n'est appliqué pour l'instant.
-    const namesByOrder = new Map<string, Set<string>>();
-    for (const item of items) {
-      const set = namesByOrder.get(item.order_id) ?? new Set<string>();
-      set.add(item.name);
-      namesByOrder.set(item.order_id, set);
-    }
-    const dishAgg = new Map<string, { sum: number; n: number }>();
-    for (const r of valid) {
-      const names = namesByOrder.get(r.order_id);
-      if (!names) continue;
-      for (const name of names) {
-        const entry = dishAgg.get(name) ?? { sum: 0, n: 0 };
-        entry.sum += r.rating as number;
-        entry.n += 1;
-        dishAgg.set(name, entry);
-      }
-    }
-    const topRatedDishes = [...dishAgg.entries()]
-      .map(([name, { sum, n }]) => ({ name, avg: sum / n, count: n }))
+    // Plats les mieux notés : la RPC renvoie {name, sum, n} (note rattachée à
+    // chaque plat distinct des commandes notées) ; on calcule avg + tri + slice ici.
+    const topRatedDishes = (r?.dish_agg ?? [])
+      .map((d) => ({ name: d.name, avg: d.sum / d.n, count: d.n }))
       .sort((a, b) => b.avg - a.avg || b.count - a.count)
       .slice(0, 5);
 
     return { count, avg, distribution, trend, topRatedDishes };
-  }, [ratings, items, startDate, endDate, periodValid]);
+  }, [dash]);
 
   const maxDish = stats.topDishes[0]?.[1] ?? 1;
   const maxService = Math.max(1, ...Object.values(stats.serviceMap));

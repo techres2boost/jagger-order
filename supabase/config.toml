@@ -14,3 +14,24 @@ verify_jwt = false
 # côté base.
 [functions.notify-admin-late-delivery]
 verify_jwt = false
+
+# ── Compte de test « app store » (review Google Play / Apple) ────────────────
+# L'OTP téléphone est géré NATIVEMENT par Supabase Auth (signInWithOtp /
+# verifyOtp côté client) — il n'existe AUCUNE Edge Function Twilio custom à
+# modifier, et un bypass côté frontend est impossible (seul Supabase Auth émet
+# une session valide).
+#
+# Pour qu'un reviewer se connecte SANS SMS réel, utilisez la fonctionnalité
+# native « Test OTP » : elle court-circuite Twilio à l'ENVOI comme à la
+# VÉRIFICATION pour le(s) seul(s) numéro(s) listé(s), et accepte un code fixe.
+#
+#   [auth.sms.test_otp]
+#   21600000000 = "123456"     # numéro E.164 SANS "+", code fixe à 6 chiffres
+#
+# ⚠️ NE PAS committer la vraie valeur ici : ce fichier est versionné, le code
+#    deviendrait un identifiant de connexion public.
+#    • PROD : configurez-le dans le Dashboard → Authentication →
+#      Sign In / Providers → Phone → « Test phone numbers ».
+#    • LOCAL (`supabase start`) uniquement : décommentez le bloc avec VOTRE
+#      valeur. Évitez `supabase config push` d'un config.toml partiel (risque
+#      d'écraser la config Twilio de prod).

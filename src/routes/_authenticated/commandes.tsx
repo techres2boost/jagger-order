@@ -96,6 +96,10 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
 const CURRENT_STATUSES: OrderStatus[] = ["pending", "accepted", "ready", "delivering"];
 const HISTORY_STATUSES: OrderStatus[] = ["delivered", "refused", "expired", "cancelled"];
 
+// Pagination keyset (created_at desc, id desc) : premier lot puis « charger plus »,
+// sans OFFSET (coût constant quel que soit le nombre de commandes).
+const PAGE_SIZE = 20;
+
 function CommandesPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -103,6 +107,8 @@ function CommandesPage() {
   const [itemOptions, setItemOptions] = useState<Record<string, OrderItemOptionRow[]>>({});
   const [ratings, setRatings] = useState<Record<string, OrderRatingRow>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [tab, setTab] = useState<"current" | "history">("current");
 
   // --- Filtres (Feature 1) : statut + montant min/max, appliqués côté serveur ---
@@ -131,108 +137,132 @@ function CommandesPage() {
     return () => clearTimeout(t);
   }, [minAmount, maxAmount]);
 
-  useEffect(() => {
-    let isMounted = true;
+  // Requête de base filtrée (statut de l'onglet + montant), triée et bornée à
+  // PAGE_SIZE. Le curseur keyset est appliqué en plus par loadMore.
+  const buildBaseQuery = useCallback(() => {
+    const group = tab === "current" ? CURRENT_STATUSES : HISTORY_STATUSES;
+    let query = supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(PAGE_SIZE);
+    if (statusFilter === "all") query = query.in("status", group);
+    else query = query.eq("status", statusFilter);
+    const min = parseFloat(appliedAmount.min);
+    if (!Number.isNaN(min)) query = query.gte("total", min);
+    const max = parseFloat(appliedAmount.max);
+    if (!Number.isNaN(max)) query = query.lte("total", max);
+    return query;
+  }, [tab, statusFilter, appliedAmount]);
 
-    async function loadOrders() {
-      setLoading(true);
-      const group = tab === "current" ? CURRENT_STATUSES : HISTORY_STATUSES;
-      let query = supabase.from("orders").select("*").order("created_at", { ascending: false });
-      // Statut : soit un statut précis, soit l'ensemble des statuts de l'onglet.
-      if (statusFilter === "all") query = query.in("status", group);
-      else query = query.eq("status", statusFilter);
-      // Montant : bornes optionnelles sur le total de la commande.
-      const min = parseFloat(appliedAmount.min);
-      if (!Number.isNaN(min)) query = query.gte("total", min);
-      const max = parseFloat(appliedAmount.max);
-      if (!Number.isNaN(max)) query = query.lte("total", max);
-      const { data: ordersData, error } = await query;
-      if (error) {
-        toast.error(error.message);
-        if (isMounted) setLoading(false);
-        return;
-      }
+  // Charge items/options/ratings pour un lot d'orderIds et FUSIONNE dans les maps
+  // existantes (ne recharge jamais les pages déjà présentes).
+  const loadRelated = useCallback(async (orderIds: string[]) => {
+    if (orderIds.length === 0) return;
+    const [itemsRes, ratingsRes] = await Promise.all([
+      supabase.from("order_items").select("*").in("order_id", orderIds),
+      supabase.from("order_ratings").select("*").in("order_id", orderIds),
+    ]);
 
-      const ordersList = (ordersData as OrderRow[]) ?? [];
-      if (!isMounted) return;
-      setOrders(ordersList);
+    if (itemsRes.error) {
+      toast.error(itemsRes.error.message);
+    } else {
+      const orderItems = (itemsRes.data as OrderItemRow[]) ?? [];
+      const grouped: Record<string, OrderItemRow[]> = {};
+      orderItems
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((item) => {
+          grouped[item.order_id] = [...(grouped[item.order_id] ?? []), item];
+        });
+      setItems((prev) => ({ ...prev, ...grouped }));
 
-      const orderIds = ordersList.map((o) => o.id);
-      if (orderIds.length === 0) {
-        setItems({});
-        setRatings({});
-        setLoading(false);
-        return;
-      }
-
-      const [itemsRes, ratingsRes] = await Promise.all([
-        supabase.from("order_items").select("*").in("order_id", orderIds),
-        supabase.from("order_ratings").select("*").in("order_id", orderIds),
-      ]);
-
-      if (isMounted) {
-        if (itemsRes.error) {
-          toast.error(itemsRes.error.message);
-          setItems({});
-          setItemOptions({});
-        } else {
-          const orderItems = itemsRes.data as OrderItemRow[];
-          const grouped: Record<string, OrderItemRow[]> = {};
-          orderItems
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .forEach((item) => {
-              grouped[item.order_id] = [...(grouped[item.order_id] ?? []), item];
-            });
-          setItems(grouped);
-
-          const orderItemIds = orderItems.map((item) => item.id);
-          if (orderItemIds.length > 0) {
-            const { data: optionsData, error: optionsError } = await supabase
-              .from("order_item_options")
-              .select("order_item_id, option_name, option_price")
-              .in("order_item_id", orderItemIds);
-            if (!optionsError && isMounted) {
-              const optionsGrouped: Record<string, OrderItemOptionRow[]> = {};
-              (optionsData ?? []).forEach((o) => {
-                optionsGrouped[o.order_item_id] = [
-                  ...(optionsGrouped[o.order_item_id] ?? []),
-                  {
-                    order_item_id: o.order_item_id,
-                    option_name: o.option_name,
-                    option_price: Number(o.option_price),
-                  },
-                ];
-              });
-              setItemOptions(optionsGrouped);
-            }
-          } else {
-            setItemOptions({});
-          }
-        }
-
-        if (ratingsRes.error) {
-          if (!ratingsRes.error.message.includes('relation "order_ratings" does not exist')) {
-            toast.error(ratingsRes.error.message);
-          }
-          setRatings({});
-        } else {
-          const map: Record<string, OrderRatingRow> = {};
-          (ratingsRes.data as OrderRatingRow[]).forEach((rating) => {
-            map[rating.order_id] = rating;
+      const orderItemIds = orderItems.map((item) => item.id);
+      if (orderItemIds.length > 0) {
+        const { data: optionsData, error: optionsError } = await supabase
+          .from("order_item_options")
+          .select("order_item_id, option_name, option_price")
+          .in("order_item_id", orderItemIds);
+        if (!optionsError) {
+          const optionsGrouped: Record<string, OrderItemOptionRow[]> = {};
+          (optionsData ?? []).forEach((o) => {
+            optionsGrouped[o.order_item_id] = [
+              ...(optionsGrouped[o.order_item_id] ?? []),
+              {
+                order_item_id: o.order_item_id,
+                option_name: o.option_name,
+                option_price: Number(o.option_price),
+              },
+            ];
           });
-          setRatings(map);
+          setItemOptions((prev) => ({ ...prev, ...optionsGrouped }));
         }
-
-        setLoading(false);
       }
     }
 
-    loadOrders();
+    if (ratingsRes.error) {
+      if (!ratingsRes.error.message.includes('relation "order_ratings" does not exist')) {
+        toast.error(ratingsRes.error.message);
+      }
+    } else {
+      setRatings((prev) => {
+        const map = { ...prev };
+        (ratingsRes.data as OrderRatingRow[]).forEach((rating) => {
+          map[rating.order_id] = rating;
+        });
+        return map;
+      });
+    }
+  }, []);
 
+  // Chargement initial / rechargement (changement d'onglet, de filtre, ou event
+  // Realtime via refreshKey) : repart TOUJOURS de la première page et réinitialise
+  // les maps liées.
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      setLoading(true);
+      const { data, error } = await buildBaseQuery();
+      if (!isMounted) return;
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return;
+      }
+      const list = (data as OrderRow[]) ?? [];
+      setOrders(list);
+      setItems({});
+      setItemOptions({});
+      setRatings({});
+      setHasMore(list.length === PAGE_SIZE);
+      await loadRelated(list.map((o) => o.id));
+      if (isMounted) setLoading(false);
+    })();
     return () => {
       isMounted = false;
     };
-  }, [tab, statusFilter, appliedAmount, refreshKey]);
+  }, [buildBaseQuery, loadRelated, refreshKey]);
+
+  // « Charger plus » : keyset sur (created_at, id) — pas d'OFFSET. On borne la
+  // valeur timestamp entre guillemets pour préserver le fuseau (« +00:00 »).
+  const loadMore = useCallback(async () => {
+    if (loadingMore || orders.length === 0) return;
+    setLoadingMore(true);
+    const cursor = orders[orders.length - 1];
+    const keyset =
+      `created_at.lt."${cursor.created_at}",` +
+      `and(created_at.eq."${cursor.created_at}",id.lt.${cursor.id})`;
+    const { data, error } = await buildBaseQuery().or(keyset);
+    setLoadingMore(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    const more = (data as OrderRow[]) ?? [];
+    setOrders((prev) => [...prev, ...more]);
+    setHasMore(more.length === PAGE_SIZE);
+    await loadRelated(more.map((o) => o.id));
+  }, [buildBaseQuery, loadRelated, orders, loadingMore]);
 
   // Realtime : un changement sur les commandes du client redéclenche le
   // rechargement filtré (via refreshKey), en conservant les filtres actifs.
@@ -500,6 +530,17 @@ function CommandesPage() {
                 </div>
               );
             })}
+
+            {hasMore && (
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="press mx-auto mt-2 flex h-11 w-fit items-center rounded-full border px-6 text-sm font-semibold disabled:opacity-50"
+              >
+                {loadingMore ? "Chargement…" : "Charger plus"}
+              </button>
+            )}
           </div>
         )}
       </main>

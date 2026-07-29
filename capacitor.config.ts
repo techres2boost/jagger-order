@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "app.lovable.boxbiteorder",
+  appId: "app.lovable.box_bite_order",
   appName: "BOX",
   // Sortie statique du build (nitro / TanStack Start). En mode `server.url`
   // ci-dessous, ce contenu web local n'est qu'un repli : la coquille native

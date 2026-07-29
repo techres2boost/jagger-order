@@ -2,7 +2,7 @@
   "name": "BOX Menu & commande",
   "short_name": "BOX",
   "description": "Menu, commande et livraison du restaurant BOX.",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",

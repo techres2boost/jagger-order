@@ -26,16 +26,26 @@ type MessageRow = ChatMessage & {
 // Table hors types générés (comme addresses/push_subscriptions) : requêtes non typées.
 const chatTable = () => supabase.from("order_messages" as never);
 
+// Pagination : dernier lot au chargement, puis « messages précédents » à la
+// demande (keyset created_at/id, pas d'OFFSET).
+const CHAT_PAGE_SIZE = 30;
+
 export function OrderChat({ orderId, currentUserId }: { orderId: string; currentUserId: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hasMoreOlder, setHasMoreOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   // Cache des noms d'expéditeur (sender_id -> full_name), alimenté à la volée.
   const namesRef = useRef<Record<string, string>>({});
   const [, forceRender] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Préservation du scroll lors d'un préchargement (prepend) : on ne saute PAS en
+  // bas dans ce cas, on conserve la position de lecture.
+  const prependingRef = useRef(false);
+  const prevHeightRef = useRef(0);
 
   const rememberName = useCallback((id: string, name: string | null | undefined) => {
     const clean = (name ?? "").trim();
@@ -74,12 +84,16 @@ export function OrderChat({ orderId, currentUserId }: { orderId: string; current
     let mounted = true;
 
     (async () => {
+      // Dernier lot : on trie DESC + limit, puis on remet en ordre chronologique.
       const { data } = await chatTable()
         .select("id, sender_id, content, created_at, profiles(full_name)")
         .eq("order_id", orderId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(CHAT_PAGE_SIZE);
       if (!mounted) return;
-      const rows = (data as MessageRow[] | null) ?? [];
+      const desc = (data as MessageRow[] | null) ?? [];
+      const rows = desc.slice().reverse();
       rows.forEach((r) => rememberName(r.sender_id, r.profiles?.full_name));
       setMessages(
         rows.map((r) => ({
@@ -89,6 +103,7 @@ export function OrderChat({ orderId, currentUserId }: { orderId: string; current
           created_at: r.created_at,
         })),
       );
+      setHasMoreOlder(desc.length === CHAT_PAGE_SIZE);
       setLoading(false);
     })();
 
@@ -116,10 +131,54 @@ export function OrderChat({ orderId, currentUserId }: { orderId: string; current
     };
   }, [orderId, appendMessage, rememberName, resolveName]);
 
-  // Auto-scroll vers le bas à chaque nouveau message.
+  // Charge le lot de messages plus anciens (keyset), et les préfixe.
+  const loadOlder = useCallback(async () => {
+    if (loadingOlder || messages.length === 0) return;
+    setLoadingOlder(true);
+    const oldest = messages[0];
+    prevHeightRef.current = scrollRef.current?.scrollHeight ?? 0;
+    const keyset =
+      `created_at.lt."${oldest.created_at}",` +
+      `and(created_at.eq."${oldest.created_at}",id.lt.${oldest.id})`;
+    const { data, error } = await chatTable()
+      .select("id, sender_id, content, created_at, profiles(full_name)")
+      .eq("order_id", orderId)
+      .or(keyset)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(CHAT_PAGE_SIZE);
+    setLoadingOlder(false);
+    if (error) return;
+    const desc = (data as MessageRow[] | null) ?? [];
+    const older = desc.slice().reverse();
+    older.forEach((r) => rememberName(r.sender_id, r.profiles?.full_name));
+    prependingRef.current = true;
+    setMessages((prev) => {
+      const existing = new Set(prev.map((m) => m.id));
+      const toAdd = older
+        .filter((r) => !existing.has(r.id))
+        .map((r) => ({
+          id: r.id,
+          sender_id: r.sender_id,
+          content: r.content,
+          created_at: r.created_at,
+        }));
+      return [...toAdd, ...prev];
+    });
+    setHasMoreOlder(desc.length === CHAT_PAGE_SIZE);
+  }, [orderId, messages, loadingOlder, rememberName]);
+
+  // Auto-scroll : en bas pour un nouveau message / chargement initial ; mais lors
+  // d'un préchargement (prepend), on conserve la position de lecture.
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    if (prependingRef.current) {
+      el.scrollTop = el.scrollHeight - prevHeightRef.current;
+      prependingRef.current = false;
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages]);
 
   async function sendMessage(e: React.FormEvent) {
@@ -146,6 +205,16 @@ export function OrderChat({ orderId, currentUserId }: { orderId: string; current
       </div>
 
       <div ref={scrollRef} className="max-h-72 min-h-[8rem] space-y-2 overflow-y-auto p-3">
+        {!loading && hasMoreOlder && (
+          <button
+            type="button"
+            onClick={loadOlder}
+            disabled={loadingOlder}
+            className="mx-auto mb-1 block rounded-full border px-3 py-1 text-xs font-semibold text-muted-foreground disabled:opacity-50"
+          >
+            {loadingOlder ? "Chargement…" : "Charger les messages précédents"}
+          </button>
+        )}
         {loading ? (
           <p className="py-6 text-center text-sm text-muted-foreground">Chargement…</p>
         ) : messages.length === 0 ? (

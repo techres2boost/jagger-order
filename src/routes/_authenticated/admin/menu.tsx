@@ -408,6 +408,28 @@ function AdminMenuPage() {
     let finalColor: string | null = null;
 
     if (imageFile) {
+      // La policy RLS INSERT du bucket dish-images exige un utilisateur admin
+      // (auth.uid() non nul). Si la session a expiré / n'est plus attachée, la
+      // requête Storage part en anonyme et Supabase renvoie une erreur RLS
+      // trompeuse. On rafraîchit/valide la session AVANT l'upload et on donne un
+      // message clair plutôt qu'une erreur "row-level security policy".
+      const { data: sessionData } = await supabase.auth.getSession();
+      // [DEBUG TEMPORAIRE — à retirer une fois la cause confirmée]
+      const { data: userData } = await supabase.auth.getUser();
+      const exp = sessionData.session?.expires_at;
+      console.log(
+        "[dish-images upload] auth.uid =",
+        userData.user?.id ?? "NULL (anonyme)",
+        "| session =",
+        sessionData.session ? "présente" : "absente",
+        exp ? `| expire dans ${Math.round((exp * 1000 - Date.now()) / 1000)}s` : "",
+      );
+      // [/DEBUG TEMPORAIRE]
+      if (!sessionData.session || !userData.user) {
+        toast.error("Session absente ou expirée — reconnectez-vous, puis réessayez l'upload.");
+        return;
+      }
+
       // Remplacement : supprimer l'ancien fichier du bucket si présent.
       if (originalImageUrl) {
         const oldPath = storagePathFromPublicUrl(originalImageUrl);

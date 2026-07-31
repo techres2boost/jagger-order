@@ -215,19 +215,19 @@ function PanierPage() {
       note: l.note ?? null,
       options: (l.options ?? []).map((o) => o.optionItemId),
     }));
-    // Cast `as any` : la RPC n'est pas encore dans les types générés (stale),
-    // même motif que `admin_process_assignments` ailleurs dans le projet.
-    const { data: newOrderId, error } = await (
-      supabase as unknown as {
-        rpc: (
-          fn: string,
-          args: Record<string, unknown>,
-        ) => Promise<{ data: string | null; error: { message: string } | null }>;
-      }
-    ).rpc("create_order_secure", {
+    // `p_special_instructions` et `p_promo_code` sont des `text` sémantiquement
+    // nullables côté SQL (NULL = aucune instruction / aucun code promo), mais
+    // PostgREST ne sait pas exprimer un paramètre nullable et les génère en
+    // `string`. On conserve donc NULL — comportement inchangé — en élargissant le
+    // type de ces deux valeurs seulement : le nom de la RPC et les autres
+    // arguments (`p_address_id`, `p_items`) restent entièrement vérifiés.
+    // Correctif de fond possible : réordonner les paramètres SQL pour que les
+    // nullables puissent porter `DEFAULT NULL` (les rendant optionnels côté types).
+    const nullableText = (value: string | null) => value as unknown as string;
+    const { data: newOrderId, error } = await supabase.rpc("create_order_secure", {
       p_address_id: deliveryAddress.id,
-      p_special_instructions: specialInstructions.trim() || null,
-      p_promo_code: promoCode,
+      p_special_instructions: nullableText(specialInstructions.trim() || null),
+      p_promo_code: nullableText(promoCode),
       p_items: payloadItems,
     });
     if (error || !newOrderId) {

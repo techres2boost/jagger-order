@@ -38,7 +38,10 @@ type Address = {
   full_address?: string | null;
   latitude: number;
   longitude: number;
-  is_default?: boolean;
+  // `boolean | null` et non `boolean | undefined` : la colonne est nullable en
+  // base. Le type local doit refléter le schéma, sinon le `null` renvoyé par
+  // PostgREST est un mensonge de typage (masqué auparavant par un `as any`).
+  is_default?: boolean | null;
   city?: string | null;
   photo_url?: string | null;
 };
@@ -125,12 +128,12 @@ export function CompteClient() {
         setProfile({ ...(p as Profile), email: u.user.email ?? null });
       }
 
-      const { data: a } = await (supabase as any)
+      const { data: a } = await supabase
         .from("addresses")
         .select("*")
         .eq("user_id", u.user.id)
         .order("is_default", { ascending: false });
-      setAddresses((a as unknown as Address[]) ?? []);
+      setAddresses(a ?? []);
 
       setLoading(false);
     })();
@@ -144,7 +147,7 @@ export function CompteClient() {
     setLoading(true);
     // Téléphone vidé => null (reste hors de l'index unique partiel).
     const row = { full_name: profile.full_name.trim(), phone: profile.phone?.trim() || null };
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...row } as any);
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...row });
 
     setLoading(false);
     if (error) {
@@ -200,17 +203,17 @@ export function CompteClient() {
   async function reloadAddresses() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const { data: a } = await (supabase as any)
+    const { data: a } = await supabase
       .from("addresses")
       .select("*")
       .eq("user_id", u.user.id)
       .order("is_default", { ascending: false });
-    setAddresses((a as unknown as Address[]) ?? []);
+    setAddresses(a ?? []);
   }
 
   async function onDeleteAddress(id: string) {
     if (!confirm("Supprimer cette adresse ?")) return;
-    const { error } = await (supabase as any).from("addresses").delete().eq("id", id);
+    const { error } = await supabase.from("addresses").delete().eq("id", id);
 
     if (error) return toast.error(error.message);
     toast.success("Adresse supprimée");

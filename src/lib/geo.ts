@@ -24,13 +24,12 @@ export function haversineDistanceKm(
 }
 
 // Coordonnées potentiellement invalides (null/undefined/NaN/0,0).
-type MaybeCoords = { lat: number | null | undefined; lng: number | null | undefined } | null | undefined;
+type MaybeCoords =
+  { lat: number | null | undefined; lng: number | null | undefined } | null | undefined;
 
 // Vrai uniquement si les coordonnées sont exploitables (ni nulles, ni NaN,
 // ni le point 0,0 par défaut). Sert de garde partagée avant tout calcul.
-export function hasValidCoords(
-  coords: MaybeCoords,
-): coords is { lat: number; lng: number } {
+export function hasValidCoords(coords: MaybeCoords): coords is { lat: number; lng: number } {
   if (!coords) return false;
   const { lat, lng } = coords;
   if (lat == null || lng == null) return false;

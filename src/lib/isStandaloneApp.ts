@@ -27,22 +27,17 @@ export function isStandaloneApp(): boolean {
 
   // 1) PWA installée : le média `display-mode: standalone` est actif.
   const isPwaStandalone =
-    typeof win.matchMedia === "function" &&
-    win.matchMedia("(display-mode: standalone)").matches;
+    typeof win.matchMedia === "function" && win.matchMedia("(display-mode: standalone)").matches;
 
   // 2) PWA iOS : API propriétaire de Safari.
   const isIosStandalone = win.navigator.standalone === true;
 
   // 3) TWA Android : la page est ouverte depuis un wrapper `android-app://`.
   const isAndroidTwa =
-    typeof document !== "undefined" &&
-    document.referrer.includes("android-app://");
+    typeof document !== "undefined" && document.referrer.includes("android-app://");
 
   // 4) Wrapper natif Capacitor / Cordova, si présent.
-  const isNativeWrapper =
-    win.Capacitor?.isNativePlatform?.() === true || win.cordova != null;
+  const isNativeWrapper = win.Capacitor?.isNativePlatform?.() === true || win.cordova != null;
 
-  return (
-    isPwaStandalone || isIosStandalone || isAndroidTwa || isNativeWrapper
-  );
+  return isPwaStandalone || isIosStandalone || isAndroidTwa || isNativeWrapper;
 }

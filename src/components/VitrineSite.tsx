@@ -41,9 +41,19 @@ const PHONE_TEL = "+21654338753";
 // Best Sellers — 3 paires avant/après hébergées sur GitHub (raw).
 const GH_RAW = "https://raw.githubusercontent.com/techres2boost/box-bite-order/main/images";
 const BEST_SELLERS_PAIRS = [
-  { id: "big-cheese", name: "Big Cheese Burger", before: `${GH_RAW}/BigCheeseBurger_old.png`, after: `${GH_RAW}/BigCheeseBurger.png` },
+  {
+    id: "big-cheese",
+    name: "Big Cheese Burger",
+    before: `${GH_RAW}/BigCheeseBurger_old.png`,
+    after: `${GH_RAW}/BigCheeseBurger.png`,
+  },
   { id: "kabeb", name: "Kabeb", before: `${GH_RAW}/kebeb_old.png`, after: `${GH_RAW}/kabeb.png` },
-  { id: "nuggets", name: "Nuggets", before: `${GH_RAW}/nuggets_old.png`, after: `${GH_RAW}/nuggets.png` },
+  {
+    id: "nuggets",
+    name: "Nuggets",
+    before: `${GH_RAW}/nuggets_old.png`,
+    after: `${GH_RAW}/nuggets.png`,
+  },
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -292,7 +302,7 @@ function Navbar() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <a href="#top" className="mr-6 inline-flex items-center rounded-xl bg-transparent p-2">
-          <div style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.25))' }}>
+          <div style={{ filter: "drop-shadow(0 0 4px rgba(255,255,255,0.25))" }}>
             <BoxLogo height={60} showWordmark={false} />
           </div>
         </a>
@@ -369,7 +379,6 @@ function Hero({ productCount, categoryCount }: { productCount: number; categoryC
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/70 to-[#0A0A0A]/40" />
-
 
       <div className="relative mx-auto w-full max-w-6xl px-5 pb-24 pt-28 sm:px-6">
         <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white/80">
@@ -464,7 +473,7 @@ function BeforeAfter({ before, after, name }: { before: string; after: string; n
   useEffect(() => {
     const onMove = (e: MouseEvent | TouchEvent) => {
       if (!dragging.current) return;
-      const x = "touches" in e ? e.touches[0]?.clientX ?? 0 : (e as MouseEvent).clientX;
+      const x = "touches" in e ? (e.touches[0]?.clientX ?? 0) : (e as MouseEvent).clientX;
       update(x);
     };
     const onUp = () => (dragging.current = false);
@@ -494,7 +503,13 @@ function BeforeAfter({ before, after, name }: { before: string; after: string; n
       }}
     >
       {/* Avant (fond) */}
-      <img src={before} alt={`${name} — avant`} loading="lazy" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+      <img
+        src={before}
+        alt={`${name} — avant`}
+        loading="lazy"
+        className="absolute inset-0 h-full w-full object-cover"
+        draggable={false}
+      />
       {/* Étiquette AVANT */}
       <span className="absolute left-3 top-3 z-10 rounded-full bg-black/70 px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white/90">
         Avant
@@ -502,16 +517,31 @@ function BeforeAfter({ before, after, name }: { before: string; after: string; n
 
       {/* Après (clip par curseur) */}
       <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${pos}%)` }}>
-        <img src={after} alt={`${name} — après`} loading="lazy" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
-        <span className="absolute right-3 top-3 z-10 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white shadow-lg" style={{ background: RED }}>
+        <img
+          src={after}
+          alt={`${name} — après`}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+        />
+        <span
+          className="absolute right-3 top-3 z-10 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white shadow-lg"
+          style={{ background: RED }}
+        >
           Après
         </span>
       </div>
 
       {/* Poignée */}
-      <div className="absolute inset-y-0 z-20 flex items-center" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
+      <div
+        className="absolute inset-y-0 z-20 flex items-center"
+        style={{ left: `${pos}%`, transform: "translateX(-50%)" }}
+      >
         <div className="h-full w-[2px] bg-white/90 shadow-[0_0_12px_rgba(255,255,255,0.7)]" />
-        <div className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white/95 shadow-2xl" style={{ color: RED }}>
+        <div
+          className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white/95 shadow-2xl"
+          style={{ color: RED }}
+        >
           <ArrowRight className="h-4 w-4 -mr-1" strokeWidth={3} />
           <ArrowRight className="h-4 w-4 rotate-180 -ml-1" strokeWidth={3} />
         </div>
@@ -558,7 +588,6 @@ function BestSellers() {
     </section>
   );
 }
-
 
 // ── Menu (onglets + recherche + tri) ─────────────────────────────────────
 function MenuSection({
@@ -771,7 +800,6 @@ function About() {
   );
 }
 
-
 // ── FAQ ──────────────────────────────────────────────────────────────────
 function Faq({ categoryNames }: { categoryNames: string[] }) {
   const carte =
@@ -890,7 +918,6 @@ function LocationSection() {
               </div>
             </div>
           </div>
-
         </div>
 
         <div
@@ -1094,6 +1121,5 @@ export function VitrineSite() {
     </OrderTransitionProvider>
   );
 }
-
 
 export default VitrineSite;

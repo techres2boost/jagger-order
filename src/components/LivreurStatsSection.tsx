@@ -85,7 +85,6 @@ export function LivreurStatsSection() {
         Statistiques livreurs
       </h2>
 
-      
       <div className="mb-4 rounded-3xl border-2 border-[#F5B800] bg-[#F5B800]/10 p-4 shadow-sm">
         <div className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-brand">
           <Star className="h-4 w-4 fill-[#F5B800] text-[#F5B800]" /> Livreur le mieux noté
@@ -156,7 +155,6 @@ export function LivreurStatsSection() {
           </div>
         </div>
       )}
-
 
       {stats.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">

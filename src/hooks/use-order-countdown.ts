@@ -19,10 +19,7 @@ interface CountdownOrder {
 }
 
 const isTerminal = (status: CountdownStatus) =>
-  status === "delivered" ||
-  status === "refused" ||
-  status === "expired" ||
-  status === "cancelled";
+  status === "delivered" || status === "refused" || status === "expired" || status === "cancelled";
 
 /**
  * Décompte temps réel vers l'heure d'arrivée figée (prépa + trajet), calculée

@@ -6,11 +6,7 @@ import L from "leaflet";
 import { X, LocateFixed, Search, Loader2, ImagePlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  validateAddressPhoto,
-  uploadAddressPhoto,
-  signAddressPhoto,
-} from "@/lib/address-photo";
+import { validateAddressPhoto, uploadAddressPhoto, signAddressPhoto } from "@/lib/address-photo";
 
 // Leaflet default icon fix for bundlers
 const markerIcon = L.icon({

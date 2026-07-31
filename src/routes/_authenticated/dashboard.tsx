@@ -1,6 +1,6 @@
 ﻿import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 // [Audit #4] xlsx-js-style (fork de SheetJS) porte des vulnérabilités connues
 // (Prototype Pollution / ReDoS, sans correctif amont). Elles ne concernent QUE le
 // PARSING de fichiers non fiables (XLSX.read). Ici l'usage est strictement limité
@@ -9,7 +9,13 @@ import { useEffect, useMemo, useState } from "react";
 // surface d'exploitation est donc nulle en pratique. Ne PAS utiliser XLSX.read()
 // sur un fichier fourni par un utilisateur sans réévaluer ce risque (préférer
 // alors une migration vers `exceljs`).
-import * as XLSX from "xlsx-js-style";
+//
+// [Perf] `xlsx-js-style` pèse ~1 Mo (338 ko gzip) et représentait à lui seul
+// l'essentiel du chunk `dashboard` (1 330 ko). Il n'est utilisé QUE par
+// `exportExcel`, déclenché au clic : l'import est donc dynamique. Le type est
+// importé séparément (`import type`, effacé à la compilation) pour que les
+// annotations restent vérifiées sans tirer le module dans le bundle.
+import type * as XLSXNS from "xlsx-js-style";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { BoxLogo } from "@/components/BoxLogo";
@@ -28,20 +34,36 @@ import {
   Trophy,
   XCircle,
 } from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { toast } from "sonner";
 import { MENU } from "@/data/menu";
 import { LivreurStatsSection } from "@/components/LivreurStatsSection";
+
+// Référence au module xlsx chargé à la demande. Affectée par `exportExcel` avant
+// tout usage ; tous les helpers d'export ne sont appelés que depuis lui (jamais
+// pendant le rendu), donc la valeur est toujours définie au moment de l'appel.
+let XLSX!: typeof XLSXNS;
+
+// `recharts` (~515 ko) ne sert qu'aux deux graphiques d'avis, sous la ligne de
+// flottaison : chargé en différé pour que le tableau de bord (KPI, tableaux)
+// s'affiche sans l'attendre.
+const RatingCharts = lazy(() =>
+  import("@/components/dashboard/RatingCharts").then((m) => ({ default: m.RatingCharts })),
+);
+
+// Réserve exactement la hauteur des deux graphiques (2 × 220 px + titres) pour
+// qu'aucun décalage de mise en page ne survienne à l'arrivée du chunk.
+function ChartsSkeleton() {
+  return (
+    <div aria-hidden className="space-y-6">
+      {[0, 1].map((i) => (
+        <div key={i}>
+          <div className="mb-2 h-3 w-40 animate-pulse rounded bg-muted" />
+          <div className="h-[220px] w-full animate-pulse rounded bg-muted/50" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   ssr: false,
@@ -62,11 +84,11 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 // `xlsx-js-style` ajoute au CellObject de SheetJS une propriété de style `s`
 // (et un format numérique `z`) sans les déclarer dans ses typings. On les
 // modélise ici plutôt que de neutraliser le typage avec `any` sur chaque cellule.
-type StyledCell = XLSX.CellObject & { s?: Record<string, unknown>; z?: string };
+type StyledCell = XLSXNS.CellObject & { s?: Record<string, unknown>; z?: string };
 
 // Propriétés de feuille non standard utilisées par l'export (volet figé,
 // couleur d'onglet), également absentes des typings amont.
-type ExtendedWorkSheet = XLSX.WorkSheet & {
+type ExtendedWorkSheet = XLSXNS.WorkSheet & {
   "!freeze"?: { xSplit: number; ySplit: number; topLeftCell: string; activePane: string };
   "!tabColor"?: { rgb: string };
 };
@@ -323,7 +345,7 @@ function DashboardPage() {
     cell.s = { ...(cell.s ?? {}), ...style };
   };
 
-  const setCurrencyColumns = (sheet: XLSX.WorkSheet, headers: string[]) => {
+  const setCurrencyColumns = (sheet: XLSXNS.WorkSheet, headers: string[]) => {
     const currencyHeaders = new Set(["Montant total", "Montant", "Chiffre d'affaires total", "Panier moyen"]);
     const currencyCols = headers.reduce<number[]>((cols, header, index) => {
       if (currencyHeaders.has(header)) cols.push(index);
@@ -354,7 +376,7 @@ function DashboardPage() {
         })
       : [];
 
-  const styleSheet = (sheet: XLSX.WorkSheet) => {
+  const styleSheet = (sheet: XLSXNS.WorkSheet) => {
     (sheet as ExtendedWorkSheet)["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft" };
     const range = sheet["!ref"] ? XLSX.utils.decode_range(sheet["!ref"]) : null;
     if (!range) return;
@@ -745,6 +767,10 @@ function DashboardPage() {
     setExporting(true);
 
     try {
+      // Chargement à la demande du moteur xlsx (~1 Mo) : il ne pèse plus sur le
+      // chunk de la route. Le spinner `exporting` couvre déjà cette latence.
+      XLSX = await import("xlsx-js-style");
+
       const from = new Date(startDate);
       from.setHours(0, 0, 0, 0);
       const to = new Date(endDate);
@@ -1060,7 +1086,7 @@ function DashboardPage() {
           name,
           TabColor: { rgb: SHEET_TAB_COLORS[name] ?? "FF9CA3AF" },
         })),
-      } as XLSX.WBProps;
+      } as XLSXNS.WBProps;
 
       const filename = `box_rapport_${format(startDate, "yyyy-MM-dd")}_${format(endDate, "yyyy-MM-dd")}.xlsx`;
       XLSX.writeFile(workbook, filename, { bookType: "xlsx", cellStyles: true });
@@ -1292,96 +1318,14 @@ function DashboardPage() {
                     <KpiCard label="Avis" value={String(ratingStats.count)} />
                   </div>
 
-                  {/* 2. Répartition des notes */}
-                  <div>
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      Répartition des notes
-                    </h3>
-                    <div className="h-[220px] w-full text-muted-foreground">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={ratingStats.distribution}
-                          margin={{ top: 8, right: 8, bottom: 0, left: -20 }}
-                        >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke="currentColor"
-                            strokeOpacity={0.15}
-                            vertical={false}
-                          />
-                          <XAxis
-                            dataKey="label"
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 12, fill: "currentColor" }}
-                          />
-                          <YAxis
-                            allowDecimals={false}
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 12, fill: "currentColor" }}
-                          />
-                          <RechartsTooltip
-                            cursor={{ fill: "#B22222", fillOpacity: 0.08 }}
-                            formatter={(value: number) => [value, "Avis"]}
-                            labelFormatter={(label: string) => `Note ${label}`}
-                          />
-                          <Bar
-                            dataKey="count"
-                            fill="#B22222"
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={48}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* 3. Évolution de la note moyenne dans le temps */}
-                  <div>
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      Évolution de la note moyenne
-                    </h3>
-                    <div className="h-[220px] w-full text-muted-foreground">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={ratingStats.trend}
-                          margin={{ top: 8, right: 12, bottom: 0, left: -20 }}
-                        >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke="currentColor"
-                            strokeOpacity={0.15}
-                            vertical={false}
-                          />
-                          <XAxis
-                            dataKey="label"
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 12, fill: "currentColor" }}
-                          />
-                          <YAxis
-                            domain={[0, 5]}
-                            ticks={[0, 1, 2, 3, 4, 5]}
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 12, fill: "currentColor" }}
-                          />
-                          <RechartsTooltip
-                            formatter={(value: number) => [fmtRating1(value), "Note moyenne"]}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="avg"
-                            stroke="#B22222"
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: "#B22222" }}
-                            activeDot={{ r: 5 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+                  {/* 2 & 3. Graphiques des avis — chargés en différé (recharts). */}
+                  <Suspense fallback={<ChartsSkeleton />}>
+                    <RatingCharts
+                      distribution={ratingStats.distribution}
+                      trend={ratingStats.trend}
+                      formatRating={fmtRating1}
+                    />
+                  </Suspense>
 
                 </div>
               )}

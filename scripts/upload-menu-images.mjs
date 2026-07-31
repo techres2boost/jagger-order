@@ -4,15 +4,17 @@
 // each menu_items.image_url to the resulting public URL.
 //
 // WHY THIS SCRIPT EXISTS
-// The categories, menu_items and prices (menu_item_sizes) were already seeded
-// directly in the database. Only the image bytes remain: they could not be
-// uploaded from the automation sandbox because its egress policy blocks
-// *.supabase.co. Run this once from a machine with normal network access.
+// The categories, menu_items, prices (menu_item_sizes), featured flags and
+// options/supplements were seeded directly in the database. Only the image
+// bytes remain: they cannot be uploaded from the automation sandbox because its
+// egress policy blocks *.supabase.co (and storage.objects cannot be mutated via
+// SQL — a trigger forbids it). Run this once from a machine with normal network
+// access.
 //
 // USAGE
 //   SUPABASE_URL=https://<ref>.supabase.co \
 //   SUPABASE_SERVICE_ROLE_KEY=<service_role_key> \
-//   node scripts/upload-menu-images.mjs [--menu ./menu] [--force]
+//   node scripts/upload-menu-images.mjs [--menu ./menu] [--force] [--reset-bucket]
 //
 // - SUPABASE_URL defaults to the project URL below if unset.
 // - The SERVICE ROLE key is required: uploading to dish-images is admin-only
@@ -20,6 +22,8 @@
 // - Matching is by dish NAME, normalised (lowercase, accents stripped,
 //   hyphens -> spaces). Filenames have no accents; DB names do — that's fine.
 // - Idempotent: items that already have an image_url are skipped unless --force.
+// - --reset-bucket : delete ALL existing objects in dish-images first (use it
+//   once, after a full menu re-seed, to clear images tied to old dish IDs).
 // ---------------------------------------------------------------------------
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, extname, basename } from "node:path";
@@ -30,6 +34,7 @@ const DEFAULT_URL = "https://ssmmstetcmgsjnjbjkat.supabase.co";
 
 const args = process.argv.slice(2);
 const force = args.includes("--force");
+const resetBucket = args.includes("--reset-bucket");
 const menuDir = (() => {
   const i = args.indexOf("--menu");
   return i !== -1 && args[i + 1] ? args[i + 1] : "menu";
@@ -59,6 +64,31 @@ const norm = (s) =>
     .trim();
 
 const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+// Optionally empty the bucket first (objects from a previous seed reference old
+// dish IDs and would otherwise linger as orphans).
+if (resetBucket) {
+  let removed = 0;
+  for (;;) {
+    const { data: objs, error: listErr } = await supabase.storage
+      .from(BUCKET)
+      .list("", { limit: 100 });
+    if (listErr) {
+      console.error("ERROR listing bucket:", listErr.message);
+      process.exit(1);
+    }
+    if (!objs || objs.length === 0) break;
+    const names = objs.map((o) => o.name);
+    const { error: rmErr } = await supabase.storage.from(BUCKET).remove(names);
+    if (rmErr) {
+      console.error("ERROR removing objects:", rmErr.message);
+      process.exit(1);
+    }
+    removed += names.length;
+    if (objs.length < 100) break;
+  }
+  console.log(`reset-bucket: removed ${removed} existing object(s) from ${BUCKET}`);
+}
 
 // Collect local image files across every sub-folder of menu/.
 const files = [];

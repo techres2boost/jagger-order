@@ -58,7 +58,9 @@ export function DriverCard({ orderId, nom, subtitle, itemsLabel, total }: Driver
 
       {itemsLabel && (
         <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/70 pt-3">
-          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{itemsLabel}</span>
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {itemsLabel}
+          </span>
           <span className="shrink-0 text-sm font-black text-brand">{fmt(total)}</span>
         </div>
       )}

@@ -114,9 +114,12 @@ serve(async (req: Request) => {
     // Supporte deux formes de payload :
     //  - Database Webhook Supabase : { type, table, record, old_record }
     //  - Appel direct : { order_id, status }
-    const record = (body?.record ?? null) as
-      | { id?: string; status?: OrderStatus; user_id?: string; refusal_reason?: string | null }
-      | null;
+    const record = (body?.record ?? null) as {
+      id?: string;
+      status?: OrderStatus;
+      user_id?: string;
+      refusal_reason?: string | null;
+    } | null;
     const oldRecord = (body?.old_record ?? null) as { status?: OrderStatus } | null;
 
     const orderId = (record?.id ?? body?.order_id) as string | undefined;
@@ -170,9 +173,12 @@ serve(async (req: Request) => {
       .eq("user_id", userId)
       .eq("role", "client");
     if (subsError) {
-      return new Response(JSON.stringify({ error: "subs_lookup_failed", detail: subsError.message }), {
-        status: 500,
-      });
+      return new Response(
+        JSON.stringify({ error: "subs_lookup_failed", detail: subsError.message }),
+        {
+          status: 500,
+        },
+      );
     }
 
     const clientPayload = JSON.stringify({ title: "BOX", body: finalMessage });

@@ -95,7 +95,15 @@ type ExtendedWorkSheet = XLSXNS.WorkSheet & {
 
 interface OrderRow {
   id: string;
-  status: "pending" | "accepted" | "ready" | "delivering" | "delivered" | "refused" | "expired" | "cancelled";
+  status:
+    | "pending"
+    | "accepted"
+    | "ready"
+    | "delivering"
+    | "delivered"
+    | "refused"
+    | "expired"
+    | "cancelled";
   created_at: string;
   updated_at: string;
   accepted_at?: string | null;
@@ -131,10 +139,13 @@ interface DashStats {
   };
 }
 
-const NAME_TO_CATEGORY: Record<string, string> = MENU.reduce((acc, item) => {
-  acc[item.name] = item.category;
-  return acc;
-}, {} as Record<string, string>);
+const NAME_TO_CATEGORY: Record<string, string> = MENU.reduce(
+  (acc, item) => {
+    acc[item.name] = item.category;
+    return acc;
+  },
+  {} as Record<string, string>,
+);
 
 const CATEGORY_LABEL: Record<string, string> = {
   burgers: "Burgers",
@@ -325,7 +336,7 @@ function DashboardPage() {
   // donc pas forcément "accepted". On considère comme acceptée toute commande à
   // ce statut ou au-delà. Valeurs strictement conformes à l'enum order_status.
   const ACCEPTED_ORDER_STATUSES = new Set(["accepted", "ready", "delivering", "delivered"]);
-  const DINAR_FORMAT = "#,##0.000 \"DT\"";
+  const DINAR_FORMAT = '#,##0.000 "DT"';
   const formatDinar = (value: number) =>
     `${value.toLocaleString("fr-FR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} DT`;
 
@@ -338,7 +349,7 @@ function DashboardPage() {
     "Ventes par créneau": "FF059669",
     "Commandes refusées": "FFB91C1C",
     "Commandes expirées": "FF7C3AED",
-    "Avis": "FFF59E0B",
+    Avis: "FFF59E0B",
   };
 
   const applyCellStyles = (cell: StyledCell, style: Record<string, unknown>) => {
@@ -346,7 +357,12 @@ function DashboardPage() {
   };
 
   const setCurrencyColumns = (sheet: XLSXNS.WorkSheet, headers: string[]) => {
-    const currencyHeaders = new Set(["Montant total", "Montant", "Chiffre d'affaires total", "Panier moyen"]);
+    const currencyHeaders = new Set([
+      "Montant total",
+      "Montant",
+      "Chiffre d'affaires total",
+      "Panier moyen",
+    ]);
     const currencyCols = headers.reduce<number[]>((cols, header, index) => {
       if (currencyHeaders.has(header)) cols.push(index);
       return cols;
@@ -377,13 +393,22 @@ function DashboardPage() {
       : [];
 
   const styleSheet = (sheet: XLSXNS.WorkSheet) => {
-    (sheet as ExtendedWorkSheet)["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft" };
+    (sheet as ExtendedWorkSheet)["!freeze"] = {
+      xSplit: 0,
+      ySplit: 1,
+      topLeftCell: "A2",
+      activePane: "bottomLeft",
+    };
     const range = sheet["!ref"] ? XLSX.utils.decode_range(sheet["!ref"]) : null;
     if (!range) return;
 
     for (let row = range.s.r; row <= range.e.r; row += 1) {
       const isHeader = row === range.s.r;
-      const fill = isHeader ? EXCEL_HEADER_FILL : row % 2 === 0 ? EXCEL_EVEN_ROW_FILL : EXCEL_ODD_ROW_FILL;
+      const fill = isHeader
+        ? EXCEL_HEADER_FILL
+        : row % 2 === 0
+          ? EXCEL_EVEN_ROW_FILL
+          : EXCEL_ODD_ROW_FILL;
 
       for (let col = range.s.c; col <= range.e.c; col += 1) {
         const address = XLSX.utils.encode_cell({ r: row, c: col });
@@ -445,20 +470,25 @@ function DashboardPage() {
     const rows: unknown[][] = [
       [title, null, null, null],
       [subtitle, null, null, null],
+      ["COMMANDES TOTALES", "REFUSÉES", "EXPIRÉES", "ANNULÉES"],
       [
-        "COMMANDES TOTALES",
-        "REFUSÉES",
-        "EXPIRÉES",
-        "ANNULÉES",
+        overviewValues.totalOrders,
+        overviewValues.refused,
+        overviewValues.expired,
+        overviewValues.cancelled,
       ],
-      [overviewValues.totalOrders, overviewValues.refused, overviewValues.expired, overviewValues.cancelled],
       [
         "DÉLAI MOYEN D'ACCEPTATION (SECONDES)",
         "CHIFFRE D'AFFAIRES TOTAL",
         "PANIER MOYEN",
         "TAUX D'ACCEPTATION",
       ],
-      [overviewValues.avgAccept, overviewValues.totalRevenue, overviewValues.panierMoyen, overviewValues.acceptanceRate],
+      [
+        overviewValues.avgAccept,
+        overviewValues.totalRevenue,
+        overviewValues.panierMoyen,
+        overviewValues.acceptanceRate,
+      ],
       [null, null, null, null],
       ["DÉTAILS COMMANDES", null, null, null],
       ["Libellé", "Valeur", null, null],
@@ -530,8 +560,12 @@ function DashboardPage() {
     });
 
     for (let col = 1; col < 4; col += 1) {
-      styleCell(XLSX.utils.encode_cell({ r: 0, c: col }), { fill: { fgColor: { rgb: "FF1F2937" } } });
-      styleCell(XLSX.utils.encode_cell({ r: 1, c: col }), { fill: { fgColor: { rgb: "FFFFFFFF" } } });
+      styleCell(XLSX.utils.encode_cell({ r: 0, c: col }), {
+        fill: { fgColor: { rgb: "FF1F2937" } },
+      });
+      styleCell(XLSX.utils.encode_cell({ r: 1, c: col }), {
+        fill: { fgColor: { rgb: "FFFFFFFF" } },
+      });
     }
 
     styleCell("A7", {
@@ -761,7 +795,6 @@ function DashboardPage() {
     return sheet;
   };
 
-
   const exportExcel = async () => {
     if (!startDate || !endDate) return;
     setExporting(true);
@@ -799,41 +832,58 @@ function DashboardPage() {
 
       const refusedOrders = periodOrders.filter((order) => order.status === "refused");
       const expiredOrders = periodOrders.filter((order) => order.status === "expired");
-      const acceptedOrders = periodOrders.filter((order) => ACCEPTED_ORDER_STATUSES.has(order.status));
+      const acceptedOrders = periodOrders.filter((order) =>
+        ACCEPTED_ORDER_STATUSES.has(order.status),
+      );
       const salesOrders = periodOrders.filter((order) => ACCEPTED_ORDER_STATUSES.has(order.status));
 
       const totalRevenue = salesOrders.reduce((sum, order) => sum + order.total, 0);
       const panierMoyen = acceptedOrders.length ? totalRevenue / acceptedOrders.length : 0;
-      const acceptanceDenominator = acceptedOrders.length + refusedOrders.length + expiredOrders.length;
-      const acceptanceRate = acceptanceDenominator ? acceptedOrders.length / acceptanceDenominator : 0;
+      const acceptanceDenominator =
+        acceptedOrders.length + refusedOrders.length + expiredOrders.length;
+      const acceptanceRate = acceptanceDenominator
+        ? acceptedOrders.length / acceptanceDenominator
+        : 0;
 
       // Temps d'acceptation : basé sur l'événement accepted_at (created_at ->
       // accepted_at), indépendamment du statut courant. Jeu de données distinct
       // de `acceptedOrders` (qui sert au CA/panier) pour ne pas altérer les ventes.
       const acceptedAtOrders = periodOrders.filter((order) => order.accepted_at != null);
       const acceptDurations = acceptedAtOrders
-        .map((order) => (new Date(order.accepted_at as string).getTime() - new Date(order.created_at).getTime()) / 1000)
+        .map(
+          (order) =>
+            (new Date(order.accepted_at as string).getTime() -
+              new Date(order.created_at).getTime()) /
+            1000,
+        )
         .filter((duration) => duration >= 0 && duration < 60 * 60);
       const acceptCount = acceptDurations.length;
       const minAccept = acceptCount ? Math.min(...acceptDurations) : 0;
       const maxAccept = acceptCount ? Math.max(...acceptDurations) : 0;
-      const avgAccept = acceptCount ? acceptDurations.reduce((sum, value) => sum + value, 0) / acceptCount : 0;
+      const avgAccept = acceptCount
+        ? acceptDurations.reduce((sum, value) => sum + value, 0) / acceptCount
+        : 0;
 
-      const dailyCounts = periodOrders.reduce((acc, order) => {
-        const day = format(new Date(order.created_at), "yyyy-MM-dd");
-        acc[day] = (acc[day] ?? 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const dailyCounts = periodOrders.reduce(
+        (acc, order) => {
+          const day = format(new Date(order.created_at), "yyyy-MM-dd");
+          acc[day] = (acc[day] ?? 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
       const bestDay = Object.keys(dailyCounts).reduce((best, current) => {
         if (!best) return current;
         return dailyCounts[current] > dailyCounts[best] ? current : best;
       }, "");
 
       const topDishes = Array.from(
-        periodItems.reduce((acc, item) => {
-          acc.set(item.name, (acc.get(item.name) ?? 0) + item.qty);
-          return acc;
-        }, new Map<string, number>()).entries(),
+        periodItems
+          .reduce((acc, item) => {
+            acc.set(item.name, (acc.get(item.name) ?? 0) + item.qty);
+            return acc;
+          }, new Map<string, number>())
+          .entries(),
       ).sort((a, b) => b[1] - a[1]);
 
       const categoryMap = new Map<string, number>();
@@ -851,7 +901,11 @@ function DashboardPage() {
 
       const categoriesRows =
         categoryRows.length > 0
-          ? categoryRows.map(([category, qty]) => [CATEGORY_LABEL[category] ?? category, qty, categoryTotal ? qty / categoryTotal : 0])
+          ? categoryRows.map(([category, qty]) => [
+              CATEGORY_LABEL[category] ?? category,
+              qty,
+              categoryTotal ? qty / categoryTotal : 0,
+            ])
           : [["Aucune donnée sur cette période", "", ""]];
 
       const acceptanceRows = [
@@ -862,9 +916,24 @@ function DashboardPage() {
       ];
 
       const serviceRows = [
-        ["Matin", periodOrders.filter((order) => serviceFromHour(new Date(order.created_at).getHours()) === "Matin").length],
-        ["Midi", periodOrders.filter((order) => serviceFromHour(new Date(order.created_at).getHours()) === "Midi").length],
-        ["Soir", periodOrders.filter((order) => serviceFromHour(new Date(order.created_at).getHours()) === "Soir").length],
+        [
+          "Matin",
+          periodOrders.filter(
+            (order) => serviceFromHour(new Date(order.created_at).getHours()) === "Matin",
+          ).length,
+        ],
+        [
+          "Midi",
+          periodOrders.filter(
+            (order) => serviceFromHour(new Date(order.created_at).getHours()) === "Midi",
+          ).length,
+        ],
+        [
+          "Soir",
+          periodOrders.filter(
+            (order) => serviceFromHour(new Date(order.created_at).getHours()) === "Soir",
+          ).length,
+        ],
       ];
 
       const refusedRowsFormatted =
@@ -892,7 +961,10 @@ function DashboardPage() {
               const orderItems = orderItemsMap.get(order.id) ?? [];
               const itemsText = orderItems.map((item) => `${item.qty}x ${item.name}`).join(", ");
               const acceptSeconds = order.accepted_at
-                ? Math.round((new Date(order.accepted_at).getTime() - new Date(order.created_at).getTime()) / 1000)
+                ? Math.round(
+                    (new Date(order.accepted_at).getTime() - new Date(order.created_at).getTime()) /
+                      1000,
+                  )
                 : "";
               return [
                 order.id,
@@ -912,11 +984,17 @@ function DashboardPage() {
 
       const biggestOrder =
         periodOrders.length > 0
-          ? periodOrders.reduce((max, order) => (order.total > max.total ? order : max), periodOrders[0])
+          ? periodOrders.reduce(
+              (max, order) => (order.total > max.total ? order : max),
+              periodOrders[0],
+            )
           : null;
       const smallestOrder =
         periodOrders.length > 0
-          ? periodOrders.reduce((min, order) => (order.total < min.total ? order : min), periodOrders[0])
+          ? periodOrders.reduce(
+              (min, order) => (order.total < min.total ? order : min),
+              periodOrders[0],
+            )
           : null;
 
       const overviewRows = [
@@ -961,7 +1039,17 @@ function DashboardPage() {
       const sheets = [
         {
           name: "Historique des commandes",
-          headers: ["ID commande", "Date", "Heure", "Items", "Montant total", "Statut", "Temps d'acceptation (s)", "Adresse de livraison", "Ville"],
+          headers: [
+            "ID commande",
+            "Date",
+            "Heure",
+            "Items",
+            "Montant total",
+            "Statut",
+            "Temps d'acceptation (s)",
+            "Adresse de livraison",
+            "Ville",
+          ],
           rows: historyRows,
         },
         { name: "Top plats vendus", headers: ["Plat", "Quantité vendue"], rows: topPlatsRows },
@@ -972,8 +1060,16 @@ function DashboardPage() {
         },
         { name: "Temps d'acceptation", headers: ["Statistique", "Valeur"], rows: acceptanceRows },
         { name: "Ventes par créneau", headers: ["Créneau", "Commandes"], rows: serviceRows },
-        { name: "Commandes refusées", headers: ["ID commande", "Date", "Motif"], rows: refusedRowsFormatted },
-        { name: "Commandes expirées", headers: ["ID commande", "Date", "Heure", "Montant"], rows: expiredRowsFormatted },
+        {
+          name: "Commandes refusées",
+          headers: ["ID commande", "Date", "Motif"],
+          rows: refusedRowsFormatted,
+        },
+        {
+          name: "Commandes expirées",
+          headers: ["ID commande", "Date", "Heure", "Montant"],
+          rows: expiredRowsFormatted,
+        },
       ];
 
       for (const sheetDef of sheets) {
@@ -996,13 +1092,14 @@ function DashboardPage() {
         .neq("dismissed", true)
         .order("created_at", { ascending: false });
       if (ratingsError) throw ratingsError;
-      const ratings = (ratingsData as Array<{
-        order_id: string;
-        rating: number;
-        comment: string | null;
-        created_at: string;
-        dismissed: boolean | null;
-      }>) ?? [];
+      const ratings =
+        (ratingsData as Array<{
+          order_id: string;
+          rating: number;
+          comment: string | null;
+          created_at: string;
+          dismissed: boolean | null;
+        }>) ?? [];
 
       const validRatings = ratings.filter((r) => r.rating != null && r.dismissed !== true);
       const totalCount = validRatings.length;
@@ -1077,8 +1174,6 @@ function DashboardPage() {
         "Avis",
       );
 
-
-
       // `TabColor` par feuille : propriété reconnue par xlsx-js-style mais absente
       // du type WBProps amont, d'où l'élargissement ciblé plutôt qu'un `any`.
       workbook.Workbook = {
@@ -1092,7 +1187,9 @@ function DashboardPage() {
       XLSX.writeFile(workbook, filename, { bookType: "xlsx", cellStyles: true });
       toast.success("Export Excel généré avec succès.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erreur lors de la génération de l'export Excel.");
+      toast.error(
+        error instanceof Error ? error.message : "Erreur lors de la génération de l'export Excel.",
+      );
     } finally {
       setExporting(false);
     }
@@ -1103,7 +1200,10 @@ function DashboardPage() {
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <Link to="/admin" className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+            <Link
+              to="/admin"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <BoxLogo size={30} showWordmark={false} />
@@ -1215,7 +1315,10 @@ function DashboardPage() {
                         <span className="font-black text-brand">{qty}</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                        <div className="h-full bg-[#B22222]" style={{ width: `${(qty / maxDish) * 100}%` }} />
+                        <div
+                          className="h-full bg-[#B22222]"
+                          style={{ width: `${(qty / maxDish) * 100}%` }}
+                        />
                       </div>
                     </li>
                   ))}
@@ -1229,7 +1332,9 @@ function DashboardPage() {
               ) : (
                 <ul className="space-y-2">
                   {stats.topCategories.map(([cat, qty]) => {
-                    const pct = stats.totalCategoryItems ? Math.round((qty / stats.totalCategoryItems) * 100) : 0;
+                    const pct = stats.totalCategoryItems
+                      ? Math.round((qty / stats.totalCategoryItems) * 100)
+                      : 0;
                     return (
                       <li key={cat}>
                         <div className="mb-1 flex justify-between text-sm">
@@ -1275,8 +1380,10 @@ function DashboardPage() {
                       <span className="font-black">{stats.serviceMap[service]}</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                      <div className="h-full bg-[#B22222]" style={{ width: `${(stats.serviceMap[service] / maxService) * 100}%` }} />
-
+                      <div
+                        className="h-full bg-[#B22222]"
+                        style={{ width: `${(stats.serviceMap[service] / maxService) * 100}%` }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -1326,7 +1433,6 @@ function DashboardPage() {
                       formatRating={fmtRating1}
                     />
                   </Suspense>
-
                 </div>
               )}
             </Card>
@@ -1339,15 +1445,7 @@ function DashboardPage() {
   );
 }
 
-function Card({
-  icon,
-  title,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  children: ReactNode;
-}) {
+function Card({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
     <section className="rounded-2xl border bg-card p-4 shadow-sm">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-wide">
@@ -1371,10 +1469,10 @@ function KpiCard({
     tone === "danger"
       ? "text-destructive"
       : tone === "muted"
-      ? "text-muted-foreground"
-      : tone === "brand"
-      ? "text-brand"
-      : "text-foreground";
+        ? "text-muted-foreground"
+        : tone === "brand"
+          ? "text-brand"
+          : "text-foreground";
   return (
     <div className="rounded-2xl border bg-card p-3 shadow-sm">
       <div className="text-[10px] font-bold uppercase text-muted-foreground">{label}</div>

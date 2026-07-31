@@ -83,6 +83,12 @@ interface OrderRow {
 }
 
 // Statuts non-« pending » = onglet Historique (côté admin).
+// Plafond de lignes rapatriées par l'onglet « Historique ». Borne le transfert
+// et le temps de requête indépendamment de la taille de la table `orders`.
+// L'admin dispose de filtres (statut, montant, client, adresse, ville) pour
+// cibler une période plus étroite lorsque ce plafond est atteint.
+const HISTORY_LIMIT = 200;
+
 const ADMIN_HISTORY_STATUSES: AdminOrderStatus[] = [
   "accepted",
   "ready",
@@ -151,6 +157,9 @@ function AdminPage() {
   const [addressFilter, setAddressFilter] = useState<string>("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [historyRows, setHistoryRows] = useState<OrderRow[]>([]);
+  // Vrai quand la requête d'historique a atteint HISTORY_LIMIT : des commandes
+  // plus anciennes existent et ne sont pas affichées (message dédié en UI).
+  const [historyTruncated, setHistoryTruncated] = useState(false);
   const [filterOptions, setFilterOptions] = useState<AdminFilterOptions>({
     clients: [],
     cities: [],
@@ -260,8 +269,21 @@ function AdminPage() {
       if (clientFilter !== "all") query = query.eq("user_id", clientFilter);
       if (addressFilter !== "all") query = query.eq("address", addressFilter);
       if (cityFilter !== "all") query = query.eq("city", cityFilter);
-      const { data, error } = await query;
-      if (!cancelled && !error) setHistoryRows((data as OrderRow[]) ?? []);
+      // Requête BORNÉE. Sans limite, cet effet rapatriait toutes les commandes
+      // correspondantes — et il se relance à chaque événement Realtime sur
+      // `orders`. À quelques milliers de commandes, cela signifie transférer la
+      // table entière à répétition, jusqu'à dépasser le `statement_timeout` de
+      // 8 s du rôle `authenticated` (l'historique cesserait alors de s'afficher).
+      //
+      // On demande UNE ligne de plus que la limite d'affichage : si elle revient,
+      // c'est qu'il existe des commandes plus anciennes non affichées, et on le
+      // signale explicitement à l'admin au lieu de tronquer en silence.
+      const { data, error } = await query.limit(HISTORY_LIMIT + 1);
+      if (!cancelled && !error) {
+        const rows = (data as OrderRow[]) ?? [];
+        setHistoryTruncated(rows.length > HISTORY_LIMIT);
+        setHistoryRows(rows.slice(0, HISTORY_LIMIT));
+      }
     })();
     return () => {
       cancelled = true;
@@ -676,6 +698,17 @@ function AdminPage() {
                   <RotateCcw className="h-4 w-4" /> Réinitialiser
                 </button>
               )}
+            </div>
+          )}
+          {/* Troncature explicite : jamais de perte de données silencieuse. */}
+          {tab === "history" && historyTruncated && (
+            <div
+              role="status"
+              className="mb-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200"
+            >
+              Seules les <strong>{HISTORY_LIMIT}</strong> commandes les plus récentes sont
+              affichées. Affinez les filtres (statut, montant, client, adresse, ville) pour
+              consulter les plus anciennes.
             </div>
           )}
           {list.length === 0 && (

@@ -59,6 +59,18 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
 });
 
+// `xlsx-js-style` ajoute au CellObject de SheetJS une propriété de style `s`
+// (et un format numérique `z`) sans les déclarer dans ses typings. On les
+// modélise ici plutôt que de neutraliser le typage avec `any` sur chaque cellule.
+type StyledCell = XLSX.CellObject & { s?: Record<string, unknown>; z?: string };
+
+// Propriétés de feuille non standard utilisées par l'export (volet figé,
+// couleur d'onglet), également absentes des typings amont.
+type ExtendedWorkSheet = XLSX.WorkSheet & {
+  "!freeze"?: { xSplit: number; ySplit: number; topLeftCell: string; activePane: string };
+  "!tabColor"?: { rgb: string };
+};
+
 interface OrderRow {
   id: string;
   status: "pending" | "accepted" | "ready" | "delivering" | "delivered" | "refused" | "expired" | "cancelled";
@@ -154,8 +166,11 @@ function DashboardPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      let p_rating_start: string | null = null;
-      let p_rating_end: string | null = null;
+      // Les deux paramètres sont `DEFAULT NULL` côté SQL : les omettre
+      // (`undefined`) est donc strictement équivalent à passer NULL, et c'est ce
+      // que les types générés exigent. Période invalide ⇒ tous les avis.
+      let p_rating_start: string | undefined;
+      let p_rating_end: string | undefined;
       if (periodValid && startDate && endDate) {
         const from = new Date(startDate);
         from.setHours(0, 0, 0, 0);
@@ -164,21 +179,18 @@ function DashboardPage() {
         p_rating_start = from.toISOString();
         p_rating_end = to.toISOString();
       }
-      // RPC hors types générés → cast typé (évite `any`, cf. commande.$id.tsx).
-      const { data, error } = await (
-        supabase as unknown as {
-          rpc: (
-            fn: string,
-            args: object,
-          ) => Promise<{ data: unknown; error: { message: string } | null }>;
-        }
-      ).rpc("admin_dashboard_stats", { p_rating_start, p_rating_end });
+      const { data, error } = await supabase.rpc("admin_dashboard_stats", {
+        p_rating_start,
+        p_rating_end,
+      });
       if (error) {
         toast.error(error.message);
         setLoading(false);
         return;
       }
-      setDash(data as DashStats);
+      // La RPC est typée `Returns: Json` : le passage par `unknown` est requis
+      // pour la réinterpréter dans la forme concrète documentée par DashStats.
+      setDash(data as unknown as DashStats);
       setLoading(false);
     })();
   }, [periodValid, startDate, endDate]);
@@ -307,7 +319,7 @@ function DashboardPage() {
     "Avis": "FFF59E0B",
   };
 
-  const applyCellStyles = (cell: any, style: Record<string, unknown>) => {
+  const applyCellStyles = (cell: StyledCell, style: Record<string, unknown>) => {
     cell.s = { ...(cell.s ?? {}), ...style };
   };
 
@@ -323,7 +335,7 @@ function DashboardPage() {
     for (const col of currencyCols) {
       for (let row = range.s.r + 1; row <= range.e.r; row += 1) {
         const address = XLSX.utils.encode_cell({ r: row, c: col });
-        const cell = sheet[address] as any;
+        const cell = sheet[address] as StyledCell | undefined;
         if (!cell || cell.t !== "n") continue;
         cell.z = DINAR_FORMAT;
       }
@@ -343,7 +355,7 @@ function DashboardPage() {
       : [];
 
   const styleSheet = (sheet: XLSX.WorkSheet) => {
-    sheet["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft" } as any;
+    (sheet as ExtendedWorkSheet)["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft" };
     const range = sheet["!ref"] ? XLSX.utils.decode_range(sheet["!ref"]) : null;
     if (!range) return;
 
@@ -383,7 +395,7 @@ function DashboardPage() {
     styleSheet(sheet);
     setCurrencyColumns(sheet, headers);
     if (tabColor) {
-      (sheet as any)["!tabColor"] = { rgb: tabColor };
+      (sheet as ExtendedWorkSheet)["!tabColor"] = { rgb: tabColor };
     }
     return sheet;
   };
@@ -456,7 +468,7 @@ function DashboardPage() {
     ];
 
     const styleCell = (address: string, style: Record<string, unknown>) => {
-      const cell = sheet[address] as any;
+      const cell = sheet[address] as StyledCell | undefined;
       if (!cell) return;
       cell.s = { ...(cell.s ?? {}), ...style };
     };
@@ -543,21 +555,21 @@ function DashboardPage() {
       styleCell(XLSX.utils.encode_cell({ r: row, c: 3 }), { border: EXCEL_BORDER });
     }
 
-    const acceptanceCell = sheet[XLSX.utils.encode_cell({ r: 5, c: 3 })] as any;
+    const acceptanceCell = sheet[XLSX.utils.encode_cell({ r: 5, c: 3 })] as StyledCell | undefined;
     if (acceptanceCell) {
       acceptanceCell.t = "n";
       acceptanceCell.z = "0.00%";
       acceptanceCell.v = overviewValues.acceptanceRate;
     }
 
-    const revenueCell = sheet[XLSX.utils.encode_cell({ r: 5, c: 1 })] as any;
+    const revenueCell = sheet[XLSX.utils.encode_cell({ r: 5, c: 1 })] as StyledCell | undefined;
     if (revenueCell) {
       revenueCell.t = "n";
       revenueCell.z = DINAR_FORMAT;
       revenueCell.v = overviewValues.totalRevenue;
     }
 
-    const panierCell = sheet[XLSX.utils.encode_cell({ r: 5, c: 2 })] as any;
+    const panierCell = sheet[XLSX.utils.encode_cell({ r: 5, c: 2 })] as StyledCell | undefined;
     if (panierCell) {
       panierCell.t = "n";
       panierCell.z = DINAR_FORMAT;
@@ -657,7 +669,7 @@ function DashboardPage() {
     ];
 
     const styleCell = (address: string, style: Record<string, unknown>) => {
-      const cell = sheet[address] as any;
+      const cell = sheet[address] as StyledCell | undefined;
       if (!cell) return;
       cell.s = { ...(cell.s ?? {}), ...style };
     };
@@ -708,7 +720,7 @@ function DashboardPage() {
       if (isBlank) continue;
       const fill = r % 2 === 0 ? EXCEL_EVEN_ROW_FILL : EXCEL_ODD_ROW_FILL;
       for (let col = 0; col < 3; col += 1) {
-        const cell = sheet[XLSX.utils.encode_cell({ r, c: col })] as any;
+        const cell = sheet[XLSX.utils.encode_cell({ r, c: col })] as StyledCell | undefined;
         if (!cell) continue;
         cell.s = {
           ...(cell.s ?? {}),
@@ -949,7 +961,7 @@ function DashboardPage() {
       // ============ Feuille "Avis" ============
       // Table: order_ratings (order_id, rating, comment, created_at, dismissed)
       // Exclut systématiquement dismissed = true ou rating IS NULL.
-      const { data: ratingsData, error: ratingsError } = await (supabase as any)
+      const { data: ratingsData, error: ratingsError } = await supabase
         .from("order_ratings")
         .select("order_id, rating, comment, created_at, dismissed")
         .gte("created_at", from.toISOString())
@@ -1041,12 +1053,14 @@ function DashboardPage() {
 
 
 
+      // `TabColor` par feuille : propriété reconnue par xlsx-js-style mais absente
+      // du type WBProps amont, d'où l'élargissement ciblé plutôt qu'un `any`.
       workbook.Workbook = {
         Sheets: workbook.SheetNames.map((name) => ({
           name,
           TabColor: { rgb: SHEET_TAB_COLORS[name] ?? "FF9CA3AF" },
         })),
-      } as any;
+      } as XLSX.WBProps;
 
       const filename = `box_rapport_${format(startDate, "yyyy-MM-dd")}_${format(endDate, "yyyy-MM-dd")}.xlsx`;
       XLSX.writeFile(workbook, filename, { bookType: "xlsx", cellStyles: true });

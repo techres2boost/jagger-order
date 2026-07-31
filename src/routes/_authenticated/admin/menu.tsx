@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesInsert } from "@/integrations/supabase/types";
 import { BoxLogo } from "@/components/BoxLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -348,7 +349,7 @@ function AdminMenuPage() {
       parsedSizes.push({ id: first?.id, label: "Standard", price: priceValue });
     }
 
-    const values: any = {
+    const values: TablesInsert<"menu_items"> = {
       id: itemForm.id,
       category_id: itemForm.category_id,
       name: itemForm.name.trim(),

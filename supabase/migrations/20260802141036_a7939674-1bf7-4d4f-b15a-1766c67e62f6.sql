@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Public can view dish images" ON storage.objects;

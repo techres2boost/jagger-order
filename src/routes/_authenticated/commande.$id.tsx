@@ -1,15 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-context";
 import { BoxLogo } from "@/components/BoxLogo";
-import { OrderProgressRing, STEPS, type ProgressStatus } from "@/components/OrderProgressRing";
-import { OrderStepsRow } from "@/components/OrderStepsRow";
 import { DriverCard } from "@/components/DriverCard";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { useOrderCountdown } from "@/hooks/use-order-countdown";
 import { fmt } from "@/lib/format";
-import { XCircle, Ban, MapPin } from "lucide-react";
+import { XCircle, Ban, MapPin, Clock, CheckCircle2, Truck, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/commande/$id")({

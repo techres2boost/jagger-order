@@ -373,8 +373,10 @@ function OrderStatusPage() {
     );
   }
 
-  // ─── Timeline de progression (5 étapes, livraison uniquement) ───────────
-  const stepIndex = STEPS.findIndex((s) => s.key === order.status);
+  // ─── Timeline de progression (4 étapes visuelles, livraison uniquement) ───
+  // "pret" est fusionné avec "en_preparation" : le statut réel reste inchangé.
+  const visualStepKey = visualStatus(order.status);
+  const stepIndex = CLIENT_STEPS.findIndex((s) => s.key === visualStepKey);
   const remaining = Math.max(0, Math.floor((new Date(order.expires_at).getTime() - now) / 1000));
   const mm = String(Math.floor(remaining / 60)).padStart(1, "0");
   const ss = String(remaining % 60).padStart(2, "0");
@@ -388,13 +390,11 @@ function OrderStatusPage() {
           <p className="mb-4 text-sm font-semibold text-muted-foreground">{itemsLabel}</p>
         )}
 
-        <OrderProgressRing stepIndex={stepIndex} />
+        <ClientProgressRing stepIndex={stepIndex} />
 
-        <OrderStepsRow stepIndex={stepIndex} />
+        <ClientStepsRow stepIndex={stepIndex} />
 
-        <p className="mt-4 text-sm text-muted-foreground">
-          {STATUS_TEXT[order.status as ProgressStatus]}
-        </p>
+        <p className="mt-4 text-sm text-muted-foreground">{STATUS_TEXT[order.status]}</p>
 
         {order.status !== "delivered" && minutesRemaining != null && arrivalTime && (
           <div className="mt-4 flex items-center justify-center gap-4">

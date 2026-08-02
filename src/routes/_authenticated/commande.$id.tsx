@@ -49,13 +49,148 @@ interface OrderItemRow {
   menu_item_id: string | null;
 }
 
-const STATUS_TEXT: Record<ProgressStatus, string> = {
+const STATUS_TEXT: Record<OrderStatus, string> = {
   pending: "Votre commande a été reçue et est en attente de confirmation.",
   accepted: "Votre commande est en cours de préparation.",
-  ready: "Votre commande est prête et va être prise en charge pour la livraison.",
+  ready: "Votre commande est en cours de préparation.",
   delivering: "Votre commande est en route !",
   delivered: "Votre commande a été livrée. Bon appétit !",
+  refused: "Votre commande a été refusée.",
+  expired: "Votre commande n'a pas été confirmée à temps.",
+  cancelled: "Votre commande a été annulée.",
 };
+
+// Stepper client à 4 étapes : "pret" est fusionné visuellement avec
+// "en_preparation" (statut réel "ready" affiché comme "accepted").
+const CLIENT_STEPS = [
+  { key: "pending", label: "Reçue", Icon: Clock },
+  { key: "accepted", label: "En préparation", Icon: CheckCircle2 },
+  { key: "delivering", label: "En livraison", Icon: Truck },
+  { key: "delivered", label: "Livrée", Icon: PartyPopper },
+] as const;
+
+type ClientProgressStatus = (typeof CLIENT_STEPS)[number]["key"];
+
+function visualStatus(status: OrderStatus): ClientProgressStatus {
+  if (status === "ready") return "accepted";
+  if (status === "pending" || status === "accepted" || status === "delivering" || status === "delivered") {
+    return status;
+  }
+  return "pending";
+}
+
+function ClientProgressRing({ stepIndex }: { stepIndex: number }) {
+  const size = 220;
+  const r = 90;
+  const strokeWidth = 14;
+  const center = size / 2;
+  const circumference = 2 * Math.PI * r;
+  const gapDeg = 6;
+  const segDeg = 360 / CLIENT_STEPS.length - gapDeg;
+  const segLen = (segDeg / 360) * circumference;
+  const dashArray = `${segLen} ${circumference}`;
+  const current = CLIENT_STEPS[Math.max(0, stepIndex)];
+
+  const gradientId = "box-client-progress-ring";
+  const stepAngle = 360 / CLIENT_STEPS.length;
+  const segmentTransform = (i: number) =>
+    `rotate(${i * stepAngle - 90 + gapDeg / 2} ${center} ${center})`;
+
+  return (
+    <div className="relative mx-auto" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" style={{ stopColor: "var(--primary)" }} />
+            <stop offset="1" style={{ stopColor: "var(--accent-warm)" }} />
+          </linearGradient>
+        </defs>
+        {CLIENT_STEPS.map((step, i) => {
+          const filled = i < stepIndex;
+          return (
+            <circle
+              key={step.key}
+              cx={center}
+              cy={center}
+              r={r}
+              fill="none"
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              strokeDasharray={dashArray}
+              transform={segmentTransform(i)}
+              style={{ stroke: filled ? `url(#${gradientId})` : "var(--border)" }}
+            />
+          );
+        })}
+        {stepIndex >= 0 && (
+          <circle
+            key={stepIndex}
+            cx={center}
+            cy={center}
+            r={r}
+            fill="none"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={dashArray}
+            transform={segmentTransform(stepIndex)}
+            className="ring-active"
+            style={{ stroke: `url(#${gradientId})`, "--seg-len": segLen } as CSSProperties}
+          />
+        )}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span key={current.key} className="icon-swap flex flex-col items-center gap-2">
+          <current.Icon className="h-9 w-9" style={{ color: "var(--primary)" }} />
+          <span className="text-sm font-bold">{current.label}</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ClientStepsRow({ stepIndex }: { stepIndex: number }) {
+  const last = CLIENT_STEPS.length - 1;
+  const filledWidth = last > 0 ? (Math.max(0, stepIndex) / last) * 75 : 0;
+
+  return (
+    <div className="relative mt-6">
+      <div
+        className="absolute left-[12.5%] right-[12.5%] top-[18px] h-0.5 -translate-y-1/2"
+        style={{ background: "var(--border)" }}
+      />
+      <div
+        className="absolute left-[12.5%] top-[18px] h-0.5 -translate-y-1/2 transition-[width] duration-500 ease-out"
+        style={{ background: "var(--primary)", width: `${filledWidth}%` }}
+      />
+      <div className="relative flex justify-between">
+        {CLIENT_STEPS.map((step, i) => {
+          const reached = i <= stepIndex;
+          const active = i === stepIndex;
+          return (
+            <div key={step.key} className="flex flex-1 flex-col items-center gap-1.5 text-center">
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 ${active ? "icon-swap" : ""}`}
+                style={{
+                  borderColor: reached ? "var(--primary)" : "var(--border)",
+                  background: reached ? "var(--primary)" : "var(--card)",
+                  color: reached ? "var(--primary-foreground)" : "var(--muted-foreground)",
+                }}
+              >
+                <step.Icon className="h-4 w-4" />
+              </div>
+              <span
+                className="text-[10px] font-semibold leading-tight"
+                style={{ color: reached ? "var(--foreground)" : "var(--muted-foreground)" }}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 const REFUSAL_LABEL: Record<"unavailable" | "busy", string> = {
   unavailable: "Plat non disponible",

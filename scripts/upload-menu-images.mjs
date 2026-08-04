@@ -139,9 +139,11 @@ for (const file of files) {
   }
   const bytes = readFileSync(file.path);
   const objectPath = `${match.id}-${Date.now()}.${file.ext}`;
-  const up = await supabase.storage
-    .from(BUCKET)
-    .upload(objectPath, bytes, { contentType: CONTENT_TYPE[file.ext], upsert: true });
+  const up = await supabase.storage.from(BUCKET).upload(objectPath, bytes, {
+    contentType: CONTENT_TYPE[file.ext],
+    cacheControl: "31536000",
+    upsert: true,
+  });
   if (up.error) {
     console.error(`FAIL upload ${file.path}: ${up.error.message}`);
     continue;

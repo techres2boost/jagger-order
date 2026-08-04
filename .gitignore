@@ -35,3 +35,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# DB migration dump — contains secrets (internal_config) and customer PII; never commit
+database_backup.sql

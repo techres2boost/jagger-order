@@ -38,21 +38,20 @@ import vitrineCta from "@/assets/vitrine-cta.jpg";
 const PHONE_DISPLAY = "54 338 753";
 const PHONE_TEL = "+21654338753";
 
-// Best Sellers — 3 paires avant/après hébergées sur GitHub (raw).
-const GH_RAW = "https://raw.githubusercontent.com/techres2boost/box-bite-order/main/images";
+// Best Sellers — 3 paires avant/après servies depuis public/images/.
 const BEST_SELLERS_PAIRS = [
   {
     id: "big-cheese",
     name: "Big Cheese Burger",
-    before: `${GH_RAW}/BigCheeseBurger_old.png`,
-    after: `${GH_RAW}/BigCheeseBurger.png`,
+    before: "/images/BigCheeseBurger_old.png",
+    after: "/images/BigCheeseBurger.png",
   },
-  { id: "kabeb", name: "Kabeb", before: `${GH_RAW}/kebeb_old.png`, after: `${GH_RAW}/kabeb.png` },
+  { id: "kabeb", name: "Kabeb", before: "/images/kebeb_old.png", after: "/images/kabeb.png" },
   {
     id: "nuggets",
     name: "Nuggets",
-    before: `${GH_RAW}/nuggets_old.png`,
-    after: `${GH_RAW}/nuggets.png`,
+    before: "/images/nuggets_old.png",
+    after: "/images/nuggets.png",
   },
 ] as const;
 

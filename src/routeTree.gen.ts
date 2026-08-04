@@ -9,64 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as CompteRouteImport } from './routes/compte'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AppRouteImport } from './routes/app'
-import { Route as AccountDeletionRouteImport } from './routes/account-deletion'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedPanierRouteImport } from './routes/_authenticated/panier'
-import { Route as AuthenticatedLivreurRouteImport } from './routes/_authenticated/livreur'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_authenticated/complete-profile'
-import { Route as AuthenticatedCommandesRouteImport } from './routes/_authenticated/commandes'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AccountDeletionRouteImport } from './routes/account-deletion'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CompteRouteImport } from './routes/compte'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as AuthenticatedDriverOrdersRouteImport } from './routes/_authenticated/driver.orders'
-import { Route as AuthenticatedDriverConversationsRouteImport } from './routes/_authenticated/driver.conversations'
-import { Route as AuthenticatedCommandeIdRouteImport } from './routes/_authenticated/commande.$id'
-import { Route as AuthenticatedAdminOptionsRouteImport } from './routes/_authenticated/admin/options'
-import { Route as AuthenticatedAdminMenuRouteImport } from './routes/_authenticated/admin/menu'
-import { Route as AuthenticatedAdminLivreursRouteImport } from './routes/_authenticated/admin/livreurs'
+import { Route as AuthenticatedCommandesRouteImport } from './routes/_authenticated/commandes'
+import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_authenticated/complete-profile'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedLivreurRouteImport } from './routes/_authenticated/livreur'
+import { Route as AuthenticatedPanierRouteImport } from './routes/_authenticated/panier'
 import { Route as AuthenticatedAdminLivreurStatsRouteImport } from './routes/_authenticated/admin/livreur-stats'
+import { Route as AuthenticatedAdminLivreursRouteImport } from './routes/_authenticated/admin/livreurs'
+import { Route as AuthenticatedAdminMenuRouteImport } from './routes/_authenticated/admin/menu'
+import { Route as AuthenticatedAdminOptionsRouteImport } from './routes/_authenticated/admin/options'
+import { Route as AuthenticatedCommandeIdRouteImport } from './routes/_authenticated/commande.$id'
+import { Route as AuthenticatedDriverConversationsRouteImport } from './routes/_authenticated/driver.conversations'
+import { Route as AuthenticatedDriverOrdersRouteImport } from './routes/_authenticated/driver.orders'
 import { Route as AuthenticatedOrdersOrderIdTrackingRouteImport } from './routes/_authenticated/orders.$orderId.tracking'
 
-const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CompteRoute = CompteRouteImport.update({
-  id: '/compte',
-  path: '/compte',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRoute = AppRouteImport.update({
-  id: '/app',
-  path: '/app',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountDeletionRoute = AccountDeletionRouteImport.update({
@@ -74,28 +48,49 @@ const AccountDeletionRoute = AccountDeletionRouteImport.update({
   path: '/account-deletion',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedPanierRoute = AuthenticatedPanierRouteImport.update({
-  id: '/panier',
-  path: '/panier',
+const CompteRoute = CompteRouteImport.update({
+  id: '/compte',
+  path: '/compte',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedLivreurRoute = AuthenticatedLivreurRouteImport.update({
-  id: '/livreur',
-  path: '/livreur',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthenticatedCommandesRoute = AuthenticatedCommandesRouteImport.update({
+  id: '/commandes',
+  path: '/commandes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCompleteProfileRoute =
@@ -104,37 +99,31 @@ const AuthenticatedCompleteProfileRoute =
     path: '/complete-profile',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedCommandesRoute = AuthenticatedCommandesRouteImport.update({
-  id: '/commandes',
-  path: '/commandes',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const AuthenticatedLivreurRoute = AuthenticatedLivreurRouteImport.update({
+  id: '/livreur',
+  path: '/livreur',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDriverOrdersRoute =
-  AuthenticatedDriverOrdersRouteImport.update({
-    id: '/driver/orders',
-    path: '/driver/orders',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const AuthenticatedPanierRoute = AuthenticatedPanierRouteImport.update({
+  id: '/panier',
+  path: '/panier',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminLivreurStatsRoute =
+  AuthenticatedAdminLivreurStatsRouteImport.update({
+    id: '/livreur-stats',
+    path: '/livreur-stats',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const AuthenticatedDriverConversationsRoute =
-  AuthenticatedDriverConversationsRouteImport.update({
-    id: '/driver/conversations',
-    path: '/driver/conversations',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedCommandeIdRoute = AuthenticatedCommandeIdRouteImport.update({
-  id: '/commande/$id',
-  path: '/commande/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAdminOptionsRoute =
-  AuthenticatedAdminOptionsRouteImport.update({
-    id: '/options',
-    path: '/options',
+const AuthenticatedAdminLivreursRoute =
+  AuthenticatedAdminLivreursRouteImport.update({
+    id: '/livreurs',
+    path: '/livreurs',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminMenuRoute = AuthenticatedAdminMenuRouteImport.update({
@@ -142,17 +131,28 @@ const AuthenticatedAdminMenuRoute = AuthenticatedAdminMenuRouteImport.update({
   path: '/menu',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
-const AuthenticatedAdminLivreursRoute =
-  AuthenticatedAdminLivreursRouteImport.update({
-    id: '/livreurs',
-    path: '/livreurs',
+const AuthenticatedAdminOptionsRoute =
+  AuthenticatedAdminOptionsRouteImport.update({
+    id: '/options',
+    path: '/options',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const AuthenticatedAdminLivreurStatsRoute =
-  AuthenticatedAdminLivreurStatsRouteImport.update({
-    id: '/livreur-stats',
-    path: '/livreur-stats',
-    getParentRoute: () => AuthenticatedAdminRoute,
+const AuthenticatedCommandeIdRoute = AuthenticatedCommandeIdRouteImport.update({
+  id: '/commande/$id',
+  path: '/commande/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDriverConversationsRoute =
+  AuthenticatedDriverConversationsRouteImport.update({
+    id: '/driver/conversations',
+    path: '/driver/conversations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDriverOrdersRoute =
+  AuthenticatedDriverOrdersRouteImport.update({
+    id: '/driver/orders',
+    path: '/driver/orders',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOrdersOrderIdTrackingRoute =
   AuthenticatedOrdersOrderIdTrackingRouteImport.update({
@@ -332,60 +332,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/compte': {
-      id: '/compte'
-      path: '/compte'
-      fullPath: '/compte'
-      preLoaderRoute: typeof CompteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/account-deletion': {
-      id: '/account-deletion'
-      path: '/account-deletion'
-      fullPath: '/account-deletion'
-      preLoaderRoute: typeof AccountDeletionRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -395,39 +346,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/account-deletion': {
+      id: '/account-deletion'
+      path: '/account-deletion'
+      fullPath: '/account-deletion'
+      preLoaderRoute: typeof AccountDeletionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/panier': {
-      id: '/_authenticated/panier'
-      path: '/panier'
-      fullPath: '/panier'
-      preLoaderRoute: typeof AuthenticatedPanierRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/livreur': {
-      id: '/_authenticated/livreur'
-      path: '/livreur'
-      fullPath: '/livreur'
-      preLoaderRoute: typeof AuthenticatedLivreurRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/compte': {
+      id: '/compte'
+      path: '/compte'
+      fullPath: '/compte'
+      preLoaderRoute: typeof CompteRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/complete-profile': {
-      id: '/_authenticated/complete-profile'
-      path: '/complete-profile'
-      fullPath: '/complete-profile'
-      preLoaderRoute: typeof AuthenticatedCompleteProfileRouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/commandes': {
@@ -437,46 +416,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommandesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+    '/_authenticated/complete-profile': {
+      id: '/_authenticated/complete-profile'
+      path: '/complete-profile'
+      fullPath: '/complete-profile'
+      preLoaderRoute: typeof AuthenticatedCompleteProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/driver/orders': {
-      id: '/_authenticated/driver/orders'
-      path: '/driver/orders'
-      fullPath: '/driver/orders'
-      preLoaderRoute: typeof AuthenticatedDriverOrdersRouteImport
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/driver/conversations': {
-      id: '/_authenticated/driver/conversations'
-      path: '/driver/conversations'
-      fullPath: '/driver/conversations'
-      preLoaderRoute: typeof AuthenticatedDriverConversationsRouteImport
+    '/_authenticated/livreur': {
+      id: '/_authenticated/livreur'
+      path: '/livreur'
+      fullPath: '/livreur'
+      preLoaderRoute: typeof AuthenticatedLivreurRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/commande/$id': {
-      id: '/_authenticated/commande/$id'
-      path: '/commande/$id'
-      fullPath: '/commande/$id'
-      preLoaderRoute: typeof AuthenticatedCommandeIdRouteImport
+    '/_authenticated/panier': {
+      id: '/_authenticated/panier'
+      path: '/panier'
+      fullPath: '/panier'
+      preLoaderRoute: typeof AuthenticatedPanierRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/options': {
-      id: '/_authenticated/admin/options'
-      path: '/options'
-      fullPath: '/admin/options'
-      preLoaderRoute: typeof AuthenticatedAdminOptionsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/menu': {
-      id: '/_authenticated/admin/menu'
-      path: '/menu'
-      fullPath: '/admin/menu'
-      preLoaderRoute: typeof AuthenticatedAdminMenuRouteImport
+    '/_authenticated/admin/livreur-stats': {
+      id: '/_authenticated/admin/livreur-stats'
+      path: '/livreur-stats'
+      fullPath: '/admin/livreur-stats'
+      preLoaderRoute: typeof AuthenticatedAdminLivreurStatsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/livreurs': {
@@ -486,12 +458,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLivreursRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/_authenticated/admin/livreur-stats': {
-      id: '/_authenticated/admin/livreur-stats'
-      path: '/livreur-stats'
-      fullPath: '/admin/livreur-stats'
-      preLoaderRoute: typeof AuthenticatedAdminLivreurStatsRouteImport
+    '/_authenticated/admin/menu': {
+      id: '/_authenticated/admin/menu'
+      path: '/menu'
+      fullPath: '/admin/menu'
+      preLoaderRoute: typeof AuthenticatedAdminMenuRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/options': {
+      id: '/_authenticated/admin/options'
+      path: '/options'
+      fullPath: '/admin/options'
+      preLoaderRoute: typeof AuthenticatedAdminOptionsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/commande/$id': {
+      id: '/_authenticated/commande/$id'
+      path: '/commande/$id'
+      fullPath: '/commande/$id'
+      preLoaderRoute: typeof AuthenticatedCommandeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/driver/conversations': {
+      id: '/_authenticated/driver/conversations'
+      path: '/driver/conversations'
+      fullPath: '/driver/conversations'
+      preLoaderRoute: typeof AuthenticatedDriverConversationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/driver/orders': {
+      id: '/_authenticated/driver/orders'
+      path: '/driver/orders'
+      fullPath: '/driver/orders'
+      preLoaderRoute: typeof AuthenticatedDriverOrdersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/orders/$orderId/tracking': {
       id: '/_authenticated/orders/$orderId/tracking'

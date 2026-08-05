@@ -431,15 +431,13 @@ function CommandesPage() {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedId((prev) => (prev === order.id ? null : order.id))
-                        }
+                      <Link
+                        to="/orders/$orderId/tracking"
+                        params={{ orderId: order.id }}
                         className="press inline-flex h-11 items-center rounded-full border px-4 text-sm font-semibold"
                       >
                         Voir la commande
-                      </button>
+                      </Link>
                     </div>
                   </div>
 

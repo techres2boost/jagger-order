@@ -860,6 +860,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      send_order_message: {
+        Args: { p_content: string; p_order_id: string; p_sender_id: string }
+        Returns: undefined
+      }
       shares_active_delivery: {
         Args: { _profile_id: string }
         Returns: boolean

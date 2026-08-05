@@ -5,13 +5,7 @@ import { toast } from "sonner";
 import { ArrowRight, Clock, RotateCcw, ShoppingBag, Star, StarOff } from "lucide-react";
 import { fmt } from "@/lib/format";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { OrderProgressRing, STEPS } from "@/components/OrderProgressRing";
 import { useOrderCountdown } from "@/hooks/use-order-countdown";
@@ -21,15 +15,7 @@ export const Route = createFileRoute("/_authenticated/commandes")({
   component: CommandesPage,
 });
 
-type OrderStatus =
-  | "pending"
-  | "accepted"
-  | "ready"
-  | "delivering"
-  | "delivered"
-  | "refused"
-  | "expired"
-  | "cancelled";
+type OrderStatus = "pending" | "accepted" | "ready" | "delivering" | "delivered" | "refused" | "expired" | "cancelled";
 
 interface OrderRow {
   id: string;
@@ -123,8 +109,7 @@ function CommandesPage() {
   // Incrémenté par le Realtime pour redéclencher un rechargement filtré.
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const filtersActive =
-    statusFilter !== "all" || appliedAmount.min !== "" || appliedAmount.max !== "";
+  const filtersActive = statusFilter !== "all" || appliedAmount.min !== "" || appliedAmount.max !== "";
 
   function resetFilters() {
     setStatusFilter("all");
@@ -250,8 +235,7 @@ function CommandesPage() {
     setLoadingMore(true);
     const cursor = orders[orders.length - 1];
     const keyset =
-      `created_at.lt."${cursor.created_at}",` +
-      `and(created_at.eq."${cursor.created_at}",id.lt.${cursor.id})`;
+      `created_at.lt."${cursor.created_at}",` + `and(created_at.eq."${cursor.created_at}",id.lt.${cursor.id})`;
     const { data, error } = await buildBaseQuery().or(keyset);
     setLoadingMore(false);
     if (error) {
@@ -274,10 +258,8 @@ function CommandesPage() {
       if (!uid) return;
       channel = supabase
         .channel(`orders-user-${uid}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "orders", filter: `user_id=eq.${uid}` },
-          () => setRefreshKey((k) => k + 1),
+        .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `user_id=eq.${uid}` }, () =>
+          setRefreshKey((k) => k + 1),
         )
         .subscribe();
     })();
@@ -334,10 +316,7 @@ function CommandesPage() {
         <div className="flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-muted-foreground">Statut</label>
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as OrderStatus | "all")}
-            >
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as OrderStatus | "all")}>
               <SelectTrigger className="h-10 w-44">
                 <SelectValue placeholder="Tous les statuts" />
               </SelectTrigger>
@@ -387,9 +366,7 @@ function CommandesPage() {
         </div>
 
         {loading ? (
-          <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
-            Chargement…
-          </div>
+          <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">Chargement…</div>
         ) : selectedOrders.length === 0 ? (
           <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
             {filtersActive
@@ -432,7 +409,7 @@ function CommandesPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        to="/orders/$orderId/tracking"
+                        to="/commande/$orderId"
                         params={{ orderId: order.id }}
                         className="press inline-flex h-11 items-center rounded-full border px-4 text-sm font-semibold"
                       >
@@ -450,13 +427,9 @@ function CommandesPage() {
                               <div className="flex items-start justify-between gap-3">
                                 <div>
                                   <div className="font-semibold">{item.name}</div>
-                                  {item.size ? (
-                                    <div className="text-xs text-muted-foreground">{item.size}</div>
-                                  ) : null}
+                                  {item.size ? <div className="text-xs text-muted-foreground">{item.size}</div> : null}
                                   {item.note ? (
-                                    <div className="mt-1 text-xs italic text-muted-foreground">
-                                      « {item.note} »
-                                    </div>
+                                    <div className="mt-1 text-xs italic text-muted-foreground">« {item.note} »</div>
                                   ) : null}
                                   {(itemOptions[item.id] ?? []).length > 0 && (
                                     <div className="mt-1 text-xs text-muted-foreground">
@@ -471,9 +444,7 @@ function CommandesPage() {
                                   )}
                                 </div>
                                 <div className="text-right">
-                                  <div className="text-sm font-black">
-                                    {fmt(Number(item.unit_price) * item.qty)}
-                                  </div>
+                                  <div className="text-sm font-black">{fmt(Number(item.unit_price) * item.qty)}</div>
                                   <div className="text-xs text-muted-foreground">{item.qty}×</div>
                                 </div>
                               </div>

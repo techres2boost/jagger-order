@@ -266,6 +266,7 @@ export function CompteClient() {
   async function handleSignOut() {
     await supabase.auth.signOut();
     toast.success("Déconnecté");
+    window.location.href = "/";
   }
 
   if (loading) {

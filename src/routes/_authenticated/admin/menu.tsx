@@ -430,11 +430,6 @@ function AdminMenuPage() {
         return;
       }
 
-      // Remplacement : supprimer l'ancien fichier du bucket si présent.
-      if (originalImageUrl) {
-        const oldPath = storagePathFromPublicUrl(originalImageUrl);
-        if (oldPath) await supabase.storage.from(DISH_IMAGES_BUCKET).remove([oldPath]);
-      }
       const extension = IMAGE_EXTENSION_BY_TYPE[imageFile.type] ?? "jpg";
       const path = `${itemId}-${Date.now()}.${extension}`;
       const { error: uploadError } = await supabase.storage
@@ -443,6 +438,12 @@ function AdminMenuPage() {
       if (uploadError) {
         toast.error(uploadError.message);
         return;
+      }
+      // Remplacement : supprimer l'ancien fichier du bucket APRÈS un upload réussi
+      // de la nouvelle image (évite de perdre l'ancienne si l'upload échoue).
+      if (originalImageUrl) {
+        const oldPath = storagePathFromPublicUrl(originalImageUrl);
+        if (oldPath) await supabase.storage.from(DISH_IMAGES_BUCKET).remove([oldPath]);
       }
       const { data: publicUrlData } = supabase.storage.from(DISH_IMAGES_BUCKET).getPublicUrl(path);
       finalImageUrl = publicUrlData.publicUrl;
@@ -531,10 +532,16 @@ function AdminMenuPage() {
 
   async function deleteItem(id: string) {
     if (!confirm("Supprimer ce plat ?")) return;
+    const target = items.find((it) => it.id === id);
     const { error } = await supabase.from("menu_items").delete().eq("id", id);
     if (error) {
       toast.error(error.message);
       return;
+    }
+    // Supprime aussi le fichier image correspondant dans le bucket dish-images.
+    if (target?.image_url) {
+      const path = storagePathFromPublicUrl(target.image_url);
+      if (path) await supabase.storage.from(DISH_IMAGES_BUCKET).remove([path]);
     }
     toast.success("Plat supprimé.");
     loadMenu();
@@ -669,11 +676,17 @@ function AdminMenuPage() {
     setItemForm((previous) => (previous ? { ...previous, imageUrl: null } : previous));
   }
 
-  function removeSelectedImage() {
+  async function removeSelectedImage() {
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(null);
     setImagePreview(null);
     setImageError(null);
+    // Supprime le fichier courant du bucket dish-images, pas seulement le champ.
+    if (originalImageUrl) {
+      const path = storagePathFromPublicUrl(originalImageUrl);
+      if (path) await supabase.storage.from(DISH_IMAGES_BUCKET).remove([path]);
+      setOriginalImageUrl(null);
+    }
     setItemForm((previous) => (previous ? { ...previous, imageUrl: null } : previous));
   }
 

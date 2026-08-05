@@ -239,8 +239,18 @@ export function MenuPage() {
         priceSort === "asc" ? priceOf(a) - priceOf(b) : priceOf(b) - priceOf(a),
       );
     }
+    // Dans la section « Tout », les Boissons s'affichent toujours en dernier,
+    // après toutes les autres catégories. Tri stable : l'ordre relatif des
+    // autres catégories (et des boissons entre elles) reste inchangé.
+    if (active === "__all__") {
+      const boissonIds = new Set(
+        categories.filter((c) => c.name.trim().toLowerCase() === "boissons").map((c) => c.id),
+      );
+      const isBoisson = (d: Dish) => (boissonIds.has(d.category) ? 1 : 0);
+      list = [...list].sort((a, b) => isBoisson(a) - isBoisson(b));
+    }
     return list;
-  }, [dishes, active, search, priceSort]);
+  }, [dishes, active, search, priceSort, categories]);
   const populaires = useMemo(() => dishes.filter((d) => d.populaire), [dishes]);
   const activeCategoryName =
     active === "__all__" ? "Tout" : categories.find((c) => c.id === active)?.name;

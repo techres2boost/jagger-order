@@ -75,9 +75,7 @@ export function CompteClient() {
     let cancelled = false;
     (async () => {
       const entries = await Promise.all(
-        addresses
-          .filter((a) => a.photo_url)
-          .map(async (a) => [a.id, await signAddressPhoto(a.photo_url)] as const),
+        addresses.filter((a) => a.photo_url).map(async (a) => [a.id, await signAddressPhoto(a.photo_url)] as const),
       );
       if (cancelled) return;
       const map: Record<string, string> = {};
@@ -111,14 +109,9 @@ export function CompteClient() {
       setUser(u.user);
       setEmailInput(u.user.email ?? "");
 
-      const { data: p, error: pErr } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", u.user.id)
-        .single();
+      const { data: p, error: pErr } = await supabase.from("profiles").select("*").eq("id", u.user.id).single();
       if (pErr) {
-        const fallbackName =
-          (u.user.user_metadata as unknown as { full_name?: string })?.full_name ?? "";
+        const fallbackName = (u.user.user_metadata as unknown as { full_name?: string })?.full_name ?? "";
         setProfile({
           full_name: fallbackName,
           phone: (p as unknown as { phone?: string })?.phone ?? null,
@@ -142,8 +135,7 @@ export function CompteClient() {
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !profile) return;
-    if (!profile.full_name || profile.full_name.trim().length < 2)
-      return toast.error("Nom invalide");
+    if (!profile.full_name || profile.full_name.trim().length < 2) return toast.error("Nom invalide");
     setLoading(true);
     // Téléphone vidé => null (reste hors de l'index unique partiel).
     const row = { full_name: profile.full_name.trim(), phone: profile.phone?.trim() || null };
@@ -172,17 +164,12 @@ export function CompteClient() {
     setSavingEmail(false);
     if (error) {
       const code = (error as { code?: string }).code;
-      if (
-        code === "email_exists" ||
-        /already|registered|exist|in use|utilis/i.test(error.message)
-      ) {
+      if (code === "email_exists" || /already|registered|exist|in use|utilis/i.test(error.message)) {
         return toast.error("Cette adresse email est déjà utilisée par un autre compte.");
       }
       return toast.error(error.message);
     }
-    toast.success(
-      "Un email de confirmation vous a été envoyé. Cliquez sur le lien pour vérifier votre adresse.",
-    );
+    toast.success("Un email de confirmation vous a été envoyé. Cliquez sur le lien pour vérifier votre adresse.");
   }
 
   // Liaison native d'un compte Google au compte courant (linkIdentity). Redirige
@@ -226,10 +213,9 @@ export function CompteClient() {
     setDeleting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>(
-        "delete-account",
-        { body: { user_id: user.id } },
-      );
+      const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>("delete-account", {
+        body: { user_id: user.id },
+      });
 
       if (error) {
         setDeleting(false);
@@ -243,9 +229,7 @@ export function CompteClient() {
             /* ignore */
           }
         }
-        return toast.error(
-          serverError || error.message || "Échec lors de la suppression du compte",
-        );
+        return toast.error(serverError || error.message || "Échec lors de la suppression du compte");
       }
 
       if (data?.error) {
@@ -266,7 +250,7 @@ export function CompteClient() {
   async function handleSignOut() {
     await supabase.auth.signOut();
     toast.success("Déconnecté");
-    window.location.href = "/";
+    window.location.href = "/app";
   }
 
   if (loading) {
@@ -306,12 +290,8 @@ export function CompteClient() {
             </div>
           )}
           <div className="min-w-0">
-            <div className="truncate text-lg font-black text-brand-foreground">
-              {profile?.full_name || "—"}
-            </div>
-            {profile?.phone && (
-              <div className="text-xs text-brand-foreground/75">{profile.phone}</div>
-            )}
+            <div className="truncate text-lg font-black text-brand-foreground">{profile?.full_name || "—"}</div>
+            {profile?.phone && <div className="text-xs text-brand-foreground/75">{profile.phone}</div>}
             {user?.email_confirmed_at && (
               <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-brand-foreground/20 px-2.5 py-1 text-[10px] font-bold text-brand-foreground">
                 <Check className="h-3 w-3" /> Email vérifié
@@ -368,9 +348,7 @@ export function CompteClient() {
                 />
               </div>
               <div className="flex gap-2">
-                <button className="h-10 rounded-full bg-brand px-4 text-brand-foreground">
-                  Enregistrer
-                </button>
+                <button className="h-10 rounded-full bg-brand px-4 text-brand-foreground">Enregistrer</button>
                 <button
                   type="button"
                   onClick={() => setEditing(false)}
@@ -397,9 +375,7 @@ export function CompteClient() {
                 <p className="text-xs text-amber-600">Email non vérifié.</p>
               ))}
             {user?.new_email && (
-              <p className="text-xs text-amber-600">
-                Changement en attente de confirmation : {user.new_email}
-              </p>
+              <p className="text-xs text-amber-600">Changement en attente de confirmation : {user.new_email}</p>
             )}
             <button
               disabled={savingEmail}
@@ -412,9 +388,7 @@ export function CompteClient() {
           <div className="mt-5 border-t border-border pt-4">
             <p className="text-sm text-muted-foreground">Compte Google</p>
             {user?.identities?.some((i) => i.provider === "google") ? (
-              <p className="mt-1 text-sm font-semibold text-[color:var(--success)]">
-                Compte Google lié
-              </p>
+              <p className="mt-1 text-sm font-semibold text-[color:var(--success)]">Compte Google lié</p>
             ) : (
               <>
                 <button
@@ -455,30 +429,18 @@ export function CompteClient() {
                   style={active ? { borderColor: t.vars["--primary"] } : undefined}
                 >
                   <span className="flex gap-1">
-                    <span
-                      className="h-6 w-6 rounded-full"
-                      style={{ backgroundColor: t.vars["--primary"] }}
-                    />
-                    <span
-                      className="h-6 w-6 rounded-full"
-                      style={{ backgroundColor: t.vars["--secondary-warm"] }}
-                    />
-                    <span
-                      className="h-6 w-6 rounded-full"
-                      style={{ backgroundColor: t.vars["--accent-warm"] }}
-                    />
+                    <span className="h-6 w-6 rounded-full" style={{ backgroundColor: t.vars["--primary"] }} />
+                    <span className="h-6 w-6 rounded-full" style={{ backgroundColor: t.vars["--secondary-warm"] }} />
+                    <span className="h-6 w-6 rounded-full" style={{ backgroundColor: t.vars["--accent-warm"] }} />
                   </span>
                   <span className="text-xs font-bold">{t.label}</span>
-                  {active && (
-                    <Check className="h-3.5 w-3.5" style={{ color: t.vars["--primary"] }} />
-                  )}
+                  {active && <Check className="h-3.5 w-3.5" style={{ color: t.vars["--primary"] }} />}
                 </button>
               );
             })}
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Restaurant actif :{" "}
-            <span className="font-semibold text-foreground">{theme.restaurantName}</span>
+            Restaurant actif : <span className="font-semibold text-foreground">{theme.restaurantName}</span>
             {!theme.hasLogo && " · emplacement « LOGO CLIENT » en attente du vrai logo"}
           </p>
         </section>
@@ -500,9 +462,7 @@ export function CompteClient() {
             </div>
           </div>
 
-          {addresses.length === 0 && (
-            <p className="mt-3 text-sm text-muted-foreground">Aucune adresse enregistrée.</p>
-          )}
+          {addresses.length === 0 && <p className="mt-3 text-sm text-muted-foreground">Aucune adresse enregistrée.</p>}
 
           <div className="mt-3 grid gap-3">
             {addresses.map((a) => {
@@ -511,10 +471,7 @@ export function CompteClient() {
               const distanceKm = deliveryDistanceKm({ lat: a.latitude, lng: a.longitude });
               const outOfZone = distanceKm != null && distanceKm > DELIVERY_RADIUS_KM;
               return (
-                <div
-                  key={a.id}
-                  className="overflow-hidden rounded-[20px] border border-border bg-card"
-                >
+                <div key={a.id} className="overflow-hidden rounded-[20px] border border-border bg-card">
                   <div className="p-3">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
@@ -557,19 +514,11 @@ export function CompteClient() {
                   </div>
                   {addressPhotos[a.id] && (
                     <div className="h-32 w-full overflow-hidden border-t border-border">
-                      <img
-                        src={addressPhotos[a.id]}
-                        alt="Photo du logement"
-                        className="h-full w-full object-cover"
-                      />
+                      <img src={addressPhotos[a.id]} alt="Photo du logement" className="h-full w-full object-cover" />
                     </div>
                   )}
                   <div className="relative z-0 h-32 w-full overflow-hidden">
-                    <MapContainer
-                      center={[a.latitude, a.longitude]}
-                      zoom={15}
-                      className="h-full w-full"
-                    >
+                    <MapContainer center={[a.latitude, a.longitude]} zoom={15} className="h-full w-full">
                       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                       <Marker position={[a.latitude, a.longitude]} icon={markerIcon} />
                     </MapContainer>
@@ -641,10 +590,7 @@ export function CompteClient() {
 
           <DialogFooter>
             <div className="mt-4 flex w-full justify-end gap-2">
-              <button
-                onClick={() => setOpenDelete(false)}
-                className="rounded-md border border-border px-4 py-2"
-              >
+              <button onClick={() => setOpenDelete(false)} className="rounded-md border border-border px-4 py-2">
                 Annuler
               </button>
               <button

@@ -409,8 +409,8 @@ function CommandesPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        to="/commande/$orderId"
-                        params={{ orderId: order.id }}
+                        to="/commande/$id"
+                        params={{ id: order.id }}
                         className="press inline-flex h-11 items-center rounded-full border px-4 text-sm font-semibold"
                       >
                         Voir la commande

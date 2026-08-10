@@ -1,5 +1,7 @@
-// Coordonnées GPS fixes du restaurant, confirmées par le client.
-export const RESTAURANT_LOCATION = { lat: 36.84130243040511, lng: 10.156443054054316 };
+// Coordonnées GPS fixes du restaurant (Jagger), confirmées par le client.
+// DOIVENT rester identiques à celles codées dans le trigger Postgres
+// `enforce_delivery_zone()` — cf. supabase/bootstrap/01_schema.sql.
+export const RESTAURANT_LOCATION = { lat: 36.85607405239656, lng: 10.15702900042228 };
 
 // Rayon de livraison (km) : au-delà, l'adresse est considérée hors zone.
 export const DELIVERY_RADIUS_KM = 7;

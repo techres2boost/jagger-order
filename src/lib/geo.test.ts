@@ -9,15 +9,16 @@ import {
 } from "@/lib/geo";
 
 // Valeurs de référence ÉPINGLÉES sur le trigger Postgres `enforce_delivery_zone`
-// (même formule Haversine, mêmes coords resto, earth = 6371). Calculées côté base :
-//   inside  (36.80, 10.18) → 5.04867030561614 km
-//   outside (36.90, 10.30) → 14.3414045315057 km
+// (même formule Haversine, mêmes coords resto Jagger, earth = 6371). Calculées
+// côté base :
+//   inside  (36.80, 10.18) → 6.56179724702146 km
+//   outside (36.90, 10.30) → 13.6225127717711 km
 //   resto                  → 0 km
 // Toute divergence TS↔SQL ferait échouer ces tests (garde anti-drift).
 const INSIDE = { lat: 36.8, lng: 10.18 };
 const OUTSIDE = { lat: 36.9, lng: 10.3 };
-const SQL_INSIDE_KM = 5.04867030561614;
-const SQL_OUTSIDE_KM = 14.3414045315057;
+const SQL_INSIDE_KM = 6.56179724702146;
+const SQL_OUTSIDE_KM = 13.6225127717711;
 
 describe("haversineDistanceKm", () => {
   it("renvoie 0 pour deux points identiques (le restaurant)", () => {

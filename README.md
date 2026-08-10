@@ -1,13 +1,16 @@
-# BOX — commande et livraison de restaurant
+# Jagger — commande et livraison de restaurant
 
-Application web (packagée en mobile via Capacitor) pour le restaurant **BOX** :
-consultation du menu, panier, passage de commande, suivi de livraison en temps
-réel, back-office administrateur et application livreur.
+Application web (packagée en mobile via Capacitor) pour le restaurant **Jagger**
+(food & drink) : consultation du menu, panier, passage de commande, suivi de
+livraison en temps réel, back-office administrateur et application livreur.
 
 **Pas de paiement en ligne** : les commandes sont réglées à la livraison.
 
-- Production : <https://box-bite-order.lovable.app/>
-- Projet Supabase : `ssmmstetcmgsjnjbjkat` (région `eu-central-2`, Postgres 17)
+- Production : <https://jagger-order.lovable.app/>
+- Projet Supabase : `zouvaqadidzeieytanoa`
+
+> Ce projet n'a **pas de site vitrine** : `/` redirige vers `/app`, l'application
+> de commande.
 
 > Ce dépôt est connecté à [Lovable](https://lovable.dev). Les commits poussés sur
 > la branche connectée sont resynchronisés dans l'éditeur : **ne jamais réécrire
@@ -108,7 +111,7 @@ Quatre profils, portés par la table `user_roles` (enum `app_role`) :
 
 | Rôle       | Accès                                                                   |
 | ---------- | ----------------------------------------------------------------------- |
-| *(anon)*   | Menu public en lecture seule, site vitrine                              |
+| *(anon)*   | Menu public en lecture seule                                            |
 | `client`   | Ses commandes, ses adresses, ses avis, le chat de sa livraison en cours |
 | `livreur`  | Les commandes qui lui sont assignées, le chat, ses statistiques         |
 | `admin`    | Toutes les commandes, le menu, les livreurs, le tableau de bord         |
@@ -123,15 +126,18 @@ La table est protégée par RLS sur les 20 tables du schéma `public`, et
 
 ## 5. Base de données et migrations
 
-Les migrations vivent dans `supabase/migrations/` (48 fichiers, ordre
-chronologique par préfixe `YYYYMMDDHHMMSS`).
+Les migrations vivent dans `supabase/migrations/` (ordre chronologique par
+préfixe `YYYYMMDDHHMMSS`). Elles sont **conservées pour l'historique** mais ne
+suffisent pas à reconstruire la base : elles ne créent que 9 des 20 tables. Pour
+installer le backend sur un projet vierge, utiliser `supabase/bootstrap/`
+(schéma complet généré depuis la base de référence) — voir son README.
 
 ```bash
 # Appliquer les migrations au projet distant
 supabase db push
 
 # Régénérer les types TypeScript après un changement de schéma
-supabase gen types typescript --project-id ssmmstetcmgsjnjbjkat \
+supabase gen types typescript --project-id zouvaqadidzeieytanoa \
   > src/integrations/supabase/types.ts
 ```
 

@@ -1,4 +1,4 @@
-# Architecture — BOX
+# Architecture — Jagger
 
 Document de référence technique. Voir `README.md` pour l'installation et
 `AUDIT.md` pour l'état de production.

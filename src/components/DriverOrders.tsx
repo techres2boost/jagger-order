@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { EnableNotifications } from "@/components/EnableNotifications";
 import { fmt } from "@/lib/format";
 import { toast } from "sonner";
@@ -285,7 +285,7 @@ export function DriverOrders() {
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-20 border-b border-black/40 hero-gradient px-4 py-3 text-white">
         <div className="mx-auto flex max-w-xl items-center gap-3">
-          <BoxLogo size={36} showWordmark={false} />
+          <BrandLogo size={36} showWordmark={false} />
           <h1 className="text-lg font-black">Mes livraisons</h1>
           <div className="ml-auto">
             <EnableNotifications role="livreur" />

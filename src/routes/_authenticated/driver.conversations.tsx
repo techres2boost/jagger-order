@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { OrderChat } from "@/components/OrderChat";
 import { DriverNavbar } from "@/components/DriverNavbar";
 import { ArrowLeft, MessagesSquare } from "lucide-react";
@@ -149,7 +149,7 @@ function DriverConversationsPage() {
               <ArrowLeft className="h-5 w-5" />
             </button>
           ) : (
-            <BoxLogo size={36} showWordmark={false} />
+            <BrandLogo size={36} showWordmark={false} />
           )}
           <h1 className="text-lg font-black">
             {activeConversation ? activeConversation.customerName : "Conversations"}

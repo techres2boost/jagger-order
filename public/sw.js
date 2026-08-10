@@ -1,4 +1,4 @@
-/* BOX service worker — installability + push notifications */
+/* Jagger service worker — installability + push notifications */
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
@@ -13,12 +13,12 @@ self.addEventListener("push", (event) => {
     data = event.data ? event.data.json() : {};
   } catch {
     try {
-      data = { title: "BOX", body: event.data ? event.data.text() : "" };
+      data = { title: "Jagger", body: event.data ? event.data.text() : "" };
     } catch {
       data = {};
     }
   }
-  const title = data.title || "BOX";
+  const title = data.title || "Jagger";
   const options = {
     body: data.body || "",
     icon: data.icon || "/favicon.png",

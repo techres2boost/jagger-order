@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { z } from "zod";
 
 const searchSchema = z.object({
@@ -117,7 +117,7 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
       <Link to="/app" className="mb-6">
-        <BoxLogo size={80} />
+        <BrandLogo size={80} />
       </Link>
 
       <div className="w-full max-w-md rounded-3xl border bg-card p-6 shadow-sm space-y-5">

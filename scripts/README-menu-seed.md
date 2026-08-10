@@ -1,59 +1,104 @@
-# BOX menu seed — image upload
+# Jagger — seed du menu : images
 
-The menu **categories, dishes, prices, featured flags and options/supplements**
-are already seeded in the database (4 categories, 44 dishes, 44 prices, 4
-featured, 2 option groups). Only the **dish images** still need to be uploaded
-to Supabase Storage.
+Les **catégories, plats, prix, flags « featured » et options** sont posés par
+SQL (`supabase/bootstrap/03_seed_menu.sql` — 22 catégories, 121 plats, 121 prix,
+8 mis en avant, 1 groupe d'options à 9 choix). Seules les **images des plats**
+restent à téléverser dans le bucket Supabase Storage `dish-images`.
 
-They could not be uploaded from the automation environment because its network
-policy blocks outbound HTTPS to `*.supabase.co` (and `storage.objects` cannot be
-mutated via SQL — a database trigger forbids it). Run the upload once from a
-machine with normal internet access.
+Elles ne peuvent pas être envoyées depuis l'environnement d'automatisation : sa
+politique réseau bloque les sorties HTTPS vers `*.supabase.co` (et
+`storage.objects` n'est pas modifiable en SQL — un trigger l'interdit). Lancez
+le téléversement une fois depuis une machine avec un accès internet normal
+(GitHub Codespace, poste local…).
 
-## Prerequisites
+## Prérequis
 
-- The `menu/` folder at the repo root, with the sub-folders
-  `Sandwich/ Burgers/ Boissons/ Pizzas/` and the dish images inside them.
-- Node 18+ and the project dependencies installed (`npm ci`) — the script uses
-  the already-present `@supabase/supabase-js`.
-- The project **service_role** key (Supabase dashboard → Project Settings →
-  API). Uploading to the `dish-images` bucket is admin-only, and the service
-  role bypasses RLS. Never commit this key.
+- Le dossier `menu/` à la racine du dépôt, avec ses 22 sous-dossiers, les 117
+  images `.webp` et `menu/manifest.json`.
+- Node 18+ et les dépendances installées (`npm ci`) — le script utilise
+  `@supabase/supabase-js`, déjà présent.
+- La clé **service_role** du projet (Dashboard → Project Settings → API).
+  Téléverser dans `dish-images` est réservé aux admins (RLS) ; la service role
+  contourne la RLS. **Ne committez jamais cette clé.**
+- Le schéma et le seed du menu déjà appliqués (les plats doivent exister pour
+  recevoir leur `image_url`).
 
-## Run
+## Lancer
 
-First run after a full menu re-seed (also empties the bucket of images tied to
-the previous dishes):
+Premier passage après un seed complet du menu (vide aussi le bucket des images
+rattachées aux anciens identifiants de plats) :
 
 ```bash
 SUPABASE_SERVICE_ROLE_KEY='<service_role_key>' \
 node scripts/upload-menu-images.mjs --reset-bucket
 ```
 
-Subsequent runs (idempotent — skips dishes that already have an image):
+Passages suivants (idempotent — saute les plats qui ont déjà une image) :
 
 ```bash
 SUPABASE_SERVICE_ROLE_KEY='<service_role_key>' \
 node scripts/upload-menu-images.mjs
 ```
 
-Options:
+Options :
 
-- `--reset-bucket` — delete every existing object in `dish-images` before
-  uploading. Use it once, right after a full re-seed, to clear images that were
-  attached to the old dish IDs.
-- `--menu <path>` — point at the images folder (default `menu`).
-- `--force` — re-upload even for dishes that already have an image.
+- `--reset-bucket` — supprime tous les objets existants de `dish-images` avant
+  le téléversement. À utiliser une seule fois, juste après un re-seed complet.
+- `--menu <chemin>` — dossier des images (défaut : `menu`).
+- `--force` — re-téléverse même les plats qui ont déjà une image.
+- `SUPABASE_URL` — surcharge l'URL du projet (défaut : celui de Jagger).
 
-The script matches each image to a dish by **normalised name** (lowercase,
-accents stripped, hyphens → spaces), uploads it to `dish-images`, and sets
-`menu_items.image_url` to the public URL. At the end it prints any image with no
-matching dish, any ambiguous match, and any dish still without an image.
+## Appariement image ↔ plat
 
-## Verify in the admin panel
+Le script lit `menu/manifest.json`, qui associe chaque fichier à un couple
+**(catégorie, plat)** exact. Ce manifeste est nécessaire — un appariement par
+nom normalisé ne suffirait pas :
 
-1. Sign in as an admin and open **/admin/menu**.
-2. You should see the 4 categories (Sandwichs, Burgers, Boissons, Pizzas) with
-   12 / 8 / 9 / 15 dishes, each with its price; the 4 popular dishes flagged as
-   featured; and, for every Sandwich and Burger, the **Options** (max 4) and
-   **Suppléments** (max 6) groups. Images appear after running the script.
+- plusieurs fichiers ne portent pas le nom du plat (`tanino.webp` → *TONINO*,
+  `fondant au choxolat.webp` → *Fondant au Chocolat*, `mexicane.webp` →
+  *MEXICAINE*, `frerrero rocher.webp` → *Ferrero Rocher*, `Americano
+  Nespresso.webp` → *Espresso Americano*…) ;
+- deux plats homonymes existent dans des catégories différentes : **Detox**
+  (Cocktails et Mojitos) et **Overdose** (Crêpes sucrées et Gaufres sucrées).
+  En base, l'unicité des noms est par catégorie, pas globale.
+
+Le manifeste est régénéré avec le seed :
+
+```bash
+node scripts/generate-menu-seed.mjs
+```
+
+Chaque image est envoyée sous `<menu_item_id>-<timestamp>.webp` avec un
+`cacheControl` d'un an (31536000), comme les téléversements faits depuis le
+panneau d'administration, puis `menu_items.image_url` reçoit l'URL publique.
+
+En fin d'exécution, le script affiche : le nombre d'entrées du manifeste, les
+téléversements, les plats sautés, les fichiers manquants, les entrées sans plat
+correspondant en base, et les plats encore sans image.
+
+## Plats sans image
+
+4 plats n'ont pas de photo dans le dépôt et s'afficheront avec le visuel de
+repli de l'application :
+
+- **Pasta** — Puttanesca, Penne Poulet Pané, Penne Mare e Monti
+- **Plats** — Cordon Bleu
+
+Fournissez ces 4 images (≤ 100 Ko, format `.webp`) dans le sous-dossier de leur
+catégorie, ajoutez le chemin sur le plat correspondant dans `src/data/menu.ts`,
+régénérez, relancez le script. Elles peuvent aussi être ajoutées directement
+depuis **/admin/menu**.
+
+## Vérifier dans le panneau d'administration
+
+1. Connectez-vous avec un compte admin et ouvrez **/admin/menu**.
+2. Vous devez voir les 22 catégories dans l'ordre de la carte (Cafés →
+   Boissons), avec 9/3/5/9/7/9/6/2/3/5/7/9/5/6/3/6/4/5/9/4/1/4 plats, chacun
+   avec son prix.
+3. 8 plats sont marqués « featured » : Café Brownies, Big Boss, Big Choc,
+   BLACK JAGGER, Overdose (gaufre), Salade César, Lasagne alla Bolognese,
+   Cordon Bleu. Ce choix est une proposition — ajustez-le librement depuis
+   l'admin, c'est un simple interrupteur par plat.
+4. Le plat **Chicha** porte le groupe d'options **Parfum** (choix unique,
+   gratuit) avec ses 9 parfums.
+5. Les images apparaissent après l'exécution du script.

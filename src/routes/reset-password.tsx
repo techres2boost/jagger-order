@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
@@ -25,7 +25,7 @@ function ResetPasswordPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <BoxLogo size={64} />
+      <BrandLogo size={64} />
       <form
         onSubmit={handle}
         className="mt-6 w-full max-w-md space-y-4 rounded-3xl border bg-card p-6 shadow-sm"

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export const Route = createFileRoute("/account-deletion")({
   component: AccountDeletionPage,
@@ -18,7 +18,7 @@ function AccountDeletionPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <BoxLogo size={30} showWordmark={false} />
+          <BrandLogo size={30} showWordmark={false} />
           <h1 className="text-lg font-black">Suppression de compte</h1>
         </div>
       </header>
@@ -26,11 +26,11 @@ function AccountDeletionPage() {
       <main className="mx-auto max-w-3xl px-4 py-6">
         <div className="mb-4">
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-brand">
-            BOX — par Res2Boost
+            Jagger — par Res2Boost
           </p>
           <h2 className="mt-1 text-2xl font-black">Suppression de compte et de données</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Comment demander la suppression de votre compte BOX et de vos données personnelles.
+            Comment demander la suppression de votre compte Jagger et de vos données personnelles.
           </p>
         </div>
 
@@ -39,7 +39,7 @@ function AccountDeletionPage() {
           <h3 className="text-lg font-black">Comment supprimer votre compte</h3>
           <ol className="mt-3 ml-5 list-decimal space-y-3 text-sm">
             <li>
-              <span className="font-semibold text-brand">Depuis l'application BOX :</span> ouvrez
+              <span className="font-semibold text-brand">Depuis l'application Jagger :</span> ouvrez
               l'onglet <strong>Compte</strong>, faites défiler jusqu'à la section{" "}
               <strong>Actions sensibles</strong>, puis appuyez sur{" "}
               <strong>« Supprimer mon compte et mes données »</strong>. Confirmez votre choix pour
@@ -51,7 +51,7 @@ function AccountDeletionPage() {
               <a href="mailto:tech@res2boost.com" className="font-semibold text-brand underline">
                 tech@res2boost.com
               </a>{" "}
-              en précisant le numéro de téléphone ou l'adresse e-mail associé à votre compte BOX.
+              en précisant le numéro de téléphone ou l'adresse e-mail associé à votre compte Jagger.
               Votre demande sera traitée dans les meilleurs délais.
             </li>
           </ol>
@@ -104,7 +104,7 @@ function AccountDeletionPage() {
         </section>
 
         <footer className="mt-8 text-center text-sm text-muted-foreground">
-          BOX est un service de Res2Boost — Tunis, Tunisie
+          Jagger est un service de Res2Boost — Tunis, Tunisie
         </footer>
       </main>
     </div>

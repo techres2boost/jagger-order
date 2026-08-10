@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
@@ -18,19 +18,19 @@ function PrivacyPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <BoxLogo size={30} showWordmark={false} />
+          <BrandLogo size={30} showWordmark={false} />
           <h1 className="text-lg font-black">Politique de confidentialité</h1>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-6">
         <div className="rounded-[28px] border border-border bg-card p-6 shadow-[0_20px_40px_-24px_rgba(46,30,23,0.35)]">
-          <h2 className="text-2xl font-black">Politique de confidentialité — BOX</h2>
+          <h2 className="text-2xl font-black">Politique de confidentialité — Jagger</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Dernière mise à jour : 29 juillet 2026
           </p>
           <p className="mt-4 text-sm leading-relaxed text-foreground">
-            BOX (« l'Application ») est une application de commande et de livraison de repas éditée
+            Jagger (« l’Application ») est une application de commande et de livraison de repas éditée
             par Res2Boost. La présente politique de confidentialité explique quelles données nous
             collectons, pourquoi, et comment elles sont utilisées et protégées.
           </p>
@@ -160,7 +160,7 @@ function PrivacyPage() {
           </Section>
 
           <p className="mt-8 border-t pt-4 text-sm font-semibold text-muted-foreground">
-            Res2Boost — BOX
+            Res2Boost — Jagger
           </p>
         </div>
       </main>

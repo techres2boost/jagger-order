@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-context";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { DriverCard } from "@/components/DriverCard";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { useOrderCountdown } from "@/hooks/use-order-countdown";
@@ -327,7 +327,7 @@ function OrderStatusPage() {
   if (order.status === "refused" || order.status === "expired" || order.status === "cancelled") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
-        <BoxLogo size={56} showWordmark={false} />
+        <BrandLogo size={56} showWordmark={false} />
         <div className="mt-6 w-full max-w-md rounded-[28px] border border-border bg-card p-6 text-center shadow-[0_20px_40px_-24px_rgba(46,30,23,0.35)]">
           <div
             className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${
@@ -383,7 +383,7 @@ function OrderStatusPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
-      <BoxLogo size={56} showWordmark={false} />
+      <BrandLogo size={56} showWordmark={false} />
 
       <div className="mt-6 w-full max-w-md rounded-[28px] border border-border bg-card p-6 text-center shadow-[0_20px_40px_-24px_rgba(46,30,23,0.35)]">
         {itemsLabel && !livreur && (

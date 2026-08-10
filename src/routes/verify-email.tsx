@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Mail } from "lucide-react";
 
 export const Route = createFileRoute("/verify-email")({
@@ -48,7 +48,7 @@ function VerifyEmailPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <BoxLogo size={64} />
+      <BrandLogo size={64} />
       <div className="mt-6 w-full max-w-md rounded-3xl border bg-card p-6 text-center shadow-sm">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent">
           <Mail className="h-8 w-8 text-brand" />

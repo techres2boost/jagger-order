@@ -1,19 +1,22 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Clé VAPID publique : lue depuis l'env (VITE_VAPID_PUBLIC_KEY). Repli sur la
-// valeur historique pour ne rien casser si l'env n'est pas fournie au build.
-// IMPORTANT : cette clé publique DOIT correspondre à la clé privée VAPID
-// configurée côté serveur (secrets Supabase), sinon FCM rejette les push.
+// Repli sur les valeurs du projet Jagger si l'env n'est pas fournie au build :
+// l'URL et la clé publiable sont publiques par design (la RLS reste la seule
+// protection réelle des données).
 const SUPABASE_URL =
   (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() ||
-  "https://ssmmstetcmgsjnjbjkat.supabase.co";
+  "https://zouvaqadidzeieytanoa.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
   (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined)?.trim() ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbW1zdGV0Y21nc2puamJqa2F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NTUyMDgsImV4cCI6MjA5OTQzMTIwOH0.W7GFHmrowlCwxuMf9GAuqO1L0iLDf4sz3IUD9eHj86g";
-const VAPID_PUBLIC_KEY =
-  (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim() ||
-  "BKJVi0v15ZIYrtfEJgyJ-DPTAq2hu7pSGLhCmjYrTQ4znq7fjLyLOtxn3D925HE0Nbci8qvNrfgfG13IlgjXm4E";
+  "sb_publishable_i1DnyeorIb-1zHs3yZMJOA__we_sYWn";
+
+// Clé VAPID publique : lue UNIQUEMENT depuis l'env (VITE_VAPID_PUBLIC_KEY).
+// Pas de repli codé en dur : une paire VAPID appartient à un seul projet, et
+// réutiliser celle d'un autre restaurant ferait rejeter les push par FCM.
+// Absente, l'abonnement échoue proprement (voir le garde plus bas) ; le reste
+// de l'application continue de fonctionner.
+const VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim() ?? "";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);

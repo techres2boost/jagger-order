@@ -1,0 +1,590 @@
+{
+  "generated_by": "scripts/generate-menu-seed.mjs",
+  "images": [
+    {
+      "file": "cafés/Espresso.webp",
+      "category": "Cafés",
+      "dish": "Espresso"
+    },
+    {
+      "file": "cafés/Espresso Nespresso.webp",
+      "category": "Cafés",
+      "dish": "Espresso Nespresso"
+    },
+    {
+      "file": "cafés/Macchiato.webp",
+      "category": "Cafés",
+      "dish": "Macchiato"
+    },
+    {
+      "file": "cafés/Macchiato Nespresso.webp",
+      "category": "Cafés",
+      "dish": "Macchiato Nespresso"
+    },
+    {
+      "file": "cafés/Cappuccino Crème.webp",
+      "category": "Cafés",
+      "dish": "Cappuccino Crème"
+    },
+    {
+      "file": "cafés/Café Crème Nespresso.webp",
+      "category": "Cafés",
+      "dish": "Café Crème Nespresso"
+    },
+    {
+      "file": "cafés/Americano Nespresso.webp",
+      "category": "Cafés",
+      "dish": "Espresso Americano"
+    },
+    {
+      "file": "cafés/Café Turc.webp",
+      "category": "Cafés",
+      "dish": "Café Turc"
+    },
+    {
+      "file": "cafés/Nescafé au Lait.webp",
+      "category": "Cafés",
+      "dish": "Nescafé au Lait"
+    },
+    {
+      "file": "signatures/Café Brownies.webp",
+      "category": "Signatures",
+      "dish": "Café Brownies"
+    },
+    {
+      "file": "signatures/Café Cookies.webp",
+      "category": "Signatures",
+      "dish": "Café Cookies"
+    },
+    {
+      "file": "signatures/Café Chocolat.webp",
+      "category": "Signatures",
+      "dish": "Café Chocolat"
+    },
+    {
+      "file": "thés/Thé Tunisien à la Menthe.webp",
+      "category": "Thés",
+      "dish": "Thé Tunisien à la Menthe"
+    },
+    {
+      "file": "thés/Thé aux Amandes.webp",
+      "category": "Thés",
+      "dish": "Thé aux Amandes"
+    },
+    {
+      "file": "thés/Thé Infusion au Choix.webp",
+      "category": "Thés",
+      "dish": "Thé Infusion au Choix"
+    },
+    {
+      "file": "thés/Thé aux Pignons.webp",
+      "category": "Thés",
+      "dish": "Thé aux Pignons"
+    },
+    {
+      "file": "thés/Thé aux Fruits Secs.webp",
+      "category": "Thés",
+      "dish": "Thé aux Fruits Secs"
+    },
+    {
+      "file": "jus frais/Citronnade.webp",
+      "category": "Jus frais",
+      "dish": "Citronnade"
+    },
+    {
+      "file": "jus frais/jus d'orange.webp",
+      "category": "Jus frais",
+      "dish": "Jus d'Orange"
+    },
+    {
+      "file": "jus frais/jus de fraise.webp",
+      "category": "Jus frais",
+      "dish": "Jus de Fraise"
+    },
+    {
+      "file": "jus frais/Jus de Pomme.webp",
+      "category": "Jus frais",
+      "dish": "Jus de Pomme"
+    },
+    {
+      "file": "jus frais/Jus de Pêche.webp",
+      "category": "Jus frais",
+      "dish": "Jus de Pêche"
+    },
+    {
+      "file": "jus frais/citronnade aux amandes.webp",
+      "category": "Jus frais",
+      "dish": "Citronnade aux Amandes"
+    },
+    {
+      "file": "jus frais/Lait de Poule.webp",
+      "category": "Jus frais",
+      "dish": "Lait de Poule"
+    },
+    {
+      "file": "jus frais/Jus d'Ananas.webp",
+      "category": "Jus frais",
+      "dish": "Jus d'Ananas"
+    },
+    {
+      "file": "jus frais/jus de kiwi.webp",
+      "category": "Jus frais",
+      "dish": "Jus de Kiwi"
+    },
+    {
+      "file": "cocktails/Ice Berg.webp",
+      "category": "Cocktails",
+      "dish": "Ice Berg"
+    },
+    {
+      "file": "cocktails/Slushy.webp",
+      "category": "Cocktails",
+      "dish": "Slushy"
+    },
+    {
+      "file": "cocktails/Pina Colada.webp",
+      "category": "Cocktails",
+      "dish": "Pina Colada"
+    },
+    {
+      "file": "cocktails/red moon.webp",
+      "category": "Cocktails",
+      "dish": "Red Moon"
+    },
+    {
+      "file": "cocktails/detox.webp",
+      "category": "Cocktails",
+      "dish": "Detox"
+    },
+    {
+      "file": "cocktails/Blue Breeze.webp",
+      "category": "Cocktails",
+      "dish": "Blue Breeze"
+    },
+    {
+      "file": "cocktails/Energy Power.webp",
+      "category": "Cocktails",
+      "dish": "Energy Power"
+    },
+    {
+      "file": "mojitos/Mojito Classique.webp",
+      "category": "Mojitos",
+      "dish": "Mojito Classique"
+    },
+    {
+      "file": "mojitos/Mojito Fraise.webp",
+      "category": "Mojitos",
+      "dish": "Mojito Fraise"
+    },
+    {
+      "file": "mojitos/mojito myrtilles.webp",
+      "category": "Mojitos",
+      "dish": "Mojito Myrtilles"
+    },
+    {
+      "file": "mojitos/Mojito Pomme.webp",
+      "category": "Mojitos",
+      "dish": "Mojito Pomme"
+    },
+    {
+      "file": "mojitos/Mojito Rose.webp",
+      "category": "Mojitos",
+      "dish": "Mojito Rose"
+    },
+    {
+      "file": "mojitos/Passion.webp",
+      "category": "Mojitos",
+      "dish": "Passion"
+    },
+    {
+      "file": "mojitos/detox.webp",
+      "category": "Mojitos",
+      "dish": "Detox"
+    },
+    {
+      "file": "mojitos/Big Power Redbull.webp",
+      "category": "Mojitos",
+      "dish": "Big Power Redbull"
+    },
+    {
+      "file": "mojitos/big boss.webp",
+      "category": "Mojitos",
+      "dish": "Big Boss"
+    },
+    {
+      "file": "milkshakes/Chocolat Vanille Fraise.webp",
+      "category": "Milkshakes",
+      "dish": "Chocolat / Vanille / Fraise"
+    },
+    {
+      "file": "milkshakes/oreo.webp",
+      "category": "Milkshakes",
+      "dish": "Oreo / Nutella / Speculoos"
+    },
+    {
+      "file": "milkshakes/mars.webp",
+      "category": "Milkshakes",
+      "dish": "Mars"
+    },
+    {
+      "file": "milkshakes/kinder.webp",
+      "category": "Milkshakes",
+      "dish": "Kinder"
+    },
+    {
+      "file": "milkshakes/frerrero rocher.webp",
+      "category": "Milkshakes",
+      "dish": "Ferrero Rocher"
+    },
+    {
+      "file": "milkshakes/Big Choc.webp",
+      "category": "Milkshakes",
+      "dish": "Big Choc"
+    },
+    {
+      "file": "frappuccinos/Caramel  Noisettes.webp",
+      "category": "Frappuccinos",
+      "dish": "Caramel / Noisettes"
+    },
+    {
+      "file": "frappuccinos/Nutella Spéculoos.webp",
+      "category": "Frappuccinos",
+      "dish": "Nutella / Spéculoos"
+    },
+    {
+      "file": "chocolats/Chocolat Chaud Cold Chocolate.webp",
+      "category": "Chocolats",
+      "dish": "Chocolat Chaud / Cold Chocolate"
+    },
+    {
+      "file": "chocolats/Chocolat Chaud Caramel Oreo  Speculoos.webp",
+      "category": "Chocolats",
+      "dish": "Chocolat Chaud Caramel / Oreo / Speculoos"
+    },
+    {
+      "file": "chocolats/ChoSec.webp",
+      "category": "Chocolats",
+      "dish": "ChoSec"
+    },
+    {
+      "file": "smoothie bowls/Green.webp",
+      "category": "Smoothie bowls",
+      "dish": "Green"
+    },
+    {
+      "file": "smoothie bowls/red.webp",
+      "category": "Smoothie bowls",
+      "dish": "Red"
+    },
+    {
+      "file": "smoothie bowls/brown.webp",
+      "category": "Smoothie bowls",
+      "dish": "Brown"
+    },
+    {
+      "file": "smoothie bowls/jwejem.webp",
+      "category": "Smoothie bowls",
+      "dish": "Jwejem"
+    },
+    {
+      "file": "smoothie bowls/warrior.webp",
+      "category": "Smoothie bowls",
+      "dish": "Warrior"
+    },
+    {
+      "file": "dessets/fondant au choxolat.webp",
+      "category": "Desserts",
+      "dish": "Fondant au Chocolat"
+    },
+    {
+      "file": "dessets/tiramissu.webp",
+      "category": "Desserts",
+      "dish": "Tiramisu"
+    },
+    {
+      "file": "dessets/knefa.webp",
+      "category": "Desserts",
+      "dish": "Knefa"
+    },
+    {
+      "file": "dessets/Assiette de Fruits de Saison.webp",
+      "category": "Desserts",
+      "dish": "Assiette de Fruits de Saison"
+    },
+    {
+      "file": "dessets/Glace 2 Boules.webp",
+      "category": "Desserts",
+      "dish": "Glace 2 Boules"
+    },
+    {
+      "file": "dessets/Glace 3 Boules avec fruits secs.webp",
+      "category": "Desserts",
+      "dish": "Glace 3 Boules avec fruits secs"
+    },
+    {
+      "file": "dessets/Banana Split.webp",
+      "category": "Desserts",
+      "dish": "Banana Split"
+    },
+    {
+      "file": "crepes sucrées/pick me up.webp",
+      "category": "Crêpes sucrées",
+      "dish": "PICK ME UP"
+    },
+    {
+      "file": "crepes sucrées/out of africa.webp",
+      "category": "Crêpes sucrées",
+      "dish": "OUT OF AFRICA"
+    },
+    {
+      "file": "crepes sucrées/UP-TODATE.webp",
+      "category": "Crêpes sucrées",
+      "dish": "UP-TODATE"
+    },
+    {
+      "file": "crepes sucrées/Biscoff.webp",
+      "category": "Crêpes sucrées",
+      "dish": "Biscoff"
+    },
+    {
+      "file": "crepes sucrées/TRI-SHOT.webp",
+      "category": "Crêpes sucrées",
+      "dish": "TRI-SHOT"
+    },
+    {
+      "file": "crepes sucrées/BLACK JAGGER.webp",
+      "category": "Crêpes sucrées",
+      "dish": "BLACK JAGGER"
+    },
+    {
+      "file": "crepes sucrées/pump it up.webp",
+      "category": "Crêpes sucrées",
+      "dish": "PUMP IT UP"
+    },
+    {
+      "file": "crepes sucrées/DOLCEZZZA BIANCA.webp",
+      "category": "Crêpes sucrées",
+      "dish": "DOLCEZZZA BIANCA"
+    },
+    {
+      "file": "crepes sucrées/overdose.webp",
+      "category": "Crêpes sucrées",
+      "dish": "OVERDOSE"
+    },
+    {
+      "file": "crepes salées/tanino.webp",
+      "category": "Crêpes salées",
+      "dish": "TONINO"
+    },
+    {
+      "file": "crepes salées/TI-PUNCH.webp",
+      "category": "Crêpes salées",
+      "dish": "TI-PUNCH"
+    },
+    {
+      "file": "crepes salées/CARAMBA.webp",
+      "category": "Crêpes salées",
+      "dish": "CARAMBA"
+    },
+    {
+      "file": "crepes salées/mexicane.webp",
+      "category": "Crêpes salées",
+      "dish": "MEXICAINE"
+    },
+    {
+      "file": "crepes salées/MOSKOVA.webp",
+      "category": "Crêpes salées",
+      "dish": "MOSKOVA"
+    },
+    {
+      "file": "gaufres sucrées/lovely.webp",
+      "category": "Gaufres sucrées",
+      "dish": "Lovely"
+    },
+    {
+      "file": "gaufres sucrées/so-sec.webp",
+      "category": "Gaufres sucrées",
+      "dish": "So-Sec"
+    },
+    {
+      "file": "gaufres sucrées/Tofifee.webp",
+      "category": "Gaufres sucrées",
+      "dish": "Tofifee"
+    },
+    {
+      "file": "gaufres sucrées/boreo.webp",
+      "category": "Gaufres sucrées",
+      "dish": "Boreo"
+    },
+    {
+      "file": "gaufres sucrées/Paradice.webp",
+      "category": "Gaufres sucrées",
+      "dish": "Paradice"
+    },
+    {
+      "file": "gaufres sucrées/overdose.webp",
+      "category": "Gaufres sucrées",
+      "dish": "Overdose"
+    },
+    {
+      "file": "gaufres salées/Chicken.webp",
+      "category": "Gaufres salées",
+      "dish": "Chicken"
+    },
+    {
+      "file": "gaufres salées/Gaufre 3 Fromages.webp",
+      "category": "Gaufres salées",
+      "dish": "Gaufre 3 Fromages"
+    },
+    {
+      "file": "gaufres salées/Guido's.webp",
+      "category": "Gaufres salées",
+      "dish": "Guido's"
+    },
+    {
+      "file": "pancakes/Banoffee Classique.webp",
+      "category": "Pancakes",
+      "dish": "Banoffee Classique"
+    },
+    {
+      "file": "pancakes/Banoffee Cremosa.webp",
+      "category": "Pancakes",
+      "dish": "Banoffee Cremosa"
+    },
+    {
+      "file": "pancakes/The Berry One Classique.webp",
+      "category": "Pancakes",
+      "dish": "The Berry One Classique"
+    },
+    {
+      "file": "pancakes/The Berry One Cremosa.webp",
+      "category": "Pancakes",
+      "dish": "The Berry One Cremosa"
+    },
+    {
+      "file": "pancakes/Frutti Classique.webp",
+      "category": "Pancakes",
+      "dish": "Frutti Classique"
+    },
+    {
+      "file": "pancakes/Frutti Cremosa.webp",
+      "category": "Pancakes",
+      "dish": "Frutti Cremosa"
+    },
+    {
+      "file": "sandwitchs/Me So HUngrI.webp",
+      "category": "Sandwichs",
+      "dish": "Me So HUngrI"
+    },
+    {
+      "file": "sandwitchs/Kaporal.webp",
+      "category": "Sandwichs",
+      "dish": "Kaporal"
+    },
+    {
+      "file": "sandwitchs/Pacific.webp",
+      "category": "Sandwichs",
+      "dish": "Pacific"
+    },
+    {
+      "file": "sandwitchs/b52.webp",
+      "category": "Sandwichs",
+      "dish": "B52"
+    },
+    {
+      "file": "salades/Salade Fraîcheur.webp",
+      "category": "Salades",
+      "dish": "Salade Fraîcheur"
+    },
+    {
+      "file": "salades/salade cesar.webp",
+      "category": "Salades",
+      "dish": "Salade César"
+    },
+    {
+      "file": "salades/Camembert Chaud.webp",
+      "category": "Salades",
+      "dish": "Camembert Chaud"
+    },
+    {
+      "file": "salades/Salade Exotique.webp",
+      "category": "Salades",
+      "dish": "Salade Exotique"
+    },
+    {
+      "file": "salades/Burrata Bresaola.webp",
+      "category": "Salades",
+      "dish": "Burrata Bresaola"
+    },
+    {
+      "file": "pasta/Spaghetti aux Boulettes.webp",
+      "category": "Pasta",
+      "dish": "Spaghetti aux Boulettes"
+    },
+    {
+      "file": "pasta/Tagliatelles con Pollo e Spinacci.webp",
+      "category": "Pasta",
+      "dish": "Tagliatelles con Pollo e Spinacci"
+    },
+    {
+      "file": "pasta/Lasagne alla Bolognese.webp",
+      "category": "Pasta",
+      "dish": "Lasagne alla Bolognese"
+    },
+    {
+      "file": "pasta/Penne Pesto et Crevettes.webp",
+      "category": "Pasta",
+      "dish": "Penne Pesto et Crevettes"
+    },
+    {
+      "file": "pasta/Spaghettis al Frutti di Mare.webp",
+      "category": "Pasta",
+      "dish": "Spaghettis al Frutti di Mare"
+    },
+    {
+      "file": "pasta/Paella.webp",
+      "category": "Pasta",
+      "dish": "Paella"
+    },
+    {
+      "file": "plats/Xango.webp",
+      "category": "Plats",
+      "dish": "Xango"
+    },
+    {
+      "file": "plats/Orchidée.webp",
+      "category": "Plats",
+      "dish": "Orchidée"
+    },
+    {
+      "file": "plats/Côte à l'Os.webp",
+      "category": "Plats",
+      "dish": "Côte à l'Os"
+    },
+    {
+      "file": "chichas/chicha.webp",
+      "category": "Chichas",
+      "dish": "Chicha"
+    },
+    {
+      "file": "boissons/Eau Plate.webp",
+      "category": "Boissons",
+      "dish": "Eau Plate"
+    },
+    {
+      "file": "boissons/Eau Gazeuse.webp",
+      "category": "Boissons",
+      "dish": "Eau Gazeuse"
+    },
+    {
+      "file": "boissons/Sodas.webp",
+      "category": "Boissons",
+      "dish": "Sodas"
+    },
+    {
+      "file": "boissons/Energy Drink.webp",
+      "category": "Boissons",
+      "dish": "Energy Drink"
+    }
+  ]
+}

@@ -5,32 +5,39 @@
 //
 // WHY THIS SCRIPT EXISTS
 // The categories, menu_items, prices (menu_item_sizes), featured flags and
-// options/supplements were seeded directly in the database. Only the image
-// bytes remain: they cannot be uploaded from the automation sandbox because its
-// egress policy blocks *.supabase.co (and storage.objects cannot be mutated via
-// SQL — a trigger forbids it). Run this once from a machine with normal network
-// access.
+// options/supplements are seeded by SQL (supabase/bootstrap/03_seed_menu.sql).
+// Only the image bytes remain: they cannot be uploaded from the automation
+// sandbox because its egress policy blocks *.supabase.co (and storage.objects
+// cannot be mutated via SQL — a trigger forbids it). Run this once from a
+// machine with normal network access.
 //
 // USAGE
+//   SUPABASE_SERVICE_ROLE_KEY='<service_role_key>' node scripts/upload-menu-images.mjs
+//
+// Full option list:
 //   SUPABASE_URL=https://<ref>.supabase.co \
 //   SUPABASE_SERVICE_ROLE_KEY=<service_role_key> \
 //   node scripts/upload-menu-images.mjs [--menu ./menu] [--force] [--reset-bucket]
 //
-// - SUPABASE_URL defaults to the project URL below if unset.
+// - SUPABASE_URL defaults to the Jagger project below if unset.
 // - The SERVICE ROLE key is required: uploading to dish-images is admin-only
 //   (RLS), and the service role bypasses RLS. Keep it secret; never commit it.
-// - Matching is by dish NAME, normalised (lowercase, accents stripped,
-//   hyphens -> spaces). Filenames have no accents; DB names do — that's fine.
+// - Matching uses menu/manifest.json, which pairs each image file with an exact
+//   (category, dish) couple. Regenerate it with:
+//       node scripts/generate-menu-seed.mjs
+//   A manifest is required rather than name-normalisation because several files
+//   are not named after their dish ("tanino.webp" -> TONINO) and two dishes share
+//   a name across categories ("Detox", "Overdose").
 // - Idempotent: items that already have an image_url are skipped unless --force.
 // - --reset-bucket : delete ALL existing objects in dish-images first (use it
 //   once, after a full menu re-seed, to clear images tied to old dish IDs).
 // ---------------------------------------------------------------------------
-import { readFileSync, readdirSync, existsSync } from "node:fs";
-import { join, extname, basename } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { join, extname } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
 const BUCKET = "dish-images";
-const DEFAULT_URL = "https://ssmmstetcmgsjnjbjkat.supabase.co";
+const DEFAULT_URL = "https://zouvaqadidzeieytanoa.supabase.co";
 
 const args = process.argv.slice(2);
 const force = args.includes("--force");
@@ -51,15 +58,27 @@ if (!existsSync(menuDir)) {
   process.exit(1);
 }
 
-const CONTENT_TYPE = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp" };
+const manifestPath = join(menuDir, "manifest.json");
+if (!existsSync(manifestPath)) {
+  console.error(
+    `ERROR: ${manifestPath} not found. Generate it with: node scripts/generate-menu-seed.mjs`,
+  );
+  process.exit(1);
+}
+const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 
-// Same normalisation the DB seed used to pair images with dishes.
+const CONTENT_TYPE = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+};
+
 const norm = (s) =>
-  s
+  String(s)
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "") // strip combining accents
     .toLowerCase()
-    .replace(/-/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -90,82 +109,78 @@ if (resetBucket) {
   console.log(`reset-bucket: removed ${removed} existing object(s) from ${BUCKET}`);
 }
 
-// Collect local image files across every sub-folder of menu/.
-const files = [];
-for (const entry of readdirSync(menuDir, { withFileTypes: true })) {
-  if (!entry.isDirectory()) continue;
-  const dir = join(menuDir, entry.name);
-  for (const f of readdirSync(dir)) {
-    const ext = extname(f).slice(1).toLowerCase();
-    if (!CONTENT_TYPE[ext]) continue;
-    files.push({ path: join(dir, f), key: norm(basename(f, extname(f))), ext });
-  }
-}
-
+// Dishes are unique per (category, name) in the database — index them the same
+// way so cross-category homonyms stay distinguishable.
 const { data: items, error } = await supabase
   .from("menu_items")
-  .select("id, name, image_url");
+  .select("id, name, image_url, categories(name)");
 if (error) {
   console.error("ERROR fetching menu_items:", error.message);
   process.exit(1);
 }
 
-// Build a normalised-name -> item index, flagging DB-side collisions.
-const byName = new Map();
+const byKey = new Map();
 for (const it of items) {
-  const k = norm(it.name);
-  if (byName.has(k)) byName.set(k, "AMBIGUOUS");
-  else byName.set(k, it);
+  byKey.set(`${norm(it.categories?.name ?? "")}/${norm(it.name)}`, it);
 }
 
-let uploaded = 0,
-  skipped = 0;
-const imgNoItem = [];
-const ambiguous = [];
+let uploaded = 0;
+let skipped = 0;
+const missingFile = [];
+const noDbItem = [];
+const matched = new Set();
 
-for (const file of files) {
-  const match = byName.get(file.key);
-  if (!match) {
-    imgNoItem.push(file.path);
+for (const entry of manifest.images) {
+  const path = join(menuDir, entry.file);
+  if (!existsSync(path)) {
+    missingFile.push(entry.file);
     continue;
   }
-  if (match === "AMBIGUOUS") {
-    ambiguous.push(file.path);
+  const item = byKey.get(`${norm(entry.category)}/${norm(entry.dish)}`);
+  if (!item) {
+    noDbItem.push(`${entry.category} / ${entry.dish}`);
     continue;
   }
-  if (match.image_url && !force) {
+  matched.add(item.id);
+  if (item.image_url && !force) {
     skipped++;
     continue;
   }
-  const bytes = readFileSync(file.path);
-  const objectPath = `${match.id}-${Date.now()}.${file.ext}`;
+  const ext = extname(entry.file).slice(1).toLowerCase();
+  const contentType = CONTENT_TYPE[ext];
+  if (!contentType) {
+    console.error(`FAIL ${entry.file}: unsupported extension .${ext}`);
+    continue;
+  }
+  const bytes = readFileSync(path);
+  const objectPath = `${item.id}-${Date.now()}.${ext}`;
   const up = await supabase.storage.from(BUCKET).upload(objectPath, bytes, {
-    contentType: CONTENT_TYPE[file.ext],
-    cacheControl: "31536000",
+    contentType,
+    cacheControl: "31536000", // 1 an, comme les uploads de l'admin
     upsert: true,
   });
   if (up.error) {
-    console.error(`FAIL upload ${file.path}: ${up.error.message}`);
+    console.error(`FAIL upload ${entry.file}: ${up.error.message}`);
     continue;
   }
   const publicUrl = supabase.storage.from(BUCKET).getPublicUrl(objectPath).data.publicUrl;
-  const upd = await supabase.from("menu_items").update({ image_url: publicUrl }).eq("id", match.id);
+  const upd = await supabase.from("menu_items").update({ image_url: publicUrl }).eq("id", item.id);
   if (upd.error) {
-    console.error(`FAIL set image_url for ${match.name}: ${upd.error.message}`);
+    console.error(`FAIL set image_url for ${item.name}: ${upd.error.message}`);
     continue;
   }
   uploaded++;
-  console.log(`OK  ${match.name}  <-  ${file.path}`);
+  console.log(`OK  ${entry.category} / ${item.name}  <-  ${entry.file}`);
 }
 
 const itemsWithoutImage = items
-  .filter((it) => !it.image_url && !files.some((f) => byName.get(f.key) === it))
-  .map((it) => it.name);
+  .filter((it) => !it.image_url && !matched.has(it.id))
+  .map((it) => `${it.categories?.name ?? "?"} / ${it.name}`);
 
 console.log("\n──────── SUMMARY ────────");
-console.log(`local images       : ${files.length}`);
-console.log(`uploaded (+url set) : ${uploaded}`);
-console.log(`skipped (had url)   : ${skipped}`);
-console.log(`images w/o DB item  : ${imgNoItem.length ? imgNoItem.join(", ") : "none"}`);
-console.log(`ambiguous matches   : ${ambiguous.length ? ambiguous.join(", ") : "none"}`);
-console.log(`DB items w/o image  : ${itemsWithoutImage.length ? itemsWithoutImage.join(", ") : "none"}`);
+console.log(`manifest entries      : ${manifest.images.length}`);
+console.log(`uploaded (+url set)   : ${uploaded}`);
+console.log(`skipped (had url)     : ${skipped}`);
+console.log(`manifest file missing : ${missingFile.length ? missingFile.join(", ") : "none"}`);
+console.log(`manifest w/o DB dish  : ${noDbItem.length ? noDbItem.join(", ") : "none"}`);
+console.log(`DB dishes w/o image   : ${itemsWithoutImage.length ? itemsWithoutImage.join(", ") : "none"}`);

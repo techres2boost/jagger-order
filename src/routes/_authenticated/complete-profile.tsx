@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useRouter, useSearch } from "@tanstack/re
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Home, Building2, Briefcase, Pencil, Trash2, Plus, ChevronLeft } from "lucide-react";
 import { z } from "zod";
 import { AddAddress, type EditAddress } from "@/components/AddAddress";
@@ -192,7 +192,7 @@ function CompleteProfilePage() {
       </button>
 
       <div className="mb-6">
-        <BoxLogo size={72} />
+        <BrandLogo size={72} />
       </div>
 
       {/* Carte unique : profil + adresse + enregistrer */}

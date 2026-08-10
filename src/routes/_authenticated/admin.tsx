@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { fmt } from "@/lib/format";
 import {
   CheckCircle2,
@@ -493,8 +493,8 @@ function AdminPage() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
-            <BoxLogo size={30} showWordmark={false} />
-            <h1 className="text-lg font-black">Admin BOX</h1>
+            <BrandLogo size={30} showWordmark={false} />
+            <h1 className="text-lg font-black">Admin Jagger</h1>
           </div>
           <div className="flex items-center gap-2">
             <EnableNotifications role="admin" />

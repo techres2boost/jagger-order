@@ -48,34 +48,36 @@
 :root {
   --radius: 1.25rem;
 
-  /* BOX identity — palette "white-label" : ces valeurs (et --secondary-warm /
+  /* Identité JAGGER — palette "white-label" : ces valeurs (et --secondary-warm /
      --accent-warm / --surface-2 plus bas) sont l'unique point de variation
      entre restaurants clients. Voir src/lib/theme-context.tsx : le
-     ThemeProvider réécrit ces mêmes variables au runtime, rien d'autre. */
-  --brand: #b52400; /* terracotta / brique cuite */
-  --brand-foreground: #fff8f1;
-  --brand-dark: #2e1e17; /* brun chaud, support des surfaces sombres */
+     ThemeProvider réécrit ces mêmes variables au runtime, rien d'autre.
+     Elles DOIVENT rester alignées sur le thème "jagger" : c'est ce bloc qui
+     peint le premier rendu SSR, avant que le provider ne s'exécute. */
+  --brand: #1a1a1a; /* noir de marque (logo Jagger) */
+  --brand-foreground: #ffffff;
+  --brand-dark: #0d0d0d; /* noir profond, support des surfaces sombres */
 
-  --background: #fbf3e8; /* crème */
-  --foreground: #241812; /* texte, brun très sombre */
+  --background: #f5f5f0; /* blanc cassé chaud */
+  --foreground: #0d0d0d; /* texte, noir profond */
 
-  --card: #fffdf9;
-  --card-foreground: #241812;
+  --card: #ffffff;
+  --card-foreground: #0d0d0d;
 
-  --popover: #fffdf9;
-  --popover-foreground: #241812;
+  --popover: #ffffff;
+  --popover-foreground: #0d0d0d;
 
-  --primary: #b52400;
-  --primary-foreground: #fff8f1;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
 
-  --secondary: oklch(0.96 0.005 20);
-  --secondary-foreground: oklch(0.2 0.02 20);
+  --secondary: #ecece4;
+  --secondary-foreground: #1a1a1a;
 
-  --muted: oklch(0.96 0.005 20);
-  --muted-foreground: #8b7365;
+  --muted: #ecece4;
+  --muted-foreground: #6e6e68;
 
-  --accent: oklch(0.95 0.02 27);
-  --accent-foreground: oklch(0.58 0.22 27);
+  --accent: #e5e5e5;
+  --accent-foreground: #1a1a1a;
 
   --destructive: oklch(0.55 0.24 27);
   --destructive-foreground: oklch(1 0 0);
@@ -87,18 +89,17 @@
   --gold: oklch(0.82 0.16 85);
   --gold-foreground: oklch(0.18 0.01 20);
 
-  --border: #e6d5c1;
-  --input: #f4e7d6;
-  --ring: #b52400;
+  --border: #e2e2da;
+  --input: #ecece4;
+  --ring: #000000;
 
-  /* Jetons additionnels du design "Comptoir" (mockups BOX Refonte), sans
-     équivalent shadcn direct : brun sombre pour les surfaces "plein" (header,
-     nav pills actives, stepper panier), ambre pour les badges/accents chauds,
-     et une variante de surface plus soutenue que --card pour les fonds de
-     section / pills inactives. Repris tels quels par les 3 thèmes. */
-  --secondary-warm: #2e1e17;
-  --accent-warm: #e39a2b;
-  --surface-2: #f4e7d6;
+  /* Jetons additionnels du design "Comptoir", sans équivalent shadcn direct :
+     ton sombre pour les surfaces "plein" (header, nav pills actives, stepper
+     panier), accent clair pour les badges, et une variante de surface plus
+     soutenue que --card pour les fonds de section / pills inactives. */
+  --secondary-warm: #262626;
+  --accent-warm: #e5e5e5;
+  --surface-2: #ecece4;
 
   /* Empilement (z-index) — jetons partagés.
      La bottom nav reste AU-DESSUS de l'overlay de la modale produit : elle
@@ -116,23 +117,23 @@
 }
 
 .dark {
-  --background: oklch(0.14 0.02 20);
+  --background: oklch(0.14 0 0);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.18 0.02 20);
+  --card: oklch(0.18 0 0);
   --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.18 0.02 20);
+  --popover: oklch(0.18 0 0);
   --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.62 0.22 27);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.22 0.02 20);
+  --primary: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.14 0 0);
+  --secondary: oklch(0.24 0 0);
   --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.22 0.02 20);
-  --muted-foreground: oklch(0.65 0.02 20);
-  --accent: oklch(0.28 0.05 27);
+  --muted: oklch(0.24 0 0);
+  --muted-foreground: oklch(0.68 0 0);
+  --accent: oklch(0.3 0 0);
   --accent-foreground: oklch(0.98 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.62 0.22 27);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.98 0 0);
 }
 
 @layer base {
@@ -181,7 +182,7 @@
     height: 3px;
     width: 2rem;
     border-radius: 999px;
-    background: linear-gradient(90deg, #e11d2e 0%, #ff6b35 100%);
+    background: linear-gradient(90deg, var(--brand) 0%, var(--muted-foreground) 100%);
     background-size: 200% 100%;
     animation: shimmer-underline 2.6s ease-in-out infinite;
   }
@@ -201,9 +202,9 @@
 }
 
 @utility halftone-dark {
-  background-color: #1a1a1a;
+  background-color: var(--brand);
   background-image:
-    radial-gradient(rgba(225, 29, 46, 0.14) 1px, transparent 1.4px),
+    radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1.4px),
     linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0) 60%);
   background-size:
     14px 14px,
@@ -211,15 +212,15 @@
 }
 
 @utility hero-gradient {
-  background: linear-gradient(135deg, #1a1a1a 0%, #2a1114 55%, #e11d2e 100%);
+  background: linear-gradient(135deg, var(--brand-dark) 0%, var(--secondary-warm) 55%, #4a4a44 100%);
 }
 
 @utility brand-gradient {
-  background: linear-gradient(135deg, #e11d2e 0%, #ff6b35 100%);
+  background: linear-gradient(135deg, var(--brand-dark) 0%, var(--muted-foreground) 100%);
 }
 
 @utility tint-red {
-  background-color: #fdf1f1;
+  background-color: var(--surface-2);
 }
 
 @utility diagonal-divider {
@@ -229,8 +230,8 @@
     to bottom right,
     transparent 0%,
     transparent 49.5%,
-    #fdf1f1 50%,
-    #fdf1f1 100%
+    var(--surface-2) 50%,
+    var(--surface-2) 100%
   );
 }
 
@@ -257,11 +258,11 @@
   0%,
   100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(245, 184, 0, 0.55);
+    box-shadow: 0 0 0 0 rgba(38, 38, 38, 0.45);
   }
   50% {
     transform: scale(1.06);
-    box-shadow: 0 0 0 6px rgba(245, 184, 0, 0);
+    box-shadow: 0 0 0 6px rgba(38, 38, 38, 0);
   }
 }
 
@@ -401,7 +402,7 @@
   pointer-events: none;
 }
 
-/* Live tracking (BOX) — marqueur scooter du livreur.
+/* Live tracking — marqueur scooter du livreur.
    Transition douce du déplacement : Leaflet applique le positionnement via
    `transform` sur l'icône ; on anime donc cette propriété. */
 .box-scooter-marker {

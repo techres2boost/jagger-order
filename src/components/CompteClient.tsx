@@ -21,8 +21,7 @@ import { deliveryDistanceKm, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { signAddressPhoto } from "@/lib/address-photo";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { useAvatar } from "@/lib/use-avatar";
-import { BoxLogo } from "@/components/BoxLogo";
-import { useTheme, THEME_LIST } from "@/lib/theme-context";
+import { BrandLogo } from "@/components/BrandLogo";
 
 // Types locaux
 
@@ -61,7 +60,6 @@ export function CompteClient() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
-  const { themeId, theme, setThemeId } = useTheme();
   const { avatarUrl } = useAvatar(user?.id);
 
   // Addresses
@@ -275,7 +273,7 @@ export function CompteClient() {
       <header className="warm-dots relative overflow-hidden bg-brand px-5 pb-9 pt-5">
         <div className="relative mx-auto flex max-w-2xl items-center justify-between">
           <h1 className="text-xl font-black text-brand-foreground">Mon compte</h1>
-          <BoxLogo size={30} showWordmark={false} className="text-brand-foreground opacity-95" />
+          <BrandLogo size={30} showWordmark={false} className="text-brand-foreground opacity-95" />
         </div>
         <div className="relative mx-auto mt-5 flex max-w-2xl items-center gap-4">
           {avatarUrl ? (
@@ -405,44 +403,6 @@ export function CompteClient() {
               </>
             )}
           </div>
-        </section>
-
-        {/* Apparence — preuve que l'architecture white-label fonctionne pour de
-            vrai : changer de thème restyle l'app cliente entière (couleurs +
-            emplacement logo), sans toucher à la structure des écrans. */}
-        <section className="mt-6">
-          <h2 className="text-lg font-semibold">Apparence</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Démonstration white-label : chaque thème simule un restaurant client différent.
-          </p>
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            {THEME_LIST.map((t) => {
-              const active = t.id === themeId;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setThemeId(t.id)}
-                  className={`press flex flex-col items-center gap-2 rounded-[18px] border-2 bg-card p-3 transition-all ${
-                    active ? "shadow-[0_8px_20px_-10px_rgba(46,30,23,0.5)]" : "border-border"
-                  }`}
-                  style={active ? { borderColor: t.vars["--primary"] } : undefined}
-                >
-                  <span className="flex gap-1">
-                    <span className="h-6 w-6 rounded-full" style={{ backgroundColor: t.vars["--primary"] }} />
-                    <span className="h-6 w-6 rounded-full" style={{ backgroundColor: t.vars["--secondary-warm"] }} />
-                    <span className="h-6 w-6 rounded-full" style={{ backgroundColor: t.vars["--accent-warm"] }} />
-                  </span>
-                  <span className="text-xs font-bold">{t.label}</span>
-                  {active && <Check className="h-3.5 w-3.5" style={{ color: t.vars["--primary"] }} />}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Restaurant actif : <span className="font-semibold text-foreground">{theme.restaurantName}</span>
-            {!theme.hasLogo && " · emplacement « LOGO CLIENT » en attente du vrai logo"}
-          </p>
         </section>
 
         <section className="mt-6">

@@ -18,7 +18,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type * as XLSXNS from "xlsx-js-style";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -464,7 +464,7 @@ function DashboardPage() {
       bestDay: string;
     },
   ) => {
-    const title = `Dashboard BOX - Vue d'ensemble (${format(startDate, "yyyy-MM-dd")} au ${format(endDate, "yyyy-MM-dd")})`;
+    const title = `Dashboard Jagger - Vue d'ensemble (${format(startDate, "yyyy-MM-dd")} au ${format(endDate, "yyyy-MM-dd")})`;
     const subtitle = "Récapitulatif des commandes sur la période sélectionnée";
 
     const rows: unknown[][] = [
@@ -1183,7 +1183,7 @@ function DashboardPage() {
         })),
       } as XLSXNS.WBProps;
 
-      const filename = `box_rapport_${format(startDate, "yyyy-MM-dd")}_${format(endDate, "yyyy-MM-dd")}.xlsx`;
+      const filename = `jagger_rapport_${format(startDate, "yyyy-MM-dd")}_${format(endDate, "yyyy-MM-dd")}.xlsx`;
       XLSX.writeFile(workbook, filename, { bookType: "xlsx", cellStyles: true });
       toast.success("Export Excel généré avec succès.");
     } catch (error) {
@@ -1206,7 +1206,7 @@ function DashboardPage() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
-            <BoxLogo size={30} showWordmark={false} />
+            <BrandLogo size={30} showWordmark={false} />
             <h1 className="text-lg font-black">Dashboard</h1>
           </div>
           <button

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { DeliveryTrackingMap } from "@/components/DeliveryTrackingMap";
 import { OrderChat } from "@/components/OrderChat";
 import { hasValidCoords } from "@/lib/geo";
@@ -112,7 +112,7 @@ function TrackingPage() {
   if (!order || !canTrack(order)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
-        <BoxLogo size={56} showWordmark={false} />
+        <BrandLogo size={56} showWordmark={false} />
         <div className="mt-6 w-full max-w-md rounded-3xl border bg-card p-6 text-center shadow-sm">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <PackageX className="h-8 w-8 text-muted-foreground" />
@@ -149,7 +149,7 @@ function TrackingPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <BoxLogo size={30} showWordmark={false} />
+          <BrandLogo size={30} showWordmark={false} />
           <h1 className="text-lg font-black">Suivi de livraison</h1>
         </div>
       </header>

@@ -1,10 +1,10 @@
-import logoUrl from "@/assets/box-logo-transparent.png";
+import logoUrl from "@/assets/jagger-logo.png";
 import { useTheme } from "@/lib/theme-context";
 
-// Logo Box Pizza El Manar — fond transparent pour s'intégrer au fond.
+// Logo du restaurant (Jagger — food & drink).
 const LOGO_URL = logoUrl;
 
-export function BoxLogo({
+export function BrandLogo({
   size = 88,
   height,
   showWordmark = false,
@@ -19,7 +19,7 @@ export function BoxLogo({
   const h = height ?? size;
 
   // Emplacement de logo neutre pour les restaurants clients (pas de vrai
-  // logo BOX) : même gabarit, même position dans chaque écran — seul le
+  // logo fourni) : même gabarit, même position dans chaque écran — seul le
   // rendu change (cf. design system, section 4 "le même écran, trois clients").
   if (!theme.hasLogo) {
     return (
@@ -42,10 +42,12 @@ export function BoxLogo({
     );
   }
 
+  const alt = `Logo ${theme.restaurantName}`;
+
   const img = height ? (
     <img
       src={LOGO_URL}
-      alt="Logo Box Pizza El Manar"
+      alt={alt}
       height={height}
       style={{ height, width: "auto", objectFit: "contain" }}
       draggable={false}
@@ -53,7 +55,7 @@ export function BoxLogo({
   ) : (
     <img
       src={LOGO_URL}
-      alt="Logo Box Pizza El Manar"
+      alt={alt}
       width={size}
       height={size}
       style={{ width: size, height: size, objectFit: "contain" }}
@@ -65,10 +67,12 @@ export function BoxLogo({
     <div className={`flex flex-col items-center gap-3 ${className}`}>
       {img}
       {showWordmark && (
-        <span className="text-3xl font-black tracking-widest text-brand-dark">BOX PIZZA</span>
+        <span className="text-3xl font-black tracking-widest text-brand-dark">
+          {theme.restaurantName.toUpperCase()}
+        </span>
       )}
     </div>
   );
 }
 
-export const BOX_LOGO_URL = LOGO_URL;
+export const BRAND_LOGO_URL = LOGO_URL;

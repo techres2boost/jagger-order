@@ -20,7 +20,7 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
   console.error("Missing VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY");
 } else {
-  webpush.setVapidDetails("mailto:contact@box-app.tn", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  webpush.setVapidDetails("https://wa.me/21644125122", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
 const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
@@ -87,7 +87,7 @@ serve(async (req: Request) => {
     }
 
     const payload = JSON.stringify({
-      title: "BOX Admin",
+      title: "Jagger Admin",
       body: message,
       tag: orderId ? `order-late-${orderId}` : "order-late",
       url: "/admin",

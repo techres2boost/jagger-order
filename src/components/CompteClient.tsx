@@ -16,12 +16,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
-import { Trash, Edit, MapPinOff, LogOut, Check } from "lucide-react";
+import { Trash, Edit, MapPinOff, LogOut, Check, MessageCircle, Phone } from "lucide-react";
 import { deliveryDistanceKm, DELIVERY_RADIUS_KM } from "@/lib/geo";
 import { signAddressPhoto } from "@/lib/address-photo";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { useAvatar } from "@/lib/use-avatar";
 import { BrandLogo } from "@/components/BrandLogo";
+import { RESTAURANT_PHONE_E164, RESTAURANT_WHATSAPP_URL } from "@/lib/restaurant";
 
 // Types locaux
 
@@ -490,6 +491,28 @@ export function CompteClient() {
           {addresses.length >= 5 && (
             <p className="mt-2 text-sm text-muted-foreground">Limite de 5 adresses atteinte.</p>
           )}
+        </section>
+
+        {/* Contact du restaurant. Seul point de contact de l'app : ce projet
+            n'a pas de site vitrine, "/" sert directement l'app de commande. */}
+        <section className="mt-6">
+          <h2 className="text-lg font-semibold">Nous contacter</h2>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <a
+              href={RESTAURANT_WHATSAPP_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="press flex h-[50px] items-center justify-center gap-2 rounded-full border border-border bg-card text-sm font-semibold"
+            >
+              <MessageCircle className="h-4 w-4" /> WhatsApp
+            </a>
+            <a
+              href={`tel:${RESTAURANT_PHONE_E164}`}
+              className="press flex h-[50px] items-center justify-center gap-2 rounded-full border border-border bg-card text-sm font-semibold"
+            >
+              <Phone className="h-4 w-4" /> Appeler
+            </a>
+          </div>
         </section>
 
         {/* Actions sensibles — isolées, jamais d'animation ludique ici. */}

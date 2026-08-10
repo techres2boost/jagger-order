@@ -16,7 +16,7 @@ const SUPABASE_PUBLISHABLE_KEY =
 // réutiliser celle d'un autre restaurant ferait rejeter les push par FCM.
 // Absente, l'abonnement échoue proprement (voir le garde plus bas) ; le reste
 // de l'application continue de fonctionner.
-const VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim() ?? "";
+const VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim() || "BDENTh0xtRBP-76fbzGQ4cCKYRlAZpTEionZSm22iOG0lnzfm9Ld-rYONk_oOKuU_wqxct1DcAFZ55DUtx7qDrk";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);

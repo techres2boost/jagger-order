@@ -1619,14 +1619,21 @@ CREATE POLICY "Admin delete dish images" ON storage.objects AS PERMISSIVE FOR DE
    FROM user_roles
   WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = 'admin'::app_role))))));
 
+-- Avatars : lecture publique (le bucket l'est), écriture réservée au compte
+-- authentifié et cantonnée au dossier portant son uid. L'UPDATE porte un
+-- WITH CHECK explicite — l'upload du front utilise `upsert: true`, donc
+-- remplacer une photo passe par un UPDATE, qui ne doit pas pouvoir déplacer
+-- l'objet vers le dossier d'un autre utilisateur. Voir aussi
+-- 04_avatar_storage_policies.sql, qui rejoue ce bloc seul sur un projet déjà
+-- installé.
 DROP POLICY IF EXISTS "Public can view avatar images" ON storage.objects;
 CREATE POLICY "Public can view avatar images" ON storage.objects AS PERMISSIVE FOR SELECT TO public USING ((bucket_id = 'avatars'::text));
 DROP POLICY IF EXISTS "Avatar upload own" ON storage.objects;
-CREATE POLICY "Avatar upload own" ON storage.objects AS PERMISSIVE FOR INSERT TO public WITH CHECK (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
+CREATE POLICY "Avatar upload own" ON storage.objects AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = ((SELECT auth.uid()))::text)));
 DROP POLICY IF EXISTS "Avatar update own" ON storage.objects;
-CREATE POLICY "Avatar update own" ON storage.objects AS PERMISSIVE FOR UPDATE TO public USING (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
+CREATE POLICY "Avatar update own" ON storage.objects AS PERMISSIVE FOR UPDATE TO authenticated USING (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = ((SELECT auth.uid()))::text))) WITH CHECK (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = ((SELECT auth.uid()))::text)));
 DROP POLICY IF EXISTS "Avatar delete own" ON storage.objects;
-CREATE POLICY "Avatar delete own" ON storage.objects AS PERMISSIVE FOR DELETE TO public USING (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
+CREATE POLICY "Avatar delete own" ON storage.objects AS PERMISSIVE FOR DELETE TO authenticated USING (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = ((SELECT auth.uid()))::text)));
 
 DROP POLICY IF EXISTS address_photos_owner_read ON storage.objects;
 CREATE POLICY address_photos_owner_read ON storage.objects AS PERMISSIVE FOR SELECT TO authenticated USING (((bucket_id = 'address-photos'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));

@@ -7,6 +7,9 @@ import { notifyAvatarChanged, useAvatar } from "@/lib/use-avatar";
 const AVATAR_BUCKET = "avatars";
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 5 * 1024 * 1024;
+// Extensions possibles d'un avatar : le fichier est toujours nommé
+// `{user_id}/avatar.{ext}`, l'extension suit le type MIME envoyé.
+const AVATAR_EXTS = ["jpg", "png", "webp"] as const;
 
 interface Props {
   userId: string;
@@ -44,6 +47,12 @@ export function ProfileAvatar({ userId }: Props) {
         .update({ avatar_url: publicUrl } as never)
         .eq("id", userId);
       if (dbErr) throw dbErr;
+      // Changer de format laisse l'ancien fichier derrière lui (avatar.jpg
+      // conservé alors que le profil pointe désormais sur avatar.png). On
+      // nettoie une fois la nouvelle URL enregistrée : un échec ici ne doit pas
+      // faire échouer la mise à jour, l'orphelin est sans effet visible.
+      const stale = AVATAR_EXTS.filter((e) => e !== ext).map((e) => `${userId}/avatar.${e}`);
+      await supabase.storage.from(AVATAR_BUCKET).remove(stale);
       notifyAvatarChanged(publicUrl);
       await refresh();
       toast.success("Photo de profil mise à jour");
@@ -61,7 +70,7 @@ export function ProfileAvatar({ userId }: Props) {
     setBusy(true);
     try {
       // Supprime tous les avatars du dossier utilisateur (jpg/png/webp).
-      const paths = ["jpg", "png", "webp"].map((e) => `${userId}/avatar.${e}`);
+      const paths = AVATAR_EXTS.map((e) => `${userId}/avatar.${e}`);
       await supabase.storage.from(AVATAR_BUCKET).remove(paths);
       const { error: dbErr } = await supabase
         .from("profiles")

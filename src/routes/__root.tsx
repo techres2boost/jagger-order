@@ -3,7 +3,6 @@ import {
   Outlet,
   createRootRouteWithContext,
   useRouter,
-  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -15,7 +14,7 @@ import { CartProvider } from "../lib/cart-context";
 import { ThemeProvider } from "../lib/theme-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import BottomNavBar from "@/components/BottomNavBar";
 
 function NotFoundComponent() {
@@ -78,38 +77,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#E11D2E" },
-      { title: "BOX — Menu, commande & livraison" },
+      { name: "theme-color", content: "#000000" },
+      { title: "Jagger — Menu, commande & livraison" },
       {
         name: "description",
         content:
-          "Consultez le menu du restaurant BOX (burgers, pizzas, sandwichs, boissons) et passez commande à retirer sur place.",
+          "Consultez le menu de Jagger (cafés, crêpes, gaufres, pancakes, pasta, salades) et commandez en livraison ou à retirer sur place.",
       },
-      { name: "author", content: "BOX" },
-      { property: "og:title", content: "BOX — Menu, commande & livraison" },
+      { name: "author", content: "Jagger" },
+      { property: "og:title", content: "Jagger — Menu, commande & livraison" },
       {
         property: "og:description",
         content:
-          "Consultez le menu du restaurant BOX (burgers, pizzas, sandwichs, boissons) et passez commande à retirer sur place.",
+          "Consultez le menu de Jagger (cafés, crêpes, gaufres, pancakes, pasta, salades) et commandez en livraison ou à retirer sur place.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "BOX — Menu, commande & livraison" },
+      { name: "twitter:title", content: "Jagger — Menu, commande & livraison" },
       {
         name: "twitter:description",
         content:
-          "Consultez le menu du restaurant BOX (burgers, pizzas, sandwichs, boissons) et passez commande à retirer sur place.",
+          "Consultez le menu de Jagger (cafés, crêpes, gaufres, pancakes, pasta, salades) et commandez en livraison ou à retirer sur place.",
       },
-      {
-        property: "og:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f11ad84a-b663-4f6a-badd-e956a9667e71/id-preview-fab04c13--37184afe-87a7-4e82-81b3-32ceffe8a672.lovable.app-1783598327711.png",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f11ad84a-b663-4f6a-badd-e956a9667e71/id-preview-fab04c13--37184afe-87a7-4e82-81b3-32ceffe8a672.lovable.app-1783598327711.png",
-      },
+      { property: "og:image", content: "/favicon.png" },
+      { name: "twitter:image", content: "/favicon.png" },
       { httpEquiv: "X-Content-Type-Options", content: "nosniff" },
       // CSP : source de vérité UNIQUE dans src/server.ts (en-tête HTTP + nonce par
       // requête). La meta http-equiv redondante a été retirée (audit #2).
@@ -150,39 +141,39 @@ function RootShell({ children }: { children: ReactNode }) {
 function Splash() {
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white">
-      <div className="box-splash-stage" style={{ perspective: "800px" }}>
-        <div className="box-splash-intro">
-          <div className="box-splash-spin">
-            <BoxLogo size={140} />
+      <div className="brand-splash-stage" style={{ perspective: "800px" }}>
+        <div className="brand-splash-intro">
+          <div className="brand-splash-spin">
+            <BrandLogo size={140} />
           </div>
         </div>
       </div>
-      <div className="box-splash-dots" aria-hidden="true">
+      <div className="brand-splash-dots" aria-hidden="true">
         <span />
         <span />
         <span />
       </div>
       <style>{`
-        .box-splash-stage { display: flex; align-items: center; justify-content: center; }
-        .box-splash-intro {
-          animation: boxIntro 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        .brand-splash-stage { display: flex; align-items: center; justify-content: center; }
+        .brand-splash-intro {
+          animation: brandIntro 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
           will-change: transform, opacity;
         }
-        @keyframes boxIntro {
+        @keyframes brandIntro {
           0%   { opacity: 0; transform: scale(0.9); }
           100% { opacity: 1; transform: scale(1); }
         }
-        .box-splash-spin {
+        .brand-splash-spin {
           transform-style: preserve-3d;
-          animation: boxSpin 3.6s ease-in-out 700ms infinite;
+          animation: brandSpin 3.6s ease-in-out 700ms infinite;
           will-change: transform;
         }
-        @keyframes boxSpin {
+        @keyframes brandSpin {
           0%   { transform: rotateY(-14deg); }
           50%  { transform: rotateY(14deg); }
           100% { transform: rotateY(-14deg); }
         }
-        .box-splash-dots {
+        .brand-splash-dots {
           position: absolute;
           bottom: 3rem;
           left: 0;
@@ -191,18 +182,17 @@ function Splash() {
           justify-content: center;
           gap: 0.5rem;
         }
-        .box-splash-dots span {
+        .brand-splash-dots span {
           width: 8px;
           height: 8px;
           border-radius: 9999px;
-          background: hsl(var(--brand, 0 84% 55%));
-          background: var(--color-brand, #e11d2a);
+          background: var(--color-brand, #1a1a1a);
           opacity: 0.3;
-          animation: boxDot 1.2s ease-in-out infinite;
+          animation: brandDot 1.2s ease-in-out infinite;
         }
-        .box-splash-dots span:nth-child(2) { animation-delay: 0.15s; }
-        .box-splash-dots span:nth-child(3) { animation-delay: 0.3s; }
-        @keyframes boxDot {
+        .brand-splash-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .brand-splash-dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes brandDot {
           0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
           40%           { opacity: 1;    transform: scale(1); }
         }
@@ -216,11 +206,6 @@ function RootComponent() {
   const router = useRouter();
   const [showSplash, setShowSplash] = useState(true);
   const [showBottomNav, setShowBottomNav] = useState(false);
-
-  // La bottom nav appartient à l'app de commande : on la masque sur le site
-  // vitrine (route racine "/"), quel que soit le rôle de l'utilisateur.
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isVitrine = pathname === "/";
 
   useEffect(() => {
     const t = setTimeout(() => setShowSplash(false), 1600);
@@ -278,7 +263,7 @@ function RootComponent() {
         <CartProvider>
           {showSplash && <Splash />}
           <Outlet />
-          {showBottomNav && !isVitrine && <BottomNavBar />}
+          {showBottomNav && <BottomNavBar />}
           <Toaster position="top-center" richColors />
         </CartProvider>
       </ThemeProvider>

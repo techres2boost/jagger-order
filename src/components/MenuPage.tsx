@@ -22,17 +22,17 @@ import {
   ArrowRight,
   X,
 } from "lucide-react";
-import { BoxLogo } from "@/components/BoxLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useAvatar } from "@/lib/use-avatar";
 import { EnableNotifications } from "@/components/EnableNotifications";
-import burger3d from "@/assets/burger-3d.png";
-import pizza3d from "@/assets/pizza-3d.png";
-import drink3d from "@/assets/drink-3d.png";
+import promoCappuccino from "@/assets/promo-cappuccino.webp";
+import promoCrepe from "@/assets/promo-crepe.webp";
+import promoMilkshake from "@/assets/promo-milkshake.webp";
 
 const PROMO_CARDS = [
-  { img: burger3d, alt: "Burger 3D" },
-  { img: pizza3d, alt: "Pizza 3D" },
-  { img: drink3d, alt: "Boisson 3D" },
+  { img: promoCappuccino, alt: "Cappuccino crème" },
+  { img: promoCrepe, alt: "Crêpe sucrée Overdose" },
+  { img: promoMilkshake, alt: "Milkshake Oreo" },
 ];
 import { toast } from "sonner";
 
@@ -271,7 +271,7 @@ export function MenuPage() {
         <div className="relative mx-auto max-w-3xl px-4">
           {/* Top row : logo + search + connexion */}
           <div className="flex items-center gap-3">
-            <BoxLogo
+            <BrandLogo
               size={40}
               showWordmark={false}
               className="text-[color:var(--primary-foreground)] [&_img]:drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)]"
@@ -433,7 +433,7 @@ export function MenuPage() {
                         width={120}
                         height={120}
                         loading="lazy"
-                        className="h-24 w-24 shrink-0 object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.35)] rotate-[-6deg]"
+                        className="h-24 w-24 shrink-0 rounded-2xl object-cover shadow-[0_10px_16px_rgba(0,0,0,0.35)] rotate-[-6deg]"
                       />
                     </div>
                   </div>
@@ -660,7 +660,7 @@ function PopularCard({
             />
           ) : (
             <div className="relative flex h-full w-full items-center justify-center rounded-full bg-[color:var(--surface-2)]">
-              <BoxLogo size={48} showWordmark={false} />
+              <BrandLogo size={48} showWordmark={false} />
             </div>
           )}
         </div>
@@ -737,7 +737,7 @@ function ProductCard({
             />
           ) : (
             <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-[color:var(--surface-2)]/60">
-              <BoxLogo size={56} showWordmark={false} />
+              <BrandLogo size={56} showWordmark={false} />
             </div>
           )}
           {item.populaire && (
@@ -894,7 +894,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
                 />
               ) : (
                 <div className="mx-auto flex h-full w-56 items-center justify-center">
-                  <BoxLogo size={100} showWordmark={false} />
+                  <BrandLogo size={100} showWordmark={false} />
                 </div>
               )}
             </button>
@@ -1109,7 +1109,7 @@ function DishDetail({ item, onClose }: { item: Dish; onClose: () => void }) {
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <BoxLogo size={120} showWordmark={false} />
+            <BrandLogo size={120} showWordmark={false} />
           )}
         </div>
       )}

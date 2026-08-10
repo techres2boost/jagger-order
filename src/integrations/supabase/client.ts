@@ -38,11 +38,11 @@ function createSupabaseClient() {
   const SUPABASE_URL =
     import.meta.env.VITE_SUPABASE_URL ||
     process.env.SUPABASE_URL ||
-    "https://ssmmstetcmgsjnjbjkat.supabase.co";
+    "https://zouvaqadidzeieytanoa.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY =
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     process.env.SUPABASE_PUBLISHABLE_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbW1zdGV0Y21nc2puamJqa2F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NTUyMDgsImV4cCI6MjA5OTQzMTIwOH0.W7GFHmrowlCwxuMf9GAuqO1L0iLDf4sz3IUD9eHj86g";
+    "sb_publishable_i1DnyeorIb-1zHs3yZMJOA__we_sYWn";
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [

@@ -88,6 +88,12 @@ const PAGE_SIZE = 20;
 
 function CommandesPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  // Miroir de `orders` lisible sans l'ajouter aux dépendances de l'effet de
+  // chargement — l'y mettre relancerait ce même effet en boucle.
+  const ordersRef = useRef<OrderRow[]>([]);
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [items, setItems] = useState<Record<string, OrderItemRow[]>>({});
   const [itemOptions, setItemOptions] = useState<Record<string, OrderItemOptionRow[]>>({});
@@ -146,31 +152,35 @@ function CommandesPage() {
   const loadRelated = useCallback(async (orderIds: string[]) => {
     if (orderIds.length === 0) return;
     const [itemsRes, ratingsRes] = await Promise.all([
-      supabase.from("order_items").select("*").in("order_id", orderIds),
+      // Les options sont imbriquées dans la même requête que les lignes : elles
+      // faisaient l'objet d'un troisième aller-retour, qui ne pouvait démarrer
+      // qu'une fois les identifiants de lignes connus.
+      supabase
+        .from("order_items")
+        .select("*, order_item_options(order_item_id, option_name, option_price)")
+        .in("order_id", orderIds),
       supabase.from("order_ratings").select("*").in("order_id", orderIds),
     ]);
 
     if (itemsRes.error) {
       toast.error(itemsRes.error.message);
     } else {
-      const orderItems = (itemsRes.data as OrderItemRow[]) ?? [];
+      type NestedItem = OrderItemRow & {
+        order_item_options?: Array<{
+          order_item_id: string;
+          option_name: string;
+          option_price: number | string;
+        }> | null;
+      };
+      const orderItems = (itemsRes.data as NestedItem[]) ?? [];
       const grouped: Record<string, OrderItemRow[]> = {};
+      const optionsGrouped: Record<string, OrderItemOptionRow[]> = {};
       orderItems
         .sort((a, b) => a.name.localeCompare(b.name))
         .forEach((item) => {
-          grouped[item.order_id] = [...(grouped[item.order_id] ?? []), item];
-        });
-      setItems((prev) => ({ ...prev, ...grouped }));
-
-      const orderItemIds = orderItems.map((item) => item.id);
-      if (orderItemIds.length > 0) {
-        const { data: optionsData, error: optionsError } = await supabase
-          .from("order_item_options")
-          .select("order_item_id, option_name, option_price")
-          .in("order_item_id", orderItemIds);
-        if (!optionsError) {
-          const optionsGrouped: Record<string, OrderItemOptionRow[]> = {};
-          (optionsData ?? []).forEach((o) => {
+          const { order_item_options: nested, ...row } = item;
+          grouped[item.order_id] = [...(grouped[item.order_id] ?? []), row as OrderItemRow];
+          (nested ?? []).forEach((o) => {
             optionsGrouped[o.order_item_id] = [
               ...(optionsGrouped[o.order_item_id] ?? []),
               {
@@ -180,9 +190,9 @@ function CommandesPage() {
               },
             ];
           });
-          setItemOptions((prev) => ({ ...prev, ...optionsGrouped }));
-        }
-      }
+        });
+      setItems((prev) => ({ ...prev, ...grouped }));
+      setItemOptions((prev) => ({ ...prev, ...optionsGrouped }));
     }
 
     if (ratingsRes.error) {
@@ -206,7 +216,11 @@ function CommandesPage() {
   useEffect(() => {
     let isMounted = true;
     (async () => {
-      setLoading(true);
+      // Un rechargement déclenché par le Realtime remplace la liste en place :
+      // afficher l'écran de chargement ferait clignoter toute la page à chaque
+      // changement de statut. On ne le montre que quand il n'y a encore rien.
+      const isBackgroundRefresh = ordersRef.current.length > 0;
+      if (!isBackgroundRefresh) setLoading(true);
       const { data, error } = await buildBaseQuery();
       if (!isMounted) return;
       if (error) {

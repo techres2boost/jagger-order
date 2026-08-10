@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { MapPin, Phone, CheckCircle2, Navigation, X } from "lucide-react";
 import { signAddressPhoto } from "@/lib/address-photo";
 import { DeliveryBroadcastStatus } from "@/components/DeliveryBroadcastStatus";
+import { ORDER_WITH_ITEMS_SELECT, splitOrdersWithItems } from "@/lib/order-queries";
 
 // Statuts d'une commande "active/en cours" pour un livreur : proposition à
 // accepter (ready) + livraison en cours (delivering). Le chat n'existe lui que
@@ -148,56 +149,25 @@ export function DriverOrders() {
 
     async function loadOrders(id: string) {
       // Propositions (ready, en attente d'acceptation) ET livraisons en cours
-      // (delivering) assignées à ce livreur.
-      const { data: ordersData, error } = await supabase
+      // (delivering) assignées à ce livreur. Commandes, lignes et options
+      // arrivent en UN aller-retour (cf. src/lib/order-queries.ts) : les trois
+      // requêtes séquentielles d'avant retardaient l'affichage d'une
+      // proposition, alors que le livreur n'a que 2 minutes pour l'accepter.
+      const { data, error } = await supabase
         .from("orders")
-        .select("*")
+        .select(ORDER_WITH_ITEMS_SELECT)
         .eq("assigned_livreur_id", id)
         .in("status", [...DRIVER_ACTIVE_STATUSES]);
       if (error) {
         toast.error(error.message);
         return;
       }
-      const list = (ordersData as OrderRow[]) ?? [];
       if (!mounted) return;
-      setOrders(list);
 
-      const orderIds = list.map((o) => o.id);
-      if (orderIds.length === 0) {
-        setItems({});
-        setItemOptions({});
-        return;
-      }
-
-      const { data: itemsData } = await supabase
-        .from("order_items")
-        .select("*")
-        .in("order_id", orderIds);
-      if (!mounted || !itemsData) return;
-      const grouped: Record<string, OrderItemRow[]> = {};
-      (itemsData as OrderItemRow[]).forEach((it) => {
-        (grouped[it.order_id] ||= []).push(it);
-      });
-      setItems(grouped);
-
-      const itemIds = (itemsData as OrderItemRow[]).map((it) => it.id);
-      if (itemIds.length === 0) {
-        setItemOptions({});
-        return;
-      }
-      const { data: optionsData } = await supabase
-        .from("order_item_options")
-        .select("order_item_id, option_name, option_price")
-        .in("order_item_id", itemIds);
-      if (!mounted || !optionsData) return;
-      const optMap: Record<string, ItemOptionRow[]> = {};
-      optionsData.forEach((o) => {
-        (optMap[o.order_item_id] ||= []).push({
-          option_name: o.option_name,
-          option_price: Number(o.option_price),
-        });
-      });
-      setItemOptions(optMap);
+      const split = splitOrdersWithItems<OrderRow, OrderItemRow>(data);
+      setOrders(split.orders);
+      setItems(split.items);
+      setItemOptions(split.itemOptions);
     }
 
     init();

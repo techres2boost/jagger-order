@@ -6,7 +6,7 @@ import {
   useLocation,
   useNavigate,
 } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandLogo } from "@/components/BrandLogo";
 import { fmt } from "@/lib/format";
@@ -27,6 +27,7 @@ import {
 import { EnableNotifications } from "@/components/EnableNotifications";
 import { toast } from "sonner";
 import { computeEstimatedTimes } from "@/lib/order-timing";
+import { ORDER_WITH_ITEMS_SELECT, splitOrdersWithItems } from "@/lib/order-queries";
 import {
   Select,
   SelectContent,
@@ -88,6 +89,11 @@ interface OrderRow {
 // L'admin dispose de filtres (statut, montant, client, adresse, ville) pour
 // cibler une période plus étroite lorsque ce plafond est atteint.
 const HISTORY_LIMIT = 200;
+
+// Statuts « vivants » : ceux que le tableau de bord affiche ou sur lesquels il
+// agit. Le reste appartient à l'historique, qui a sa propre requête bornée.
+const LIVE_STATUSES = ["pending", "accepted", "ready", "delivering"] as const;
+const LIVE_LIMIT = 200;
 
 const ADMIN_HISTORY_STATUSES: AdminOrderStatus[] = [
   "accepted",
@@ -172,72 +178,108 @@ function AdminPage() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const beepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function loadAll() {
-    await supabase.rpc("expire_stale_orders");
-    const { data: livreursData } = await supabase
-      .from("livreurs")
-      .select("id, nom, is_active")
-      .eq("is_active", true)
-      .order("nom", { ascending: true });
-    if (livreursData) setLivreurs(livreursData as LivreurRow[]);
+  // Le tableau de bord ne rend QUE les commandes vivantes (l'historique a sa
+  // propre requête filtrée côté serveur, cf. `historyRows`). On borne donc la
+  // requête à ces statuts : elle rapatriait jusqu'ici la table `orders`
+  // entière — et le faisait à chaque événement Realtime.
+  const loadAll = useCallback(async () => {
+    const [livreursRes, ordersRes] = await Promise.all([
+      supabase
+        .from("livreurs")
+        .select("id, nom, is_active")
+        .eq("is_active", true)
+        .order("nom", { ascending: true }),
+      supabase
+        .from("orders")
+        .select(ORDER_WITH_ITEMS_SELECT)
+        .in("status", [...LIVE_STATUSES])
+        .order("created_at", { ascending: false })
+        .limit(LIVE_LIMIT),
+    ]);
 
-    const { data: os } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (os) {
-      setOrders(os as OrderRow[]);
-      const ids = os.map((o) => o.id);
-      if (ids.length) {
-        const { data: its } = await supabase.from("order_items").select("*").in("order_id", ids);
-        if (its) {
-          const map: Record<string, ItemRow[]> = {};
-          (its as ItemRow[]).forEach((it) => {
-            (map[it.order_id] ||= []).push(it);
-          });
-          setItems(map);
+    if (livreursRes.data) setLivreurs(livreursRes.data as LivreurRow[]);
+    if (ordersRes.error) return;
 
-          const itemIds = (its as ItemRow[]).map((it) => it.id);
-          if (itemIds.length) {
-            const { data: opts } = await supabase
-              .from("order_item_options")
-              .select("order_item_id, option_name, option_price")
-              .in("order_item_id", itemIds);
-            if (opts) {
-              const optMap: Record<string, ItemOptionRow[]> = {};
-              opts.forEach((o) => {
-                (optMap[o.order_item_id] ||= []).push({
-                  option_name: o.option_name,
-                  option_price: Number(o.option_price),
-                });
-              });
-              setItemOptions(optMap);
-            }
-          } else {
-            setItemOptions({});
-          }
-        }
-      }
-    }
-  }
+    const { orders, items, itemOptions } = splitOrdersWithItems<OrderRow, ItemRow>(ordersRes.data);
+    setOrders(orders);
+    setItems(items);
+    setItemOptions(itemOptions);
+  }, []);
 
   useEffect(() => {
     loadAll();
+
+    // Un changement de statut arrive avec la ligne complète dans le payload
+    // Realtime : on l'applique directement à l'état, sans requête. C'est ce qui
+    // rend la synchronisation quasi instantanée — auparavant chaque événement
+    // déclenchait un rechargement complet (3 requêtes en cascade) avant que
+    // l'écran ne bouge.
+    // INSERT et DELETE changent la composition de la liste (et un INSERT n'a
+    // pas encore ses lignes) : on recharge, en regroupant les rafales.
+    let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleReload = () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        reloadTimer = null;
+        loadAll();
+      }, 120);
+    };
+
     const channel = supabase
       .channel("admin-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => loadAll())
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        (payload) => {
+          if (payload.eventType !== "UPDATE") {
+            scheduleReload();
+            return;
+          }
+          const next = payload.new as OrderRow;
+          setOrders((prev) => {
+            const known = prev.some((o) => o.id === next.id);
+            // Une commande qui quitte les statuts vivants sort de la liste ;
+            // une commande qui y entre sans y être encore impose un rechargement
+            // (ses lignes ne sont pas en mémoire).
+            if (!LIVE_STATUSES.includes(next.status as (typeof LIVE_STATUSES)[number])) {
+              return known ? prev.filter((o) => o.id !== next.id) : prev;
+            }
+            if (!known) {
+              scheduleReload();
+              return prev;
+            }
+            return prev.map((o) => (o.id === next.id ? { ...o, ...next } : o));
+          });
+        },
+      )
       .subscribe();
-    const poll = setInterval(loadAll, 15000);
+
+    // Filet de sécurité si le websocket tombe : le Realtime reste le chemin
+    // rapide, ce sondage ne fait que rattraper une éventuelle coupure. Il était
+    // à 15 s alors qu'il rechargeait la table entière.
+    //
+    // `expire_stale_orders` est une ÉCRITURE : elle était appelée à chaque
+    // rechargement, donc à chaque événement Realtime. Le job pg_cron l'exécute
+    // déjà toutes les 15 s côté serveur ; on la garde ici uniquement comme
+    // filet, au rythme du sondage, si le cron n'était pas actif sur le projet.
+    const poll = setInterval(() => {
+      supabase.rpc("expire_stale_orders").then(() => loadAll());
+    }, 60000);
     return () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
       supabase.removeChannel(channel);
       clearInterval(poll);
     };
-  }, []);
+  }, [loadAll]);
 
+  // Le compte à rebours ne concerne que les commandes en attente : inutile de
+  // re-rendre tout l'écran chaque seconde quand il n'y en a aucune.
+  const hasPending = orders.some((o) => o.status === "pending");
   useEffect(() => {
+    if (!hasPending) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [hasPending]);
 
   // Débounce des montants pour ne pas requêter à chaque frappe.
   useEffect(() => {
@@ -395,6 +437,20 @@ function AdminPage() {
     };
   }, []);
 
+  // Applique un changement de statut localement AVANT la réponse du serveur, et
+  // renvoie de quoi revenir en arrière si l'écriture échoue. Le bouton réagit
+  // ainsi immédiatement ; l'événement Realtime qui suit ne fait que confirmer.
+  function patchOrderLocally(id: string, patch: Partial<OrderRow>) {
+    let previous: OrderRow | undefined;
+    setOrders((prev) => {
+      previous = prev.find((o) => o.id === id);
+      return prev.map((o) => (o.id === id ? { ...o, ...patch } : o));
+    });
+    return () => {
+      if (previous) setOrders((prev) => prev.map((o) => (o.id === id ? previous! : o)));
+    };
+  }
+
   async function acceptOrder(id: string) {
     const order = orders.find((o) => o.id === id);
     const acceptedAt = new Date();
@@ -402,6 +458,7 @@ function AdminPage() {
       acceptedAt,
       order?.distance_km ?? null,
     );
+    const rollback = patchOrderLocally(id, { status: "accepted" });
     const { error } = await supabase
       .from("orders")
       .update({
@@ -412,8 +469,10 @@ function AdminPage() {
       })
       .eq("id", id)
       .eq("status", "pending");
-    if (error) toast.error(error.message);
-    else toast.success("Commande acceptée");
+    if (error) {
+      rollback();
+      toast.error(error.message);
+    } else toast.success("Commande acceptée");
   }
 
   // Feature 2 : marquer prête = passer le statut à `ready`. L'assignation d'un
@@ -422,12 +481,14 @@ function AdminPage() {
   // cron couvre les timeouts et les reprises.
   async function markReady(id: string) {
     const readyAt = new Date().toISOString();
+    const rollback = patchOrderLocally(id, { status: "ready" });
     const { error } = await supabase
       .from("orders")
       .update({ status: "ready", ready_at: readyAt } as never)
       .eq("id", id)
       .eq("status", "accepted");
     if (error) {
+      rollback();
       toast.error(error.message);
       return;
     }
@@ -440,19 +501,23 @@ function AdminPage() {
   }
 
   async function markDelivered(id: string) {
+    const rollback = patchOrderLocally(id, { status: "delivered" });
     const { error } = await supabase
       .from("orders")
       .update({ status: "delivered", delivered_at: new Date().toISOString() } as never)
       .eq("id", id)
       .eq("status", "delivering");
-    if (error) toast.error(error.message);
-    else toast.success("Commande livrée");
+    if (error) {
+      rollback();
+      toast.error(error.message);
+    } else toast.success("Commande livrée");
   }
 
   async function confirmRefuse() {
     if (!refusingId) return;
     const id = refusingId;
     const reason = refuseReason;
+    const rollback = patchOrderLocally(id, { status: "refused" });
     // Tente d'écrire aussi le motif ; si la colonne n'existe pas encore, retente sans.
     let { error } = await supabase
       .from("orders")
@@ -468,8 +533,10 @@ function AdminPage() {
       error = retry.error;
       if (!error) toast.warning("Motif non enregistré (colonne manquante en base).");
     }
-    if (error) toast.error(error.message);
-    else toast.success("Commande refusée");
+    if (error) {
+      rollback();
+      toast.error(error.message);
+    } else toast.success("Commande refusée");
     setRefusingId(null);
   }
 

@@ -3,8 +3,8 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "app.lovable.jagger_order",
-      "sha256_cert_fingerprints": []
+      "package_name": "com.res2boost.jagger_order",
+      "sha256_cert_fingerprints": [63:45:0D:70:C2:87:70:F7:F6:6D:95:BA:57:96:8D:99:E4:76:FE:54:E7:B0:3B:04:08:BA:21:ED:8C:47:30:87]
     }
   }
 ]

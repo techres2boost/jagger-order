@@ -1,37 +1,132 @@
 workflows:
-  ios-build:
-    name: iOS Build
+  ios-jagger:
+    name: Jagger iOS Build
     max_build_duration: 60
+    instance_type: mac_mini_m2
     environment:
+      groups:
+        - ios_signing
+      vars:
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+        APP_ID: "6801565887"
+        APP_STORE_APPLE_ID: "[à récupérer dans App Store Connect une fois l'app créée]"
       node: latest
       xcode: latest
-      cocoapods: default
+      # Pas de cocoapods: default — Jagger utilise SPM (CapApp-SPM), pas de Podfile
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
     scripts:
       - name: Install dependencies
         script: |
-          npm ci
-      - name: Build mobile app
-        script: |
-          npm run build:mobile
-      - name: Sync Capacitor
+          npm install
+
+      - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
-      - name: Set up code signing
+
+      - name: Strip routing key (fix ITMS-90118)
         script: |
-          # Codemagic gère automatiquement le code signing
+          PLIST="ios/App/App/Info.plist"
+          echo "--- Clé routing présente ? ---"
+          /usr/libexec/PlistBuddy -c "Print :MKDirectionsApplicationSupportedModes" "$PLIST" 2>/dev/null || echo "  NON (binaire propre)"
+          /usr/libexec/PlistBuddy -c "Delete :MKDirectionsApplicationSupportedModes" "$PLIST" 2>/dev/null || true
+
+      # Pas d'étape "Install CocoaPods" — SPM se résout automatiquement via Xcode
+
+      - name: Initialize keychain
+        script: |
+          keychain initialize
+
+      - name: Check App Store Connect API key
+        script: |
+          # Echoue tot et en clair. Le 401 renvoye par Apple ne dit jamais
+          # QUELLE cle a ete presentee, ce qui rend une cle revoquee ou un
+          # Key ID mal recopie tres long a diagnostiquer.
+          manquantes=""
+          [ -z "$ASC_ISSUER_ID" ] && manquantes="$manquantes ASC_ISSUER_ID"
+          [ -z "$ASC_KEY_ID" ] && manquantes="$manquantes ASC_KEY_ID"
+          [ -z "$ASC_PRIVATE_KEY" ] && manquantes="$manquantes ASC_PRIVATE_KEY"
+          if [ -n "$manquantes" ]; then
+            echo "ERREUR : variables absentes du groupe ios_signing :$manquantes"
+            exit 1
+          fi
+          echo "Key ID presente a Apple : $ASC_KEY_ID"
+          echo "Il doit figurer dans App Store Connect > Users and Access >"
+          echo "Integrations, section 'Active' (PAS 'Revoked'), et le fichier"
+          echo "telecharge doit s'appeler AuthKey_$ASC_KEY_ID.p8."
+          case "$ASC_PRIVATE_KEY" in
+            *"BEGIN PRIVATE KEY"*) ;;
+            *) echo "ATTENTION : ASC_PRIVATE_KEY ne ressemble pas au contenu d'un .p8."
+               echo "Attendu : le texte complet du fichier, ligne -----BEGIN PRIVATE KEY----- comprise,"
+               echo "sans encodage base64." ;;
+          esac
+
+      - name: Fetch or create signing files
+        script: |
+          # Apple ne stocke QUE la partie publique d'un certificat de
+          # distribution : la cle privee reste sur la machine qui a fait la
+          # demande. Codemagic peut donc telecharger ou creer le certificat,
+          # mais sans cle privee il n'a rien a signer avec -> le message
+          # "Cannot save Signing Certificates without certificate private key".
+          # CERTIFICATE_PRIVATE_KEY est cette cle, conservee dans le groupe
+          # de variables ios_signing.
+          if [ -z "$CERTIFICATE_PRIVATE_KEY" ]; then
+            echo "ERREUR : la variable CERTIFICATE_PRIVATE_KEY est absente du groupe ios_signing."
+            echo ""
+            echo "Genere-la une fois sur ta machine :"
+            echo "  ssh-keygen -t rsa -b 2048 -m PEM -f ios_distribution_private_key"
+            echo "  (appuie deux fois sur Entree pour laisser la phrase secrete vide)"
+            echo ""
+            echo "Puis colle TOUT le contenu du fichier ios_distribution_private_key"
+            echo "(lignes BEGIN et END comprises, SANS encodage base64) dans Codemagic :"
+            echo "  Environment variables > groupe ios_signing > CERTIFICATE_PRIVATE_KEY, case Secure cochee."
+            exit 1
+          fi
+          app-store-connect fetch-signing-files "$APP_ID" \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --key-id "$ASC_KEY_ID" \
+            --private-key "@env:ASC_PRIVATE_KEY" \
+            --type IOS_APP_STORE \
+            --certificate-key "@env:CERTIFICATE_PRIVATE_KEY" \
+            --create
+
+      - name: Add certificates to keychain
+        script: |
+          keychain add-certificates
+
+      - name: Set up code signing (App Store Connect API)
+        script: |
           xcode-project use-profiles
-      - name: Build iOS archive
+
+      - name: Increment build number
+        script: |
+          cd ios/App
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --key-id "$ASC_KEY_ID" \
+            --private-key "@env:ASC_PRIVATE_KEY")
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+
+      - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --project ios/App/App.xcodeproj \
-            --scheme App
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
     artifacts:
       - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-      email:
-        recipients:
-          - tech@res2boost.com
+        api_key: $ASC_PRIVATE_KEY
+        key_id: $ASC_KEY_ID
+        issuer_id: $ASC_ISSUER_ID
+        submit_to_testflight: false

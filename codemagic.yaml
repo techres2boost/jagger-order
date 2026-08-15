@@ -9,8 +9,8 @@ workflows:
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
-        APP_ID: "6801565887"
-        APP_STORE_APPLE_ID: "[à récupérer dans App Store Connect une fois l'app créée]"
+        APP_ID: "com.res2boost.Jagger"
+        APP_STORE_APPLE_ID: "6801565887"
       node: latest
       xcode: latest
       # Pas de cocoapods: default — Jagger utilise SPM (CapApp-SPM), pas de Podfile

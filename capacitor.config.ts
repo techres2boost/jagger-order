@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.res2boost.Jagger ",
+appId: "com.res2boost.Jagger",
   appName: "Jagger",
   webDir: ".output/public",
   server: {

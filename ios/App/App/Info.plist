@@ -11,7 +11,12 @@
     
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>BOX needs background location access to provide real-time delivery tracking</string>
-    
+
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>BOX a besoin d'accéder à vos photos pour vous permettre de choisir une image (profil, avis, etc.).</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>BOX a besoin d'enregistrer des images dans votre photothèque, par exemple pour sauvegarder une photo de commande ou de reçu.</string>
+
     <!-- Push notifications -->
     <key>UIBackgroundModes</key>
     <array>

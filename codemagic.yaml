@@ -38,6 +38,21 @@ workflows:
           /usr/libexec/PlistBuddy -c "Print :MKDirectionsApplicationSupportedModes" "$PLIST" 2>/dev/null || echo "  NON (binaire propre)"
           /usr/libexec/PlistBuddy -c "Delete :MKDirectionsApplicationSupportedModes" "$PLIST" 2>/dev/null || true
 
+      # Filet de sécurité : garantit la présence des purpose strings photothèque
+      # exigées par Apple (rejet ITMS-90683). Les clés sont déjà dans Info.plist,
+      # donc "Add" échoue proprement (|| true) si elles existent ; l'étape ne sert
+      # qu'au cas où le plist serait régénéré sans elles.
+      - name: Ensure photo library usage descriptions (fix ITMS-90683)
+        script: |
+          PLIST="ios/App/App/Info.plist"
+          USAGE="BOX a besoin d'accéder à vos photos pour vous permettre de choisir une image."
+          ADD_USAGE="BOX a besoin d'enregistrer des images dans votre photothèque."
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string \"$USAGE\"" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string \"$ADD_USAGE\"" "$PLIST" 2>/dev/null || true
+          echo "--- Purpose strings photothèque présentes ? ---"
+          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryUsageDescription" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryAddUsageDescription" "$PLIST"
+
       # Pas d'étape "Install CocoaPods" — SPM se résout automatiquement via Xcode
 
       - name: Initialize keychain

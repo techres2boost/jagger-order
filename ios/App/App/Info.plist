@@ -4,18 +4,18 @@
 <dict>
     <!-- Required permissions for native features -->
     <key>NSCameraUsageDescription</key>
-    <string>BOX needs camera access to take photos of delivery addresses</string>
-    
+    <string>Jagger needs camera access to take photos of delivery addresses</string>
+
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>BOX needs your location to track deliveries and find nearby restaurants</string>
-    
+    <string>Jagger needs your location to track deliveries and find nearby restaurants</string>
+
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>BOX needs background location access to provide real-time delivery tracking</string>
+    <string>Jagger needs background location access to provide real-time delivery tracking</string>
 
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>BOX a besoin d'accéder à vos photos pour vous permettre de choisir une image (profil, avis, etc.).</string>
+    <string>Jagger a besoin d'accéder à vos photos pour vous permettre de choisir une image (profil, avis, etc.).</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>BOX a besoin d'enregistrer des images dans votre photothèque, par exemple pour sauvegarder une photo de commande ou de reçu.</string>
+    <string>Jagger a besoin d'enregistrer des images dans votre photothèque, par exemple pour sauvegarder une photo de commande ou de reçu.</string>
 
     <!-- Push notifications -->
     <key>UIBackgroundModes</key>
@@ -28,7 +28,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>BOX</string>
+    <string>Jagger</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>

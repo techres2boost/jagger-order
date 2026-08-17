@@ -45,8 +45,8 @@ workflows:
       - name: Ensure photo library usage descriptions (fix ITMS-90683)
         script: |
           PLIST="ios/App/App/Info.plist"
-          USAGE="BOX a besoin d'accéder à vos photos pour vous permettre de choisir une image."
-          ADD_USAGE="BOX a besoin d'enregistrer des images dans votre photothèque."
+          USAGE="Jagger a besoin d'accéder à vos photos pour vous permettre de choisir une image."
+          ADD_USAGE="Jagger a besoin d'enregistrer des images dans votre photothèque."
           /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string \"$USAGE\"" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string \"$ADD_USAGE\"" "$PLIST" 2>/dev/null || true
           echo "--- Purpose strings photothèque présentes ? ---"
